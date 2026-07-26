@@ -107,6 +107,8 @@
     flex-direction: column;
     gap: 6px;
   }
+  .title-row { display: flex; align-items: center; gap: 14px; }
+  .football-icon { width: clamp(32px, 6vw, 48px); height: auto; flex-shrink: 0; }
   .eyebrow {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
@@ -766,7 +768,19 @@
 <div class="wrap">
   <header class="masthead">
     <div class="eyebrow">The Gamblers · Yahoo League 732599</div>
-    <h1 class="title">Draft Rankings</h1>
+    <div class="title-row">
+      <svg class="football-icon" viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M2,30 C2,10 25,2 50,2 C75,2 98,10 98,30 C98,50 75,58 50,58 C25,58 2,50 2,30 Z" fill="#8B5A2B" stroke="#5C3A1A" stroke-width="2"/>
+        <path d="M16,30 Q50,12 84,30" fill="none" stroke="#F1E4D4" stroke-width="2" opacity="0.85"/>
+        <path d="M16,30 Q50,48 84,30" fill="none" stroke="#F1E4D4" stroke-width="2" opacity="0.85"/>
+        <line x1="34" y1="30" x2="66" y2="30" stroke="#F1E4D4" stroke-width="2.5"/>
+        <line x1="40" y1="24" x2="40" y2="36" stroke="#F1E4D4" stroke-width="2"/>
+        <line x1="47" y1="24" x2="47" y2="36" stroke="#F1E4D4" stroke-width="2"/>
+        <line x1="54" y1="24" x2="54" y2="36" stroke="#F1E4D4" stroke-width="2"/>
+        <line x1="61" y1="24" x2="61" y2="36" stroke="#F1E4D4" stroke-width="2"/>
+      </svg>
+      <h1 class="title">Draft Rankings</h1>
+    </div>
     <div class="subtitle" id="subtitleText"></div>
   </header>
 
