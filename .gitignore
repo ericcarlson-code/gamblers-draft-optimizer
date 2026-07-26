@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 env/
+.conda-env/
 .pytest_cache/
 *.egg-info/
 

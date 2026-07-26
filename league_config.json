@@ -7,6 +7,10 @@
     "draft_type": "offline",
     "scoring_type": "season points"
   },
+  "season": {
+    "games_per_season": 17,
+    "note": "Used to convert a defense's season-total points allowed into a per-game average for the points_allowed_buckets lookup, then scale the bucket result back up across the season."
+  },
   "roster": {
     "slots": {
       "QB": 2,
