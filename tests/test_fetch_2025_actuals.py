@@ -1,4 +1,4 @@
-from scripts.fetch_2025_actuals import category_values
+from scripts.fetch_actuals import category_values
 
 
 def test_category_values_flattens_using_root_names_ordering():

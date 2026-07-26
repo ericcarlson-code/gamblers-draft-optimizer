@@ -1,13 +1,15 @@
 """
-One-off fetch: pulls actual final 2025 NFL season stats from ESPN's public
-stats API (no auth required) and writes them to data/historical/2025_actual_stats.csv
-in the app's canonical schema.
+One-off fetch: pulls actual final NFL season stats for a given year from
+ESPN's public stats API (no auth required) and writes them to
+data/historical/{season}_actual_stats.csv in the app's canonical schema.
 
-Run manually when you want to refresh the data (e.g. next season):
-    python scripts/fetch_2025_actuals.py
+Usage:
+    python scripts/fetch_actuals.py 2025
+    python scripts/fetch_actuals.py 2024
+    python scripts/fetch_actuals.py 2023
 
-This is NOT called at app runtime -- the app just reads the CSV this script
-produces, so draft day doesn't depend on ESPN being reachable.
+This is NOT called at app runtime -- the app just reads the CSVs this
+script produces, so draft day doesn't depend on ESPN being reachable.
 
 Known gap: team defense (DEF) stats aren't included. ESPN's by-athlete
 endpoint only covers individual players; team defense would need a
@@ -15,12 +17,13 @@ separate team-stats endpoint that hasn't been wired up yet.
 """
 import csv
 import json
+import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
-SEASON = 2025
 BASE_URL = "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/statistics/byathlete"
-OUT_PATH = Path(__file__).resolve().parent.parent / "data" / "historical" / "2025_actual_stats.csv"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 
 # (sort key, how many pages of 50 to pull) -- covers players whose primary
 # production is in that category; deduped by athlete id afterward so a
@@ -42,10 +45,10 @@ CSV_FIELDS = [
 ]
 
 
-def fetch_page(sort: str, page: int) -> dict:
+def fetch_page(season: int, sort: str, page: int) -> dict:
     url = (
         f"{BASE_URL}?region=us&lang=en&contentorigin=espn&isqualified=false"
-        f"&page={page}&limit=50&sort={sort}%3Adesc&season={SEASON}&seasontype=2"
+        f"&page={page}&limit=50&sort={sort}%3Adesc&season={season}&seasontype=2"
     )
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=15) as resp:
@@ -65,12 +68,16 @@ def category_values(athlete_record: dict, category_names: dict[str, list[str]]) 
     return out
 
 
-def main() -> None:
+def fetch_season(season: int) -> dict[str, dict]:
     players: dict[str, dict] = {}  # athlete id -> canonical row
 
     for sort_key, num_pages in QUERIES:
         for page in range(1, num_pages + 1):
-            data = fetch_page(sort_key, page)
+            try:
+                data = fetch_page(season, sort_key, page)
+            except urllib.error.HTTPError as e:
+                print(f"  {sort_key} page {page}: request failed ({e.code}), skipping")
+                continue
             category_names = {c["name"]: c["names"] for c in data.get("categories", [])}
 
             for record in data.get("athletes", []):
@@ -108,16 +115,29 @@ def main() -> None:
                     "pat_made": stats.get("extraPointsMade", 0),
                 }
 
-            print(f"{sort_key} page {page}: {len(data.get('athletes', []))} rows, {len(players)} unique so far")
+            print(f"  {sort_key} page {page}: {len(data.get('athletes', []))} rows, {len(players)} unique so far")
 
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUT_PATH, "w", newline="", encoding="utf-8") as f:
+    return players
+
+
+def main() -> None:
+    if len(sys.argv) != 2:
+        print("Usage: python scripts/fetch_actuals.py <season>")
+        sys.exit(1)
+    season = int(sys.argv[1])
+
+    print(f"Fetching {season} actual stats...")
+    players = fetch_season(season)
+
+    out_path = DATA_DIR / f"{season}_actual_stats.csv"
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
         writer.writeheader()
         for row in sorted(players.values(), key=lambda r: r["name"]):
             writer.writerow(row)
 
-    print(f"Wrote {len(players)} players to {OUT_PATH}")
+    print(f"Wrote {len(players)} players to {out_path}")
 
 
 if __name__ == "__main__":
