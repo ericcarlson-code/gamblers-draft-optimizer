@@ -525,6 +525,32 @@
   }
   .hist-note { font-size: 12.5px; color: var(--ink-muted); margin: 10px 0 20px; }
 
+  .team-roster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 6px; }
+  @media (max-width: 780px) { .team-roster-grid { grid-template-columns: 1fr; } }
+  .team-roster-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .team-name-input {
+    all: unset;
+    display: block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--ink);
+    width: 100%;
+    padding: 2px 0 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .team-name-input:focus { border-bottom-color: var(--accent); }
+  .team-roster-card .roster-slot-grid { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+  .team-roster-card .trade-search { margin-bottom: 0; }
+  .roster-row-remove { all: unset; cursor: pointer; color: var(--ink-muted); font-weight: 700; padding: 0 6px; }
+  .roster-row-remove:hover { color: var(--danger); }
+
   .kv-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -811,6 +837,13 @@
       <span id="stackTopNValue"></span>
     </div>
     <div class="table-shell"><div class="table-scroll"><table id="stackTable"><thead id="stackTableHead"></thead><tbody id="stackTableBody"></tbody></table></div></div>
+  </section>
+
+  <section id="section-teamrosters" class="app-section" hidden>
+    <p class="section-intro">Manually track every team's real current roster -- a stand-in for Yahoo sync, which isn't wired up yet. Saved in this browser only (nothing is sent anywhere), so it'll still be here next time you open this page. Rename a team by editing its name field.</p>
+    <h3 class="subhead">Team Power Rankings</h3>
+    <div class="table-shell" style="margin-bottom:22px;"><div class="table-scroll"><table><thead><tr><th>Team</th><th class="num">Total VOR</th><th class="num">Players</th></tr></thead><tbody id="teamRosterSummaryBody"></tbody></table></div></div>
+    <div class="team-roster-grid" id="teamRosterCards"></div>
   </section>
 
   <section id="section-historical" class="app-section" hidden>
@@ -1144,6 +1177,7 @@
     { key: 'trade', label: 'Trade Calculator' },
     { key: 'stacks', label: 'Stack Rankings' },
     { key: 'historical', label: 'Historical Review' },
+    { key: 'teamrosters', label: 'Team Rosters' },
     { key: 'leaguedetails', label: 'League Details' },
     { key: 'leaguescores', label: 'League Scores' },
   ];
@@ -1350,12 +1384,14 @@
       </table></div></div>`;
   }
 
-  function myRosterSlotAssignments() {
-    const rosterSlots = LEAGUE_META.roster_slots;
-    const myPicks = [...mockDraft.rosters['Me']].sort((a, b) => b.vor - a.vor);
+  // Shared by Mock Draft's My Roster panel and the Team Rosters tab -- fills
+  // starter slots by position (highest VOR first), overflows to BN, then
+  // flags anything past that as OVERFLOW. Ported from app.py's tab_roster.
+  function computeSlotAssignments(players, rosterSlots) {
+    const sorted = [...players].sort((a, b) => b.vor - a.vor);
     const slotCounts = {};
     for (const pos in rosterSlots) slotCounts[pos] = 0;
-    const assignments = myPicks.map(p => {
+    const assignments = sorted.map(p => {
       let slot;
       if ((slotCounts[p.position] || 0) < (rosterSlots[p.position] || 0)) {
         slotCounts[p.position] += 1;
@@ -1366,14 +1402,14 @@
       } else {
         slot = 'OVERFLOW';
       }
-      return { name: p.name, position: p.position, slot };
+      return { name: p.name, position: p.position, vor: p.vor, slot };
     });
     return { assignments, slotCounts };
   }
 
   function renderMyRosterPanel() {
     const rosterSlots = LEAGUE_META.roster_slots;
-    const { assignments, slotCounts } = myRosterSlotAssignments();
+    const { assignments, slotCounts } = computeSlotAssignments(mockDraft.rosters['Me'], rosterSlots);
 
     const grid = document.getElementById('myRosterSlotGrid');
     grid.innerHTML = Object.keys(rosterSlots).map(pos => {
@@ -1835,6 +1871,169 @@
   }
 
   // ===========================================================================
+  // Team Rosters -- manual entry for every team's real current roster (Me +
+  // opponents), a stand-in for Yahoo sync until that's wired up. Persisted
+  // to localStorage so it survives across the season, not just one sitting.
+  // Reuses computeSlotAssignments (same slot-fill logic as Mock Draft's My
+  // Roster panel) and the same search-picklist pattern as Trade Calculator.
+  // ===========================================================================
+  const ROSTER_STORAGE_KEY = 'gamblers-team-rosters-v1';
+
+  function buildTeamIds(numTeams) {
+    const ids = ['me'];
+    for (let i = 2; i <= numTeams; i++) ids.push('t' + i);
+    return ids;
+  }
+  const TEAM_IDS = buildTeamIds(LEAGUE_META.num_teams);
+
+  function defaultRosterState() {
+    const teamNames = {};
+    TEAM_IDS.forEach((id, i) => { teamNames[id] = id === 'me' ? 'Me' : `Team ${i + 1}`; });
+    const rosters = {};
+    TEAM_IDS.forEach(id => { rosters[id] = []; });
+    return { teamNames, rosters };
+  }
+
+  function loadRosterState() {
+    try {
+      const raw = localStorage.getItem(ROSTER_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.teamNames || !parsed.rosters) return null;
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveRosterState() {
+    try { localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(rosterState)); } catch (e) { /* storage unavailable -- state just won't persist */ }
+  }
+
+  let rosterState = loadRosterState() || defaultRosterState();
+  // Backfill in case num_teams changed since this was last saved.
+  const _defaults = defaultRosterState();
+  TEAM_IDS.forEach(id => {
+    if (!(id in rosterState.teamNames)) rosterState.teamNames[id] = _defaults.teamNames[id];
+    if (!(id in rosterState.rosters)) rosterState.rosters[id] = [];
+  });
+
+  function playerByName(name) {
+    return DATA_BY_VIEW['2026'].find(p => p.name === name);
+  }
+
+  function allRosteredNames() {
+    const set = new Set();
+    for (const id of TEAM_IDS) for (const n of rosterState.rosters[id]) set.add(n);
+    return set;
+  }
+
+  function renderTeamRosterSummary() {
+    const rows = TEAM_IDS.map(id => {
+      const players = rosterState.rosters[id].map(n => playerByName(n)).filter(Boolean);
+      const totalVor = players.reduce((s, p) => s + p.vor, 0);
+      return { name: rosterState.teamNames[id], totalVor, count: players.length };
+    }).sort((a, b) => b.totalVor - a.totalVor);
+    document.getElementById('teamRosterSummaryBody').innerHTML = rows.length
+      ? rows.map(r => `<tr><td>${r.name}</td><td class="num">${r.totalVor.toFixed(1)}</td><td class="num">${r.count}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="trend-empty">No rosters entered yet.</td></tr>';
+  }
+
+  function renderTeamRosterCard(id) {
+    const rosterSlots = LEAGUE_META.roster_slots;
+    const players = rosterState.rosters[id].map(n => playerByName(n)).filter(Boolean);
+    const { assignments } = computeSlotAssignments(players, rosterSlots);
+
+    const slotCounts = {};
+    for (const pos in rosterSlots) slotCounts[pos] = 0;
+    for (const a of assignments) if (a.slot !== 'OVERFLOW') slotCounts[a.slot] = (slotCounts[a.slot] || 0) + 1;
+
+    const slotGrid = Object.keys(rosterSlots).map(pos => {
+      const filled = slotCounts[pos] || 0;
+      const total = rosterSlots[pos];
+      return `<div class="roster-slot-cell${filled >= total ? ' rs-full' : ''}"><span class="rs-pos">${pos}</span><span class="rs-count">${filled}/${total}</span></div>`;
+    }).join('');
+
+    const rosterRows = assignments.map(a => `
+      <tr>
+        <td>${a.name}</td>
+        <td><span class="pos-chip">${a.position}</span></td>
+        <td>${a.slot}</td>
+        <td><button class="roster-row-remove" data-role="remove-player" data-team-id="${id}" data-name="${a.name}">×</button></td>
+      </tr>`).join('');
+
+    return `
+      <div class="team-roster-card" data-team-id="${id}">
+        <input class="team-name-input" data-role="team-name" data-team-id="${id}" value="${rosterState.teamNames[id]}" />
+        <div class="roster-slot-grid">${slotGrid}</div>
+        <input type="text" class="trade-search" data-role="team-search" data-team-id="${id}" placeholder="Search players to add…" />
+        <div class="trade-picklist" data-role="team-picklist" data-team-id="${id}" style="display:none;"></div>
+        <div class="table-shell"><div class="table-scroll"><table>
+          <thead><tr><th>Player</th><th>Pos</th><th>Slot</th><th></th></tr></thead>
+          <tbody>${rosterRows || '<tr><td colspan="4" class="trend-empty">No players yet.</td></tr>'}</tbody>
+        </table></div></div>
+      </div>`;
+  }
+
+  function renderTeamRosterCards() {
+    document.getElementById('teamRosterCards').innerHTML = TEAM_IDS.map(renderTeamRosterCard).join('');
+  }
+
+  function renderTeamRosters() {
+    renderTeamRosterSummary();
+    renderTeamRosterCards();
+  }
+
+  function renderTeamPicklist(teamId, query) {
+    const picklistEl = document.querySelector(`[data-role="team-picklist"][data-team-id="${teamId}"]`);
+    const q = query.trim().toLowerCase();
+    if (!q) { picklistEl.innerHTML = ''; picklistEl.style.display = 'none'; return; }
+    const taken = allRosteredNames();
+    const matches = DATA_BY_VIEW['2026']
+      .filter(p => p.name.toLowerCase().includes(q) && !taken.has(p.name))
+      .slice(0, 8);
+    picklistEl.style.display = matches.length ? 'block' : 'none';
+    picklistEl.innerHTML = matches.map(p =>
+      `<div class="trade-picklist-item" data-role="add-player" data-team-id="${teamId}" data-name="${p.name}"><span>${p.name} (${p.position}, ${p.team})</span><span class="vor-val">${p.vor.toFixed(1)}</span></div>`
+    ).join('');
+  }
+
+  function initTeamRosters() {
+    const section = document.getElementById('section-teamrosters');
+
+    section.addEventListener('input', (e) => {
+      const target = e.target;
+      if (target.matches('[data-role="team-name"]')) {
+        rosterState.teamNames[target.dataset.teamId] = target.value;
+        saveRosterState();
+        renderTeamRosterSummary(); // avoid re-rendering cards mid-keystroke -- would steal focus
+      } else if (target.matches('[data-role="team-search"]')) {
+        renderTeamPicklist(target.dataset.teamId, target.value);
+      }
+    });
+
+    section.addEventListener('click', (e) => {
+      const addEl = e.target.closest('[data-role="add-player"]');
+      if (addEl) {
+        const teamId = addEl.dataset.teamId;
+        rosterState.rosters[teamId].push(addEl.dataset.name);
+        saveRosterState();
+        renderTeamRosters();
+        return;
+      }
+      const removeEl = e.target.closest('[data-role="remove-player"]');
+      if (removeEl) {
+        const teamId = removeEl.dataset.teamId;
+        rosterState.rosters[teamId] = rosterState.rosters[teamId].filter(n => n !== removeEl.dataset.name);
+        saveRosterState();
+        renderTeamRosters();
+      }
+    });
+
+    renderTeamRosters();
+  }
+
+  // ===========================================================================
   // League Details -- read-only render of the full league_config.json,
   // bundled into LEAGUE_META by scripts/build_rankings_artifact_data.py.
   // ===========================================================================
@@ -1914,6 +2113,7 @@
   initTradeCalculator();
   initStackRankings();
   initHistoricalReview();
+  initTeamRosters();
   renderLeagueDetails();
 
   renderViewPills();
