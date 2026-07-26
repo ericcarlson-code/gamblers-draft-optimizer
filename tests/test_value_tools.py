@@ -1,12 +1,19 @@
 import pandas as pd
 
-from optimizer.value_tools import evaluate_trade, team_totals
+from optimizer.value_tools import evaluate_trade, team_stack_summary, team_totals
 
 BOARD = pd.DataFrame({
     "name": ["A", "B", "C", "D", "E"],
     "position": ["QB", "RB", "WR", "TE", "K"],
     "vor": [50.0, 30.0, 20.0, 10.0, 5.0],
     "drafted_by": ["Me", "Me", "Opponent 1", "", "Opponent 1"],
+})
+
+STACK_BOARD = pd.DataFrame({
+    "name": ["Lions QB", "Lions RB", "Lions WR", "Lions TE", "Lions K", "Bears QB", "Bears RB"],
+    "position": ["QB", "RB", "WR", "TE", "K", "QB", "RB"],
+    "team": ["DET", "DET", "DET", "DET", "DET", "CHI", "CHI"],
+    "vor": [40.0, 35.0, 30.0, 25.0, 2.0, 20.0, 5.0],
 })
 
 
@@ -48,3 +55,26 @@ def test_evaluate_trade_favors_side_receiving_more_vor():
 def test_evaluate_trade_even():
     result = evaluate_trade(BOARD, side_a_players=["A"], side_b_players=["B", "C"])  # 50 vs 30+20=50
     assert result["verdict"] == "Even trade"
+
+
+def test_team_stack_ranks_best_offense_first():
+    # DET's top 4 by VOR: 40+35+30+25=130 (Lions K excluded, only top 4 counted).
+    # CHI: 20+5=25 (only 2 players total).
+    stacks = team_stack_summary(STACK_BOARD, top_n=4)
+    assert stacks.iloc[0]["team"] == "DET"
+    assert stacks.iloc[0]["stack_vor"] == 130.0
+    assert stacks.iloc[1]["team"] == "CHI"
+    assert stacks.iloc[1]["stack_vor"] == 25.0
+
+
+def test_team_stack_top_n_excludes_weakest_players():
+    stacks = team_stack_summary(STACK_BOARD, top_n=4)
+    det_players = stacks[stacks["team"] == "DET"].iloc[0]["players"]
+    assert "Lions K" not in det_players  # 5th-best DET player, cut by top_n=4
+    assert "Lions QB" in det_players
+
+
+def test_team_stack_empty_board():
+    empty = pd.DataFrame(columns=["name", "position", "team", "vor"])
+    stacks = team_stack_summary(empty)
+    assert stacks.empty

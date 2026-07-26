@@ -322,8 +322,8 @@ elif page == "Draft Board":
             st.session_state.drafted_by = {}
             st.rerun()
 
-        tab_full, tab_live, tab_roster, tab_teams = st.tabs(
-            ["Full Player Pool — Mark Picks", "Best Available (Live)", "My Roster", "Team Power Rankings"]
+        tab_full, tab_live, tab_roster, tab_teams, tab_stacks = st.tabs(
+            ["Full Player Pool — Mark Picks", "Best Available (Live)", "My Roster", "Team Power Rankings", "Team Stacks"]
         )
 
         with tab_full:
@@ -416,6 +416,23 @@ elif page == "Draft Board":
                 st.caption("No picks marked yet. Assign players to teams in the Full Player Pool tab.")
             else:
                 st.dataframe(totals, hide_index=True, use_container_width=True)
+
+        with tab_stacks:
+            st.caption(
+                "Which real NFL teams have the most combined value across their best players -- a strong "
+                "offense tends to make several of its own players valuable at once (e.g. a run of games where "
+                "the QB, WR1, and RB1 all score together), so these are good targets for drafting more than "
+                "one player from the same team. Ranked by the combined VOR of each team's best players."
+            )
+            top_n = st.slider("Players per team to count", min_value=2, max_value=6, value=4, key="stack_top_n")
+            stacks = value_tools.team_stack_summary(board, top_n=top_n)
+            st.dataframe(
+                stacks.rename(columns={
+                    "team": "Team", "stack_vor": "Combined VOR", "player_count": "Players Counted", "players": "Top Players",
+                }),
+                hide_index=True,
+                use_container_width=True,
+            )
 
 # =============================================================================
 # PAGE: Mock Draft
