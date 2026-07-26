@@ -63,7 +63,7 @@ def test_wr_scoring():
 
 def test_kicker_scoring():
     # 1 PAT (1) + FG 0-19 (3, falls in the 0-39 bucket) + FG 20-29 (3, also 0-39 bucket)
-    # + FG 40-49 (4) + FG 50+ (5) = 1 + 3 + 3 + 4 + 5 = 16
+    # + FG 40-49 (4) + FG 50+ (5, the real league's 50-59 tier -- see below) = 16
     stats = {
         "position": "K",
         "pat_made": 1,
@@ -74,6 +74,15 @@ def test_kicker_scoring():
         "fg_50_plus": 1,
     }
     assert score_player(stats, cfg) == 16.0
+
+
+def test_kicker_50_plus_aggregate_maps_to_50_59_not_60_plus():
+    # Our data source only reports one aggregate "50+ yard" make count, with no way
+    # to split out genuinely rare 60+ yard makes (worth 9 vs 5 in the real config).
+    # Regression test for a bug where a wide assumed distance range pushed this
+    # aggregate's midpoint into the 60+ bucket, overvaluing every kicker's 50+ makes.
+    stats = {"position": "K", "fg_50_plus": 1}
+    assert score_player(stats, cfg) == 5.0  # 50-59 tier, not the 9pt 60+ tier
 
 
 def test_defense_scoring():

@@ -50,12 +50,23 @@ STAT_FIELDS = [
 # even though the league's scoring buckets (in league_config.json) may be
 # coarser or drawn at different cutoffs. We assign each raw band to whichever
 # configured scoring bucket contains its midpoint.
+#
+# The "50+" band's upper bound is deliberately capped at 59, not a higher
+# number: our data source only reports one aggregate "50+ yards" make count,
+# with no way to split out true 60+ makes (which are genuinely rare -- a
+# handful league-wide per season; the vast majority of "50+" kicks are
+# 50-59). Using a wide range here (e.g. up to 89) would push the midpoint
+# into whatever bucket covers 60+ yards, which -- once that tier scores
+# meaningfully more (as this league's does: 60+ = 9pts vs 50-59 = 5pts) --
+# would systematically overvalue every kicker's 50+ makes. Capping at 59
+# keeps the conservative, realistic assumption: treat the aggregate as
+# 50-59 yard makes unless/until a data source can split it further.
 FG_INPUT_BANDS = [
     ("fg_0_19", 0, 19),
     ("fg_20_29", 20, 29),
     ("fg_30_39", 30, 39),
     ("fg_40_49", 40, 49),
-    ("fg_50_plus", 50, 89),
+    ("fg_50_plus", 50, 59),
 ]
 
 ALL_CANONICAL_FIELDS = [f[0] for f in IDENTITY_FIELDS] + [f[0] for f in STAT_FIELDS]

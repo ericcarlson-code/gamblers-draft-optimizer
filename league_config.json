@@ -51,14 +51,15 @@
       "field_goal_buckets": [
         { "min_yards": 0, "max_yards": 39, "points": 3 },
         { "min_yards": 40, "max_yards": 49, "points": 4 },
-        { "min_yards": 50, "max_yards": 999, "points": 5 }
+        { "min_yards": 50, "max_yards": 59, "points": 5 },
+        { "min_yards": 60, "max_yards": 999, "points": 9 }
       ]
     },
     "defense": {
       "touchdown": 6,
       "safety": 2,
       "return_touchdown": 6,
-      "extra_point_returned": 2,
+      "extra_point_returned": 0,
       "points_allowed_buckets": [
         { "min_points": 0, "max_points": 0, "points": 15 },
         { "min_points": 1, "max_points": 6, "points": 10 },
@@ -71,8 +72,10 @@
     }
   },
   "notes": [
-    "All numbers above are best-guess entries pending confirmation against the real Yahoo league settings page.",
-    "The user specifically flagged that FG buckets likely have more/finer distance tiers, and that the D/ST points-allowed scale likely swings more positive at the low end and more negative at the high end than shown here.",
+    "CONFIRMED as of 2026-07-26 against the league's real rules document (FOOTBALL_RULES_2023-2024.docx). Passing/rushing/receiving/roster/D-ST points-allowed all matched the prior placeholder values exactly. FG buckets were corrected to add the 60+ yard tier (9pts, vs 5pts for 50-59) that the placeholder didn't have. extra_point_returned corrected from a guessed 2 down to 0 -- not a scored category in the real rules.",
+    "The real rules also specify a 2-point-conversion rule where EVERY player involved gets 2 points (e.g. both the QB who threw it and the receiver who caught it) -- this already matches how two_point_conversion is applied per-player in the scoring engine, no change needed there.",
+    "Known data-source caveat: our stats source only reports one aggregate '50+ yard' field goal make count, with no way to split out true 60+ yard makes (which are genuinely rare). See optimizer/schema.py's FG_INPUT_BANDS comment -- the aggregate is conservatively treated as 50-59 yard makes (5pts) rather than 60+ (9pts) to avoid overvaluing kickers.",
+    "The rules doc is titled '2023-2024' -- worth double-checking with the user whether anything changed for the current season.",
     "Edit the bucket lists freely -- add/remove/adjust rows, the scoring engine reads them at runtime and does not assume a fixed number of buckets.",
     "Passing interceptions are not scored here because the league's INT penalty (if any) was not provided -- add a 'interception' key under scoring.passing if the real league docks points for it."
   ]
