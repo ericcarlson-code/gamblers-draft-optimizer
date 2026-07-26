@@ -9,6 +9,8 @@ TD values, FG distance buckets, D/ST points-allowed buckets -- is read from
 config, not hardcoded here, so editing league_config.json changes scoring
 without touching this file.
 """
+import math
+
 from optimizer.schema import FG_INPUT_BANDS
 
 
@@ -16,7 +18,8 @@ def _get(stats: dict, field: str) -> float:
     value = stats.get(field, 0)
     if value is None or value == "":
         return 0.0
-    return float(value)
+    value = float(value)
+    return 0.0 if math.isnan(value) else value
 
 
 def _bucket_points(value: float, buckets: list[dict], min_key: str, max_key: str) -> float:

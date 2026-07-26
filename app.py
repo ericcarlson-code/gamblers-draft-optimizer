@@ -1,5 +1,6 @@
 """Streamlit draft-day app: upload projections, tune league settings live, draft board."""
 import json
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -8,6 +9,8 @@ from optimizer import config as config_module
 from optimizer import data_loader, mock_draft, scoring, schema, tiers, value_tools, vor
 
 st.set_page_config(page_title="Gamblers Draft Optimizer", layout="wide")
+
+HISTORICAL_2025_PATH = Path(__file__).resolve().parent / "data" / "historical" / "2025_actual_stats.csv"
 
 if "cfg" not in st.session_state:
     st.session_state.cfg = config_module.load_config()
@@ -20,7 +23,7 @@ st.sidebar.title(cfg["league"]["name"])
 st.sidebar.caption(f"Yahoo League ID {cfg['league']['yahoo_league_id']}")
 page = st.sidebar.radio(
     "Navigate",
-    ["Upload & Map Data", "League Settings", "Draft Board", "Mock Draft", "Trade Calculator"],
+    ["Upload & Map Data", "League Settings", "Draft Board", "Mock Draft", "Trade Calculator", "2025 Actual Results", "Playoffs"],
     label_visibility="collapsed",
 )
 
@@ -521,3 +524,48 @@ elif page == "Trade Calculator":
             )
         else:
             st.info("Pick at least one player on either side to evaluate.")
+
+# =============================================================================
+# PAGE: 2025 Actual Results
+# =============================================================================
+elif page == "2025 Actual Results":
+    st.header("2025 Actual Results")
+    st.caption(
+        "What actually happened in the 2025 season, scored under your current League Settings -- "
+        "sourced automatically from ESPN's public stats, nothing to upload. "
+        "Known gap: team defense (DEF) isn't included yet."
+    )
+
+    if not HISTORICAL_2025_PATH.exists():
+        st.warning(
+            "Historical data file not found. Generate it with: "
+            "`python scripts/fetch_2025_actuals.py`"
+        )
+    else:
+        historical_raw = pd.read_csv(HISTORICAL_2025_PATH)
+        # Route through the same column-mapping cleanup every other CSV gets (numeric
+        # coercion, NaN->0, position validation) instead of trusting the file blindly --
+        # this file's columns already match the canonical schema 1:1, hence the identity map.
+        identity_mapping = {field: field for field in schema.ALL_CANONICAL_FIELDS if field in historical_raw.columns}
+        historical_df = data_loader.apply_mapping(historical_raw, identity_mapping)
+        board = compute_scored_board(historical_df, cfg)
+
+        pos_filter = st.multiselect(
+            "Filter by position", sorted(board["position"].unique()), default=[], key="hist_pos_filter"
+        )
+        display = board if not pos_filter else board[board["position"].isin(pos_filter)]
+        st.dataframe(
+            display[["overall_rank", "name", "position", "team", "points", "vor", "tier"]],
+            hide_index=True,
+            use_container_width=True,
+        )
+
+# =============================================================================
+# PAGE: Playoffs
+# =============================================================================
+elif page == "Playoffs":
+    st.header("Playoffs")
+    st.info(
+        "Coming soon -- playoff-only stats and scoring, for both the 2025 season and future seasons, "
+        "will live here once that data pipeline is built."
+    )

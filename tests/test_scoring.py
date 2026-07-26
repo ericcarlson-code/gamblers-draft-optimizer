@@ -6,10 +6,21 @@ If you edit league_config.json's scoring numbers, these hand-computed
 expected values will no longer match -- that's expected, update them
 alongside the config, or write scenario-specific configs inline instead.
 """
+import math
+
 from optimizer.config import load_config
 from optimizer.scoring import score_player
 
 cfg = load_config()
+
+
+def test_nan_stat_value_treated_as_zero():
+    # Reading a CSV with blank cells (e.g. a QB's field-goal columns) via pandas
+    # produces float('nan'), not None -- must not propagate NaN through scoring.
+    stats = {"position": "QB", "pass_yds": 300, "pass_td": 3, "rush_yds": float("nan")}
+    result = score_player(stats, cfg)
+    assert not math.isnan(result)
+    assert result == 18.0  # rush_yds NaN treated as 0: 300/50 + 3*4 = 18
 
 
 def test_qb_scoring():

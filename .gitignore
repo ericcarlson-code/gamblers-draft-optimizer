@@ -16,6 +16,7 @@ env/
 /data/uploads/
 *.csv
 !data/sample/*.csv
+!data/historical/*.csv
 
 # Node (kept in case of future React frontend)
 node_modules/
