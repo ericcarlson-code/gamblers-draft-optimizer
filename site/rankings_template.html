@@ -793,6 +793,7 @@
               <th class="num" data-key="points">Pts</th>
               <th class="num" data-key="vor">VOR</th>
               <th class="num" data-key="tier">Tier</th>
+              <th class="num" data-key="td_dependency_pct" title="Share of this player's points that come from touchdowns rather than yardage/volume -- a proxy for week-to-week boom/bust variance, and for why a QB and his own pass-catcher are unusually correlated (a passing TD and a receiving TD are the same play).">TD%</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
           </thead>
@@ -1129,6 +1130,7 @@
           </div>
         </td>
         <td class="num"><span class="tier-chip" style="background:${tierColor(d.tier)}; color:${tierTextColor(d.tier)}">${d.tier}</span></td>
+        <td class="num">${(d.td_dependency_pct ?? 0).toFixed(1)}%</td>
         <td class="num trend-cell">${sparklineSvg(d.history)}</td>
       `;
       tbody.appendChild(tr);
@@ -1168,7 +1170,7 @@
   });
 
   // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
-  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier' };
+  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%' };
   document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
 
   // ===========================================================================
@@ -1315,6 +1317,23 @@
     return myRosterPlayers
       .filter(mine => mine.team === candidate.team && isStackPair(candidate.position, mine.position))
       .map(mine => mine.name);
+  }
+
+  // Best available proxy for real per-game correlation right now (the
+  // rigorous version needs a per-game stats pipeline that doesn't exist
+  // yet): a passing TD and its receiver's receiving TD are literally the
+  // same play, so a stack between two highly TD-dependent players is
+  // structurally tighter-correlated than one between two volume/yardage
+  // players who just happen to share a team. Threshold is a judgment call,
+  // not a measured cutoff.
+  const HIGH_TD_DEPENDENCY_THRESHOLD = 40;
+  function highTdStackPartner(candidate, myRosterPlayers) {
+    if ((candidate.td_dependency_pct ?? 0) < HIGH_TD_DEPENDENCY_THRESHOLD) return null;
+    return myRosterPlayers.find(mine =>
+      mine.team === candidate.team &&
+      isStackPair(candidate.position, mine.position) &&
+      (mine.td_dependency_pct ?? 0) >= HIGH_TD_DEPENDENCY_THRESHOLD
+    ) || null;
   }
 
   // The best available player who would NOT complete a stack with your
@@ -1610,7 +1629,11 @@
           if (stackWith.length) {
             const reason = stackTradeoffReason(p, bestAlt);
             const reasonHtml = reason ? `<span class="stack-reason reason-${reason.tier}">${reason.text}</span>` : '';
-            stackCell = `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>${reasonHtml}`;
+            const tdPartner = highTdStackPartner(p, mockDraft.rosters['Me']);
+            const tdHtml = tdPartner
+              ? `<span class="stack-reason reason-clear">High TD-correlation: ${p.name} (${(p.td_dependency_pct ?? 0).toFixed(0)}% TD) and ${tdPartner.name} (${(tdPartner.td_dependency_pct ?? 0).toFixed(0)}% TD) share the same scoring events, not just a team.</span>`
+              : '';
+            stackCell = `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>${reasonHtml}${tdHtml}`;
           }
           return `
             <tr>

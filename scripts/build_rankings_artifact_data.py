@@ -27,12 +27,35 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 HISTORY_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 
 
+def td_points(stats: dict, cfg: dict) -> float:
+    """Isolates just the touchdown-value portion of a player's score (mirrors
+    the position-scorer structure in optimizer/scoring.py's _POSITION_SCORERS,
+    but only the TD-value terms -- no yardage/reception/FG points). Used to
+    compute what fraction of a player's total points come from touchdowns
+    vs. yardage/volume -- a proxy for week-to-week boom/bust variance, and
+    for why a QB and his own pass-catcher are unusually correlated: a passing
+    TD and its receiver's receiving TD are literally the same play. Kickers
+    have no TD-value terms (FG distance swings are a different kind of
+    variance, not this one), so they always score 0 here."""
+    position = stats.get("position")
+    scoring_cfg = cfg["scoring"]
+    if position == "QB":
+        return stats.get("pass_td", 0) * scoring_cfg["passing"]["touchdown"] + stats.get("rush_td", 0) * scoring_cfg["rushing"]["touchdown"]
+    if position in ("RB", "WR", "TE"):
+        return stats.get("rush_td", 0) * scoring_cfg["rushing"]["touchdown"] + stats.get("rec_td", 0) * scoring_cfg["receiving"]["touchdown"]
+    if position == "DEF":
+        return stats.get("def_td", 0) * scoring_cfg["defense"]["touchdown"] + stats.get("def_return_td", 0) * scoring_cfg["defense"]["return_touchdown"]
+    return 0.0
+
+
 def score_file(path: Path, cfg: dict) -> pd.DataFrame:
     raw = pd.read_csv(path)
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
     df = apply_mapping(raw, mapping)
     board = df[["name", "position", "team"]].copy()
     board["points"] = df.apply(lambda r: score_player(r.to_dict(), cfg), axis=1)
+    td_pts = df.apply(lambda r: td_points(r.to_dict(), cfg), axis=1)
+    board["td_dependency_pct"] = (td_pts / board["points"].where(board["points"] > 0)).fillna(0.0) * 100
     board = compute_vor(board, cfg)
     board = assign_tiers(board, cfg)
     board = board.sort_values("vor", ascending=False).reset_index(drop=True)
@@ -41,7 +64,8 @@ def score_file(path: Path, cfg: dict) -> pd.DataFrame:
 
 
 def to_rows(board: pd.DataFrame) -> list[dict]:
-    return board[["overall_rank", "name", "position", "team", "points", "vor", "tier"]].round(1).to_dict("records")
+    cols = ["overall_rank", "name", "position", "team", "points", "vor", "tier", "td_dependency_pct"]
+    return board[cols].round(1).to_dict("records")
 
 
 def build_data_bundle(cfg: dict) -> dict:
