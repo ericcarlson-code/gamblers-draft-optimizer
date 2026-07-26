@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from optimizer import config as config_module
-from optimizer import data_loader, scoring, schema, tiers, vor
+from optimizer import data_loader, mock_draft, scoring, schema, tiers, value_tools, vor
 
 st.set_page_config(page_title="Gamblers Draft Optimizer", layout="wide")
 
@@ -20,12 +20,20 @@ st.sidebar.title(cfg["league"]["name"])
 st.sidebar.caption(f"Yahoo League ID {cfg['league']['yahoo_league_id']}")
 page = st.sidebar.radio(
     "Navigate",
-    ["Upload & Map Data", "League Settings", "Draft Board"],
+    ["Upload & Map Data", "League Settings", "Draft Board", "Mock Draft", "Trade Calculator"],
     label_visibility="collapsed",
 )
 
 
-def compute_board(canonical_df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+def team_options(cfg: dict) -> list[str]:
+    """'' (undrafted) + Me + one label per remaining team, so every real-draft pick can be
+    attributed to a specific opponent instead of one generic 'Opponent' bucket -- that's what
+    makes Team Power Rankings meaningful on the real draft, not just mock drafts."""
+    num_teams = cfg["league"]["num_teams"]
+    return ["", "Me"] + [f"Opponent {i}" for i in range(1, num_teams)]
+
+
+def compute_scored_board(canonical_df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     """Recomputes points/VOR/tier from raw stats + the CURRENT settings, every call.
     This is what makes editing League Settings instantly reshuffle the board."""
     board = canonical_df[["name", "position", "team"]].copy()
@@ -33,8 +41,28 @@ def compute_board(canonical_df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     board = vor.compute_vor(board, cfg)
     board = tiers.assign_tiers(board, cfg)
     board["overall_rank"] = range(1, len(board) + 1)
-    board["drafted_by"] = board["name"].map(st.session_state.drafted_by).fillna("")
     return board.set_index("name", drop=False)
+
+
+def compute_board(canonical_df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """compute_scored_board plus the real Draft Board's pick-tracking state."""
+    board = compute_scored_board(canonical_df, cfg)
+    board["drafted_by"] = board["name"].map(st.session_state.drafted_by).fillna("")
+    return board
+
+
+def record_mock_pick(md: dict, pick_row: pd.Series, team_label: str, num_teams: int) -> None:
+    md["picks_log"].append({
+        "pick": len(md["picks_log"]) + 1,
+        "round": md["pick_idx"] // num_teams + 1,
+        "team": team_label,
+        "name": pick_row["name"],
+        "position": pick_row["position"],
+        "vor": pick_row["vor"],
+    })
+    md["rosters"][team_label].append(pick_row["position"])
+    md["drafted_names"].add(pick_row["name"])
+    md["pick_idx"] += 1
 
 
 # =============================================================================
@@ -273,8 +301,8 @@ elif page == "Draft Board":
             st.session_state.drafted_by = {}
             st.rerun()
 
-        tab_full, tab_live, tab_roster = st.tabs(
-            ["Full Player Pool — Mark Picks", "Best Available (Live)", "My Roster"]
+        tab_full, tab_live, tab_roster, tab_teams = st.tabs(
+            ["Full Player Pool — Mark Picks", "Best Available (Live)", "My Roster", "Team Power Rankings"]
         )
 
         with tab_full:
@@ -290,7 +318,7 @@ elif page == "Draft Board":
                 hide_index=True,
                 disabled=["overall_rank", "name", "position", "team", "points", "vor", "tier"],
                 column_config={
-                    "drafted_by": st.column_config.SelectboxColumn("Drafted By", options=["", "Me", "Opponent"]),
+                    "drafted_by": st.column_config.SelectboxColumn("Drafted By", options=team_options(cfg)),
                     "points": st.column_config.NumberColumn(format="%.1f"),
                     "vor": st.column_config.NumberColumn(format="%.1f"),
                 },
@@ -359,3 +387,137 @@ elif page == "Draft Board":
                 )
             else:
                 st.caption("No picks marked yet. Mark players as 'Me' in the Full Player Pool tab.")
+
+        with tab_teams:
+            st.caption("Total VOR of players marked to each team so far — the same value the board ranks players by.")
+            totals = value_tools.team_totals(board, team_column="drafted_by")
+            if totals.empty:
+                st.caption("No picks marked yet. Assign players to teams in the Full Player Pool tab.")
+            else:
+                st.dataframe(totals, hide_index=True, use_container_width=True)
+
+# =============================================================================
+# PAGE: Mock Draft
+# =============================================================================
+elif page == "Mock Draft":
+    st.header("Mock Draft")
+    st.caption(
+        "Bot opponents draft against the same VOR rankings as the real Draft Board, using your current "
+        "League Settings. Separate from your real draft picks — safe to try and reset."
+    )
+
+    if "canonical_df" not in st.session_state:
+        st.info("Go to **Upload & Map Data** first to load a projections CSV.")
+    else:
+        num_teams = cfg["league"]["num_teams"]
+        roster_slots = cfg["roster"]["slots"]
+
+        if st.session_state.get("mock_draft") is None:
+            st.subheader("Set Up")
+            your_slot = st.number_input("Your draft slot", min_value=1, max_value=num_teams, value=1, step=1)
+            if st.button("Start Mock Draft", type="primary"):
+                total_rounds = mock_draft.total_rounds_for(roster_slots)
+                order = mock_draft.build_snake_order(num_teams, total_rounds)
+                team_labels = ["Me" if (i + 1) == your_slot else f"Team {i + 1}" for i in range(num_teams)]
+                st.session_state.mock_draft = {
+                    "team_labels": team_labels,
+                    "order": order,
+                    "pick_idx": 0,
+                    "rosters": {label: [] for label in team_labels},
+                    "picks_log": [],
+                    "drafted_names": set(),
+                }
+                st.rerun()
+        else:
+            md = st.session_state.mock_draft
+            scored = compute_scored_board(st.session_state.canonical_df, cfg)
+
+            # Auto-run bot picks until it's the user's turn or the draft is complete.
+            while md["pick_idx"] < len(md["order"]):
+                team_label = md["team_labels"][md["order"][md["pick_idx"]]]
+                if team_label == "Me":
+                    break
+                available = scored[~scored["name"].isin(md["drafted_names"])]
+                if available.empty:
+                    break
+                ranked = vor.compute_vor(available[["name", "position", "team", "points"]], cfg)
+                pick = mock_draft.pick_for_bot(ranked, md["rosters"][team_label], roster_slots)
+                record_mock_pick(md, pick, team_label, num_teams)
+
+            if st.button("Reset Mock Draft"):
+                st.session_state.mock_draft = None
+                st.rerun()
+
+            if md["pick_idx"] >= len(md["order"]):
+                st.success("Mock draft complete — see results below.")
+            else:
+                team_label = md["team_labels"][md["order"][md["pick_idx"]]]
+                round_num = md["pick_idx"] // num_teams + 1
+                st.subheader(f"Round {round_num}, Pick {md['pick_idx'] + 1} — {team_label} is on the clock")
+
+                available = scored[~scored["name"].isin(md["drafted_names"])]
+                ranked = vor.compute_vor(available[["name", "position", "team", "points"]], cfg)
+                ranked = tiers.assign_tiers(ranked, cfg)
+
+                pos_filter = st.multiselect(
+                    "Filter by position", sorted(ranked["position"].unique()), default=[], key="mock_pos_filter"
+                )
+                display = ranked if not pos_filter else ranked[ranked["position"].isin(pos_filter)]
+                st.dataframe(
+                    display.head(30)[["name", "position", "team", "points", "vor", "tier"]],
+                    hide_index=True,
+                    use_container_width=True,
+                )
+
+                pick_name = st.selectbox("Your pick", display["name"].tolist(), key="mock_pick_select")
+                if st.button("Draft This Player", type="primary"):
+                    pick_row = ranked[ranked["name"] == pick_name].iloc[0]
+                    record_mock_pick(md, pick_row, "Me", num_teams)
+                    st.rerun()
+
+            st.divider()
+            st.subheader("Draft Log")
+            if md["picks_log"]:
+                st.dataframe(pd.DataFrame(md["picks_log"]), hide_index=True, use_container_width=True)
+            else:
+                st.caption("No picks yet.")
+
+            st.subheader("Team Power Rankings")
+            if md["picks_log"]:
+                mock_board = pd.DataFrame(md["picks_log"]).rename(columns={"team": "drafted_by"})
+                totals = value_tools.team_totals(mock_board, team_column="drafted_by")
+                st.dataframe(totals, hide_index=True, use_container_width=True)
+            else:
+                st.caption("No picks yet.")
+
+# =============================================================================
+# PAGE: Trade Calculator
+# =============================================================================
+elif page == "Trade Calculator":
+    st.header("Trade Calculator")
+    st.caption("Compares VOR given up by each side of a trade, using current League Settings.")
+
+    if "canonical_df" not in st.session_state:
+        st.info("Go to **Upload & Map Data** first to load a projections CSV.")
+    else:
+        board = compute_scored_board(st.session_state.canonical_df, cfg)
+        all_names = sorted(board["name"].tolist())
+
+        col_a, col_b = st.columns(2)
+        with col_a:
+            side_a = st.multiselect("Side A gives up", all_names, key="trade_side_a")
+        with col_b:
+            side_b = st.multiselect("Side B gives up", all_names, key="trade_side_b")
+
+        if side_a or side_b:
+            result = value_tools.evaluate_trade(board, side_a, side_b)
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Side A VOR given up", f"{result['side_a_vor_given']:.1f}")
+            c2.metric("Side B VOR given up", f"{result['side_b_vor_given']:.1f}")
+            c3.metric("Verdict", result["verdict"])
+            st.caption(
+                f"Net VOR swing — Side A: {result['net_for_a']:+.1f} · Side B: {result['net_for_b']:+.1f} "
+                "(positive means that side comes out ahead)"
+            )
+        else:
+            st.info("Pick at least one player on either side to evaluate.")
