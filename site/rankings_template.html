@@ -373,7 +373,7 @@
             <th class="num" data-key="points">Pts</th>
             <th class="num" data-key="vor">VOR</th>
             <th class="num" data-key="tier">Tier</th>
-            <th class="num trend-cell" title="Each player's VOR across 2020–2025 under current league scoring — the trajectory behind the 2026 projection">Trend</th>
+            <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -383,7 +383,7 @@
   </div>
 
   <footer>
-    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). This is a static snapshot — open the live app for real-time draft tracking, mock drafts, and a trade calculator.
+    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). In the Trend column, the solid line is actual results (2020–2025); the dashed segment and hollow dot are the 2026 projection, not an observed result. This is a static snapshot — open the live app for real-time draft tracking, mock drafts, and a trade calculator.
   </footer>
 </div>
 
@@ -461,14 +461,34 @@
     const coords = history.map((pt, i) => {
       const x = n === 1 ? w / 2 : padX + (i / (n - 1)) * (w - padX * 2);
       const y = padY + (1 - (pt.vor - minV) / range) * (h - padY * 2);
-      return [x, y];
+      return { x, y, projected: !!pt.projected, year: pt.year };
     });
-    const pointsAttr = coords.map(c => c.join(',')).join(' ');
-    const [lastX, lastY] = coords[coords.length - 1];
-    const years = history.map(pt => pt.year).join(', ');
+
+    const last = coords[coords.length - 1];
+    const actualCoords = last.projected ? coords.slice(0, -1) : coords;
+    const actualPointsAttr = actualCoords.map(c => `${c.x},${c.y}`).join(' ');
+    const years = history.map(pt => pt.year + (pt.projected ? ' (projected)' : '')).join(', ');
+
+    // The projected (2026) point and the line leading into it render distinctly --
+    // dashed, accent color, hollow marker -- so it visually reads as a forecast,
+    // not an observed result like the rest of the trendline.
+    let projectedBits = '';
+    if (last.projected) {
+      const prev = actualCoords[actualCoords.length - 1];
+      const leadIn = prev
+        ? `<line x1="${prev.x}" y1="${prev.y}" x2="${last.x}" y2="${last.y}" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="2.5,2" stroke-linecap="round" />`
+        : '';
+      projectedBits = `${leadIn}<circle cx="${last.x}" cy="${last.y}" r="3" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6" />`;
+    }
+
+    const endDot = last.projected
+      ? ''
+      : `<circle cx="${last.x}" cy="${last.y}" r="2.6" fill="var(--accent)" />`;
+
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" class="sparkline" role="img" aria-label="VOR trend for ${years}">
-      <polyline points="${pointsAttr}" fill="none" stroke="var(--accent-2)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />
-      <circle cx="${lastX}" cy="${lastY}" r="2.6" fill="var(--accent)" />
+      <polyline points="${actualPointsAttr}" fill="none" stroke="var(--accent-2)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />
+      ${projectedBits}
+      ${endDot}
     </svg>`;
   }
 

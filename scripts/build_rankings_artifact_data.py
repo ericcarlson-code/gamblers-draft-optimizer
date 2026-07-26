@@ -66,6 +66,9 @@ def build_data_bundle(cfg: dict) -> dict:
             vor = year_vor_lookup[year].get(key)
             if vor is not None:
                 history.append({"year": year, "vor": round(vor, 1)})
+        # The 2026 point itself is the projection, not an observed year -- flagged
+        # so the frontend can render it (and the line leading to it) distinctly.
+        history.append({"year": 2026, "vor": row["vor"], "projected": True})
         row["history"] = history
 
     bundle = {"2026": projection_rows}
