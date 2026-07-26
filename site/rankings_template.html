@@ -264,6 +264,12 @@
     z-index: 50;
     padding: 20px;
   }
+  /* The class rule's `display: flex` above otherwise beats the [hidden]
+     attribute's default UA-stylesheet `display: none` in the cascade (both
+     are single-selector specificity, so author CSS wins regardless of the
+     attribute) -- this is what actually kept the modal visible and
+     unclosable no matter what the JS set `.hidden` to. */
+  .modal-overlay[hidden] { display: none; }
   .modal-box {
     background: var(--surface);
     border-radius: var(--radius);
