@@ -410,6 +410,29 @@
 
   .stack-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 
+  .coming-soon {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 36px 28px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+  }
+  .coming-soon-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
   .table-shell {
     margin-top: 4px;
     border: 1px solid var(--line);
@@ -629,6 +652,20 @@
       <span id="stackTopNValue"></span>
     </div>
     <div class="table-shell"><div class="table-scroll"><table id="stackTable"><thead id="stackTableHead"></thead><tbody id="stackTableBody"></tbody></table></div></div>
+  </section>
+
+  <section id="section-leaguescores" class="app-section" hidden>
+    <div class="coming-soon">
+      <div class="coming-soon-badge">Coming Soon</div>
+      <h2 class="subhead" style="font-size:28px;">League Scores</h2>
+      <p class="section-intro" style="max-width:60ch;">
+        Real weekly matchup scores for this specific league — either synced from Yahoo (pending API access approval)
+        or entered by hand week to week. Yahoo's own scoring sometimes comes out slightly different from this
+        league's actual rules, so the plan is to pull the underlying raw stats and score them ourselves here,
+        not just copy Yahoo's number. This is also the foundation for a future dollar-edge view: which decisions
+        carried the most expected value under this league's payout math, not a payout tracker itself.
+      </p>
+    </div>
   </section>
 
   <footer>
@@ -910,6 +947,7 @@
     { key: 'mockdraft', label: 'Mock Draft' },
     { key: 'trade', label: 'Trade Calculator' },
     { key: 'stacks', label: 'Stack Rankings' },
+    { key: 'leaguescores', label: 'League Scores' },
   ];
   let activeSection = 'rankings';
 
