@@ -553,9 +553,7 @@ elif page == "Player Data":
     st.header("Player Data")
     st.caption("Reference views of player stats by year -- nothing to upload, all sourced automatically.")
 
-    tab_proj, tab_2025, tab_playoffs = st.tabs(
-        ["2026 Projections (Our Model)", "2025 Actual Results", "Playoffs"]
-    )
+    ACTUAL_YEARS = [2025, 2024, 2023]
 
     def _year_board(path: Path, missing_hint: str):
         if not path.exists():
@@ -573,6 +571,8 @@ elif page == "Player Data":
             use_container_width=True,
         )
 
+    tab_proj, tab_actual, tab_playoffs = st.tabs(["2026 Projections (Our Model)", "Actual Results", "Playoffs"])
+
     with tab_proj:
         st.caption(
             "Our own projection model: a recency-weighted average of each player's real 2023-2025 stats "
@@ -582,12 +582,16 @@ elif page == "Player Data":
         )
         _year_board(PROJECTIONS_2026_PATH, "python scripts/build_2026_projections.py")
 
-    with tab_2025:
+    with tab_actual:
+        selected_year = st.segmented_control(
+            "Year", options=[str(y) for y in ACTUAL_YEARS], default=str(ACTUAL_YEARS[0]), key="actual_year_selector"
+        )
+        selected_year = int(selected_year) if selected_year else ACTUAL_YEARS[0]
         st.caption(
-            "What actually happened in the 2025 season, scored under your current League Settings. "
+            f"What actually happened in the {selected_year} season, scored under your current League Settings. "
             "Known gap: team defense (DEF) isn't included yet."
         )
-        _year_board(HISTORICAL_2025_PATH, "python scripts/fetch_actuals.py 2025")
+        _year_board(HISTORICAL_DIR / f"{selected_year}_actual_stats.csv", f"python scripts/fetch_actuals.py {selected_year}")
 
     with tab_playoffs:
         st.info(
