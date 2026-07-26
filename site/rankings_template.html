@@ -422,6 +422,44 @@
 
   .stack-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 
+  .kv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow);
+  }
+  .kv-cell {
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .kv-cell .kv-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted);
+  }
+  .kv-cell .kv-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .notes-list {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--ink-muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .notes-list li { margin-bottom: 8px; }
+
   .coming-soon {
     border: 1px dashed var(--line);
     border-radius: var(--radius);
@@ -664,6 +702,28 @@
       <span id="stackTopNValue"></span>
     </div>
     <div class="table-shell"><div class="table-scroll"><table id="stackTable"><thead id="stackTableHead"></thead><tbody id="stackTableBody"></tbody></table></div></div>
+  </section>
+
+  <section id="section-leaguedetails" class="app-section" hidden>
+    <p class="section-intro">Read-only reference — the exact league name, roster format, and scoring rules everything else on this site is computed from. Edit these in <code>league_config.json</code> in the repo, not here.</p>
+    <div class="kv-grid" id="leagueInfoGrid"></div>
+
+    <h3 class="subhead">Roster Slots</h3>
+    <div class="table-shell" style="margin-bottom:22px;"><div class="table-scroll"><table><thead id="rosterSlotsHead"></thead><tbody id="rosterSlotsBody"></tbody></table></div></div>
+
+    <h3 class="subhead">Offense Scoring</h3>
+    <div class="kv-grid" id="offenseScoringGrid"></div>
+
+    <h3 class="subhead">Kicking</h3>
+    <div class="kv-grid" id="kickingScoringGrid"></div>
+    <div class="table-shell" style="margin-bottom:22px;"><div class="table-scroll"><table><thead><tr><th>Distance</th><th class="num">Points</th></tr></thead><tbody id="fgBucketsBody"></tbody></table></div></div>
+
+    <h3 class="subhead">Defense / Special Teams</h3>
+    <div class="kv-grid" id="defenseScoringGrid"></div>
+    <div class="table-shell" style="margin-bottom:22px;"><div class="table-scroll"><table><thead><tr><th>Points Allowed</th><th class="num">Fantasy Points</th></tr></thead><tbody id="paBucketsBody"></tbody></table></div></div>
+
+    <h3 class="subhead">Notes</h3>
+    <ul class="notes-list" id="leagueNotesList"></ul>
   </section>
 
   <section id="section-leaguescores" class="app-section" hidden>
@@ -959,6 +1019,7 @@
     { key: 'mockdraft', label: 'Mock Draft' },
     { key: 'trade', label: 'Trade Calculator' },
     { key: 'stacks', label: 'Stack Rankings' },
+    { key: 'leaguedetails', label: 'League Details' },
     { key: 'leaguescores', label: 'League Scores' },
   ];
   let activeSection = 'rankings';
@@ -1327,6 +1388,75 @@
     }
   }
 
+  // ===========================================================================
+  // League Details -- read-only render of the full league_config.json,
+  // bundled into LEAGUE_META by scripts/build_rankings_artifact_data.py.
+  // ===========================================================================
+  function kvCell(label, value) {
+    return `<div class="kv-cell"><span class="kv-label">${label}</span><span class="kv-value">${value}</span></div>`;
+  }
+
+  function rangeLabel(min, max, unit) {
+    if (max >= 999) return `${min}+ ${unit}`;
+    if (min === max) return `${min} ${unit}`;
+    return `${min}-${max} ${unit}`;
+  }
+
+  function renderLeagueDetails() {
+    const league = LEAGUE_META.league;
+    const scoring = LEAGUE_META.scoring;
+
+    document.getElementById('leagueInfoGrid').innerHTML = [
+      kvCell('League Name', league.name),
+      kvCell('Yahoo League ID', league.yahoo_league_id),
+      kvCell('Teams', league.num_teams),
+      kvCell('Platform', league.platform),
+      kvCell('Draft Type', league.draft_type),
+      kvCell('Scoring Type', league.scoring_type),
+    ].join('');
+
+    const rosterSlots = LEAGUE_META.roster_slots;
+    document.getElementById('rosterSlotsHead').innerHTML =
+      '<tr>' + Object.keys(rosterSlots).map(pos => `<th>${pos}</th>`).join('') + '</tr>';
+    document.getElementById('rosterSlotsBody').innerHTML =
+      '<tr>' + Object.values(rosterSlots).map(n => `<td class="num">${n}</td>`).join('') + '</tr>';
+
+    document.getElementById('offenseScoringGrid').innerHTML = [
+      kvCell('Pass Yards/Point', scoring.passing.yards_per_point),
+      kvCell('Pass TD', scoring.passing.touchdown),
+      kvCell('Rush Yards/Point', scoring.rushing.yards_per_point),
+      kvCell('Rush TD', scoring.rushing.touchdown),
+      kvCell('Rec Yards/Point', scoring.receiving.yards_per_point),
+      kvCell('Rec TD', scoring.receiving.touchdown),
+      kvCell('Per Reception (PPR)', scoring.receiving.reception),
+      kvCell('Return TD', scoring.misc.return_touchdown),
+      kvCell('Off. Fumble Return TD', scoring.misc.offensive_fumble_return_touchdown),
+      kvCell('2-Point Conversion', scoring.misc.two_point_conversion),
+    ].join('');
+
+    document.getElementById('kickingScoringGrid').innerHTML = [
+      kvCell('Extra Point (PAT)', scoring.kicking.extra_point),
+    ].join('');
+    document.getElementById('fgBucketsBody').innerHTML = scoring.kicking.field_goal_buckets.map(b =>
+      `<tr><td>${rangeLabel(b.min_yards, b.max_yards, 'yds')}</td><td class="num">${b.points}</td></tr>`
+    ).join('');
+
+    document.getElementById('defenseScoringGrid').innerHTML = [
+      kvCell('TD', scoring.defense.touchdown),
+      kvCell('Safety', scoring.defense.safety),
+      kvCell('Return TD', scoring.defense.return_touchdown),
+      kvCell('XP Returned', scoring.defense.extra_point_returned),
+    ].join('');
+    document.getElementById('paBucketsBody').innerHTML = scoring.defense.points_allowed_buckets.map(b =>
+      `<tr><td>${rangeLabel(b.min_points, b.max_points, 'pts')}</td><td class="num">${b.points}</td></tr>`
+    ).join('');
+
+    const notes = LEAGUE_META.notes || [];
+    document.getElementById('leagueNotesList').innerHTML = notes.length
+      ? notes.map(n => `<li>${n}</li>`).join('')
+      : '<li>No notes.</li>';
+  }
+
   function initStackRankings() {
     renderStackTabs();
     document.getElementById('stackTopN').addEventListener('input', renderStackTable);
@@ -1337,6 +1467,7 @@
   initMockDraft();
   initTradeCalculator();
   initStackRankings();
+  renderLeagueDetails();
 
   renderViewPills();
   updateSubtitle();
