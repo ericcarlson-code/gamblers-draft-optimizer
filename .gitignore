@@ -31,3 +31,6 @@ Thumbs.db
 
 # Env
 .env
+
+# Yahoo OAuth app credentials and tokens -- never commit these
+.credentials/
