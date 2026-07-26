@@ -1,4 +1,4 @@
-"""Streamlit draft-day app: upload projections, tune league settings live, draft board."""
+"""Streamlit draft-day app: auto-loaded projections, tune league settings live, draft board."""
 import json
 from pathlib import Path
 
@@ -10,20 +10,38 @@ from optimizer import data_loader, mock_draft, scoring, schema, tiers, value_too
 
 st.set_page_config(page_title="Gamblers Draft Optimizer", layout="wide")
 
-HISTORICAL_2025_PATH = Path(__file__).resolve().parent / "data" / "historical" / "2025_actual_stats.csv"
+HISTORICAL_DIR = Path(__file__).resolve().parent / "data" / "historical"
+HISTORICAL_2025_PATH = HISTORICAL_DIR / "2025_actual_stats.csv"
+PROJECTIONS_2026_PATH = HISTORICAL_DIR / "2026_projections.csv"
 
 if "cfg" not in st.session_state:
     st.session_state.cfg = config_module.load_config()
 if "drafted_by" not in st.session_state:
-    st.session_state.drafted_by = {}  # player name -> "" / "Me" / "Opponent"
+    st.session_state.drafted_by = {}  # player name -> "" / "Me" / "Opponent 1" / ...
 
 cfg = st.session_state.cfg
+
+
+def load_bundled_csv(path: Path) -> pd.DataFrame:
+    """Loads one of our own committed CSVs (already in canonical-schema column
+    names) through the same cleanup every uploaded CSV gets: numeric coercion,
+    NaN->0, position validation."""
+    raw = pd.read_csv(path)
+    identity_mapping = {field: field for field in schema.ALL_CANONICAL_FIELDS if field in raw.columns}
+    return data_loader.apply_mapping(raw, identity_mapping)
+
+
+# Auto-load our own projections by default so every page just works with no
+# upload step. Advanced users can still override this from League Settings.
+if "canonical_df" not in st.session_state and PROJECTIONS_2026_PATH.exists():
+    st.session_state.canonical_df = load_bundled_csv(PROJECTIONS_2026_PATH)
+    st.session_state.data_source = "2026 Projections (Our Model)"
 
 st.sidebar.title(cfg["league"]["name"])
 st.sidebar.caption(f"Yahoo League ID {cfg['league']['yahoo_league_id']}")
 page = st.sidebar.radio(
     "Navigate",
-    ["Upload & Map Data", "League Settings", "Draft Board", "Mock Draft", "Trade Calculator", "2025 Actual Results", "Playoffs"],
+    ["Draft Board", "Mock Draft", "Trade Calculator", "Player Data", "League Settings"],
     label_visibility="collapsed",
 )
 
@@ -69,64 +87,9 @@ def record_mock_pick(md: dict, pick_row: pd.Series, team_label: str, num_teams: 
 
 
 # =============================================================================
-# PAGE: Upload & Map Data
-# =============================================================================
-if page == "Upload & Map Data":
-    st.header("Upload & Map Data")
-    st.caption("Upload a projections CSV once, confirm which columns mean what, then head to Draft Board.")
-
-    uploaded = st.file_uploader("Player projections CSV", type="csv")
-
-    if uploaded is not None:
-        raw_df = pd.read_csv(uploaded)
-        st.success(f"Loaded {len(raw_df)} rows, {len(raw_df.columns)} columns")
-
-        if st.session_state.get("mapping_source_cols") != list(raw_df.columns):
-            st.session_state.column_mapping = data_loader.guess_mapping(list(raw_df.columns))
-            st.session_state.mapping_source_cols = list(raw_df.columns)
-
-        saved = data_loader.list_saved_mappings()
-        if saved:
-            load_choice = st.selectbox("Load a saved column mapping", ["-- none --"] + saved)
-            if load_choice != "-- none --" and st.button("Load mapping"):
-                st.session_state.column_mapping = data_loader.load_mapping(load_choice)
-
-        st.subheader("Column Mapping")
-        st.caption("Confirm/correct which raw CSV column feeds each stat. Anything left as 'not in file' scores as 0.")
-        options = ["-- not in file --"] + list(raw_df.columns)
-        new_mapping = {}
-        map_cols = st.columns(2)
-        for i, field in enumerate(schema.ALL_CANONICAL_FIELDS):
-            current = st.session_state.column_mapping.get(field)
-            index = options.index(current) if current in options else 0
-            with map_cols[i % 2]:
-                choice = st.selectbox(field, options, index=index, key=f"map_{field}")
-            new_mapping[field] = None if choice == "-- not in file --" else choice
-        st.session_state.column_mapping = new_mapping
-
-        col_a, col_b = st.columns(2)
-        with col_a:
-            mapping_name = st.text_input("Save this mapping as", value="my_mapping")
-            if st.button("Save mapping for reuse"):
-                data_loader.save_mapping(mapping_name, new_mapping)
-                st.success(f"Saved mapping '{mapping_name}'")
-        with col_b:
-            st.write("")
-            st.write("")
-            if st.button("Load Player Data", type="primary"):
-                try:
-                    canonical_df = data_loader.apply_mapping(raw_df, st.session_state.column_mapping)
-                except ValueError as e:
-                    st.error(str(e))
-                else:
-                    st.session_state.canonical_df = canonical_df
-                    st.session_state.drafted_by = {}
-                    st.success(f"Loaded {len(canonical_df)} players. Go to Draft Board to see rankings.")
-
-# =============================================================================
 # PAGE: League Settings
 # =============================================================================
-elif page == "League Settings":
+if page == "League Settings":
     st.header("League Settings")
     st.caption(
         "Every number here feeds the scoring/ranking math directly — there are no built-in caps on roster "
@@ -289,14 +252,69 @@ elif page == "League Settings":
             st.session_state.cfg = config_module.load_config()
             st.rerun()
 
+    st.divider()
+    with st.expander("Advanced: use your own projections CSV instead"):
+        st.caption(
+            "The app defaults to our own auto-generated projections (see Player Data). "
+            "Upload a different file here only if you have a specific export you'd rather use instead."
+        )
+        uploaded = st.file_uploader("Player projections CSV", type="csv", key="advanced_upload")
+
+        if uploaded is not None:
+            raw_df = pd.read_csv(uploaded)
+            st.success(f"Loaded {len(raw_df)} rows, {len(raw_df.columns)} columns")
+
+            if st.session_state.get("mapping_source_cols") != list(raw_df.columns):
+                st.session_state.column_mapping = data_loader.guess_mapping(list(raw_df.columns))
+                st.session_state.mapping_source_cols = list(raw_df.columns)
+
+            saved = data_loader.list_saved_mappings()
+            if saved:
+                load_choice = st.selectbox("Load a saved column mapping", ["-- none --"] + saved)
+                if load_choice != "-- none --" and st.button("Load mapping"):
+                    st.session_state.column_mapping = data_loader.load_mapping(load_choice)
+
+            st.caption("Confirm/correct which raw CSV column feeds each stat. Anything left as 'not in file' scores as 0.")
+            options = ["-- not in file --"] + list(raw_df.columns)
+            new_mapping = {}
+            map_cols = st.columns(2)
+            for i, field in enumerate(schema.ALL_CANONICAL_FIELDS):
+                current = st.session_state.column_mapping.get(field)
+                index = options.index(current) if current in options else 0
+                with map_cols[i % 2]:
+                    choice = st.selectbox(field, options, index=index, key=f"map_{field}")
+                new_mapping[field] = None if choice == "-- not in file --" else choice
+            st.session_state.column_mapping = new_mapping
+
+            col_a, col_b = st.columns(2)
+            with col_a:
+                mapping_name = st.text_input("Save this mapping as", value="my_mapping")
+                if st.button("Save mapping for reuse"):
+                    data_loader.save_mapping(mapping_name, new_mapping)
+                    st.success(f"Saved mapping '{mapping_name}'")
+            with col_b:
+                st.write("")
+                st.write("")
+                if st.button("Use This Data", type="primary"):
+                    try:
+                        canonical_df = data_loader.apply_mapping(raw_df, st.session_state.column_mapping)
+                    except ValueError as e:
+                        st.error(str(e))
+                    else:
+                        st.session_state.canonical_df = canonical_df
+                        st.session_state.data_source = uploaded.name
+                        st.session_state.drafted_by = {}
+                        st.success(f"Loaded {len(canonical_df)} players. Go to Draft Board to see rankings.")
+
 # =============================================================================
 # PAGE: Draft Board
 # =============================================================================
 elif page == "Draft Board":
     st.header("Draft Board")
+    st.caption(f"Data source: {st.session_state.get('data_source', 'unknown')}")
 
     if "canonical_df" not in st.session_state:
-        st.info("Go to **Upload & Map Data** first to load a projections CSV.")
+        st.info("No player data loaded. Go to **League Settings > Advanced** to import a CSV.")
     else:
         board = compute_board(st.session_state.canonical_df, cfg)
 
@@ -405,12 +423,12 @@ elif page == "Draft Board":
 elif page == "Mock Draft":
     st.header("Mock Draft")
     st.caption(
-        "Bot opponents draft against the same VOR rankings as the real Draft Board, using your current "
-        "League Settings. Separate from your real draft picks — safe to try and reset."
+        f"Data source: {st.session_state.get('data_source', 'unknown')}. Bot opponents draft against the same "
+        "VOR rankings as the real Draft Board. Separate from your real draft picks — safe to try and reset."
     )
 
     if "canonical_df" not in st.session_state:
-        st.info("Go to **Upload & Map Data** first to load a projections CSV.")
+        st.info("No player data loaded. Go to **League Settings > Advanced** to import a CSV.")
     else:
         num_teams = cfg["league"]["num_teams"]
         roster_slots = cfg["roster"]["slots"]
@@ -498,10 +516,13 @@ elif page == "Mock Draft":
 # =============================================================================
 elif page == "Trade Calculator":
     st.header("Trade Calculator")
-    st.caption("Compares VOR given up by each side of a trade, using current League Settings.")
+    st.caption(
+        f"Data source: {st.session_state.get('data_source', 'unknown')}. "
+        "Compares VOR given up by each side of a trade, using current League Settings."
+    )
 
     if "canonical_df" not in st.session_state:
-        st.info("Go to **Upload & Map Data** first to load a projections CSV.")
+        st.info("No player data loaded. Go to **League Settings > Advanced** to import a CSV.")
     else:
         board = compute_scored_board(st.session_state.canonical_df, cfg)
         all_names = sorted(board["name"].tolist())
@@ -526,32 +547,24 @@ elif page == "Trade Calculator":
             st.info("Pick at least one player on either side to evaluate.")
 
 # =============================================================================
-# PAGE: 2025 Actual Results
+# PAGE: Player Data
 # =============================================================================
-elif page == "2025 Actual Results":
-    st.header("2025 Actual Results")
-    st.caption(
-        "What actually happened in the 2025 season, scored under your current League Settings -- "
-        "sourced automatically from ESPN's public stats, nothing to upload. "
-        "Known gap: team defense (DEF) isn't included yet."
+elif page == "Player Data":
+    st.header("Player Data")
+    st.caption("Reference views of player stats by year -- nothing to upload, all sourced automatically.")
+
+    tab_proj, tab_2025, tab_playoffs = st.tabs(
+        ["2026 Projections (Our Model)", "2025 Actual Results", "Playoffs"]
     )
 
-    if not HISTORICAL_2025_PATH.exists():
-        st.warning(
-            "Historical data file not found. Generate it with: "
-            "`python scripts/fetch_2025_actuals.py`"
-        )
-    else:
-        historical_raw = pd.read_csv(HISTORICAL_2025_PATH)
-        # Route through the same column-mapping cleanup every other CSV gets (numeric
-        # coercion, NaN->0, position validation) instead of trusting the file blindly --
-        # this file's columns already match the canonical schema 1:1, hence the identity map.
-        identity_mapping = {field: field for field in schema.ALL_CANONICAL_FIELDS if field in historical_raw.columns}
-        historical_df = data_loader.apply_mapping(historical_raw, identity_mapping)
-        board = compute_scored_board(historical_df, cfg)
-
+    def _year_board(path: Path, missing_hint: str):
+        if not path.exists():
+            st.warning(f"Data file not found. Generate it with: `{missing_hint}`")
+            return
+        year_df = load_bundled_csv(path)
+        board = compute_scored_board(year_df, cfg)
         pos_filter = st.multiselect(
-            "Filter by position", sorted(board["position"].unique()), default=[], key="hist_pos_filter"
+            "Filter by position", sorted(board["position"].unique()), default=[], key=f"filter_{path.stem}"
         )
         display = board if not pos_filter else board[board["position"].isin(pos_filter)]
         st.dataframe(
@@ -560,12 +573,24 @@ elif page == "2025 Actual Results":
             use_container_width=True,
         )
 
-# =============================================================================
-# PAGE: Playoffs
-# =============================================================================
-elif page == "Playoffs":
-    st.header("Playoffs")
-    st.info(
-        "Coming soon -- playoff-only stats and scoring, for both the 2025 season and future seasons, "
-        "will live here once that data pipeline is built."
-    )
+    with tab_proj:
+        st.caption(
+            "Our own projection model: a recency-weighted average of each player's real 2023-2025 stats "
+            "(60% 2025 / 25% 2024 / 15% 2023, renormalized for players missing some years). "
+            "This is what Draft Board, Mock Draft, and Trade Calculator use by default. "
+            "Known gap: team defense (DEF) isn't included yet."
+        )
+        _year_board(PROJECTIONS_2026_PATH, "python scripts/build_2026_projections.py")
+
+    with tab_2025:
+        st.caption(
+            "What actually happened in the 2025 season, scored under your current League Settings. "
+            "Known gap: team defense (DEF) isn't included yet."
+        )
+        _year_board(HISTORICAL_2025_PATH, "python scripts/fetch_actuals.py 2025")
+
+    with tab_playoffs:
+        st.info(
+            "Coming soon -- playoff-only stats and scoring, for both the 2025 season and future seasons, "
+            "will live here once that data pipeline is built."
+        )
