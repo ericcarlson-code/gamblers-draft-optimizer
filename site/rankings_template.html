@@ -32,6 +32,7 @@
     --accent: #2F6E3B;
     --accent-ink: #F5FBF3;
     --accent-2: #B87A1F;
+    --danger: #B23B3B;
     --line: #D8DBD1;
     --shadow: 0 1px 2px rgba(27,36,32,0.06), 0 8px 24px rgba(27,36,32,0.05);
     --radius: 10px;
@@ -46,18 +47,19 @@
       --accent: #5FBE72;
       --accent-ink: #0C170D;
       --accent-2: #E3A94A;
+      --danger: #E0716B;
       --line: #29322A;
       --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
     }
   }
   :root[data-theme="dark"] {
     --bg: #10140F; --surface: #171D15; --surface-2: #1D241A; --ink: #E8EBE3;
-    --ink-muted: #93A38F; --accent: #5FBE72; --accent-ink: #0C170D; --accent-2: #E3A94A;
+    --ink-muted: #93A38F; --accent: #5FBE72; --accent-ink: #0C170D; --accent-2: #E3A94A; --danger: #E0716B;
     --line: #29322A; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
   }
   :root[data-theme="light"] {
     --bg: #F1F2ED; --surface: #FFFFFF; --surface-2: #E7E9E0; --ink: #1B2420;
-    --ink-muted: #5B655C; --accent: #2F6E3B; --accent-ink: #F5FBF3; --accent-2: #B87A1F;
+    --ink-muted: #5B655C; --accent: #2F6E3B; --accent-ink: #F5FBF3; --accent-2: #B87A1F; --danger: #B23B3B;
     --line: #D8DBD1; --shadow: 0 1px 2px rgba(27,36,32,0.06), 0 8px 24px rgba(27,36,32,0.05);
   }
 
@@ -377,6 +379,49 @@
     font-weight: 700;
   }
   .roster-slot-cell.rs-full .rs-count { color: var(--accent); }
+
+  .grade-banner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 18px 22px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+  .grade-circle {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    line-height: 1;
+    color: var(--accent-ink);
+    background: var(--accent);
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .grade-headline { font-family: 'Bebas Neue', sans-serif; font-size: 22px; margin: 0 0 4px; }
+  .grade-summary { color: var(--ink-muted); font-size: 14px; max-width: 62ch; line-height: 1.5; margin: 0; }
+
+  .verdict-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 2px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .verdict-great_value { background: color-mix(in srgb, var(--accent) 20%, var(--surface-2)); color: var(--accent); }
+  .verdict-solid { background: var(--surface-2); color: var(--ink-muted); }
+  .verdict-slight_reach { background: color-mix(in srgb, var(--accent-2) 22%, var(--surface-2)); color: var(--accent-2); }
+  .verdict-reach { background: color-mix(in srgb, var(--danger) 22%, var(--surface-2)); color: var(--danger); }
+  .verdict-depth_pick { background: var(--surface-2); color: var(--ink-muted); }
 
   .mock-pick-card {
     border: 1px solid var(--line);
@@ -707,6 +752,7 @@
         <div class="table-shell"><div class="table-scroll"><table><thead><tr><th>Player</th><th>Pos</th><th>Slot</th></tr></thead><tbody id="myRosterBody"></tbody></table></div></div>
       </div>
       <div id="mockPickPanel"></div>
+      <div id="mockGradeReport"></div>
       <div class="mock-columns">
         <div>
           <h3 class="subhead">Draft Log</h3>
@@ -1168,6 +1214,109 @@
     return { text: `${bestAlt.name} has ${gapPct.toFixed(0)}% higher VOR (${bestAlt.vor.toFixed(1)}) — significant reach just for the stack.`, tier: 'reach' };
   }
 
+  // ===========================================================================
+  // Post-draft grade report -- a 0-100 "coaching report" for your Me picks
+  // only. For each pick, compares its VOR against the best-available player
+  // (any position) at that exact moment -- captured live in the pick-panel
+  // click handler above, since it isn't recoverable after the fact. Reach
+  // penalties are weighted by round (an early-round reach costs more than a
+  // late-round one, since it's a starter slot rather than bench depth).
+  // ===========================================================================
+  function pickCaptureRatio(pick) {
+    if (pick.bestAvailableVor === undefined) return null;
+    if (pick.bestAvailableVor <= 0) return null; // no real value left on the board either way
+    return Math.max(0, pick.vor / pick.bestAvailableVor);
+  }
+
+  function verdictForRatio(ratio) {
+    if (ratio === null) return { tag: 'depth_pick', label: 'Depth Pick' };
+    if (ratio >= 0.97) return { tag: 'great_value', label: 'Great Value' };
+    if (ratio >= 0.85) return { tag: 'solid', label: 'Solid' };
+    if (ratio >= 0.65) return { tag: 'slight_reach', label: 'Slight Reach' };
+    return { tag: 'reach', label: 'Reach' };
+  }
+
+  function pickReasonText(pick, ratio, verdict) {
+    if (verdict.tag === 'depth_pick') return `Late-round depth pick — no meaningful value left on the board either way.`;
+    if (pick.bestAvailableName === pick.name) return `Also the best player available at this pick — no better alternative existed.`;
+    const pct = Math.round((1 - ratio) * 100);
+    return `Took ${pick.name} (${pick.vor.toFixed(1)} VOR) over the top-ranked ${pick.bestAvailableName} (${pick.bestAvailableVor.toFixed(1)} VOR) — captured ${Math.round(ratio * 100)}% of the value available here${pct > 0 ? `, a ${pct}% gap` : ''}.`;
+  }
+
+  function computeDraftGrade(picksLog, numTeams) {
+    const myPicks = picksLog.filter(p => p.team === 'Me' && p.bestAvailableVor !== undefined);
+    const totalRounds = Math.max(1, ...myPicks.map(p => p.round));
+    let weightedSum = 0, weightTotal = 0;
+    const rows = myPicks.map(p => {
+      const ratio = pickCaptureRatio(p);
+      const verdict = verdictForRatio(ratio);
+      const score = ratio === null ? 90 : Math.round(ratio * 100);
+      const weight = Math.max(1, totalRounds - p.round + 1);
+      weightedSum += score * weight;
+      weightTotal += weight;
+      return { ...p, ratio, verdict, score, reason: pickReasonText(p, ratio, verdict) };
+    });
+    const overall = weightTotal > 0 ? Math.round(weightedSum / weightTotal) : 0;
+    return { rows, overall };
+  }
+
+  function letterGrade(score) {
+    if (score >= 93) return 'A';
+    if (score >= 87) return 'A-';
+    if (score >= 80) return 'B+';
+    if (score >= 73) return 'B';
+    if (score >= 65) return 'B-';
+    if (score >= 55) return 'C';
+    if (score >= 40) return 'D';
+    return 'F';
+  }
+
+  function renderGradeReport() {
+    const container = document.getElementById('mockGradeReport');
+    const { rows, overall } = computeDraftGrade(mockDraft.picksLog, LEAGUE_META.num_teams);
+    if (rows.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const reaches = rows.filter(r => r.verdict.tag === 'reach' || r.verdict.tag === 'slight_reach');
+    const great = rows.filter(r => r.verdict.tag === 'great_value');
+    let summary;
+    if (reaches.length === 0) {
+      summary = `No real reaches -- every pick captured most or all of the value available at the time.`;
+    } else {
+      const worst = reaches.reduce((a, b) => (a.score < b.score ? a : b));
+      summary = `${reaches.length} pick${reaches.length === 1 ? '' : 's'} gave up notable value, worst being ${worst.name} (Round ${worst.round}) over ${worst.bestAvailableName}.`;
+      if (great.length) {
+        const best = great[0];
+        summary += ` Best value: ${best.name} in Round ${best.round}.`;
+      }
+    }
+
+    const tableRows = rows.map(r => `
+      <tr>
+        <td>${r.pick}</td>
+        <td>${r.round}</td>
+        <td><span class="player-name">${r.name}</span></td>
+        <td class="num">${r.vor.toFixed(1)}</td>
+        <td><span class="verdict-tag verdict-${r.verdict.tag}">${r.verdict.label}</span></td>
+        <td style="font-size:13px; color:var(--ink-muted);">${r.reason}</td>
+      </tr>`).join('');
+
+    container.innerHTML = `
+      <div class="grade-banner">
+        <div class="grade-circle">${overall}</div>
+        <div>
+          <h3 class="grade-headline">Draft Grade: ${letterGrade(overall)} (${overall}/100)</h3>
+          <p class="grade-summary">${summary}</p>
+        </div>
+      </div>
+      <div class="table-shell"><div class="table-scroll"><table>
+        <thead><tr><th>Pick</th><th>Rd</th><th>Player</th><th class="num">VOR</th><th>Verdict</th><th>Reasoning</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table></div></div>`;
+  }
+
   function myRosterSlotAssignments() {
     const rosterSlots = LEAGUE_META.roster_slots;
     const myPicks = [...mockDraft.rosters['Me']].sort((a, b) => b.vor - a.vor);
@@ -1281,7 +1430,9 @@
     if (mockDraft.pickIdx >= mockDraft.order.length) {
       onClockEl.innerHTML = 'Mock draft complete — see results below.';
       pickPanel.innerHTML = '';
+      renderGradeReport();
     } else {
+      document.getElementById('mockGradeReport').innerHTML = '';
       const teamLabel = mockDraft.teamLabels[mockDraft.order[mockDraft.pickIdx]];
       const round = Math.floor(mockDraft.pickIdx / numTeams) + 1;
       onClockEl.innerHTML = `Round ${round}, Pick ${mockDraft.pickIdx + 1} — <span class="clock-team">${teamLabel}</span> on the clock`;
@@ -1332,6 +1483,12 @@
           btn.addEventListener('click', () => {
             const pick = withTiers.find(p => p.name === btn.dataset.name);
             recordMockPick(pick, 'Me');
+            // Snapshot the best-available player at this exact pick (any
+            // position) so the post-draft grade report can show what the
+            // alternative would have been -- this only exists for Me picks.
+            const logEntry = mockDraft.picksLog[mockDraft.picksLog.length - 1];
+            logEntry.bestAvailableVor = withTiers[0].vor;
+            logEntry.bestAvailableName = withTiers[0].name;
             runMockDraftStep();
           });
         });
