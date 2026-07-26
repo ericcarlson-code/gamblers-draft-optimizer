@@ -1472,6 +1472,20 @@
     return { assignments, slotCounts };
   }
 
+  // Would this candidate actually have anywhere to go if drafted right now?
+  // Checks whether ANY player overflows once the candidate is added, not
+  // just whether the candidate itself lands in OVERFLOW -- computeSlotAssignments
+  // sorts by VOR before assigning, so a high-VOR candidate could otherwise
+  // (correctly, for display purposes) bump a lower-VOR existing player into
+  // OVERFLOW instead of itself. But a real draft is strictly additive --
+  // nothing you've already drafted can be un-drafted to make room -- so what
+  // actually matters is total count-based feasibility (position capacity +
+  // shared bench), which is invariant to the greedy sort order either way.
+  function wouldHaveRoom(candidate, currentRosterPlayers, rosterSlots) {
+    const { assignments } = computeSlotAssignments([...currentRosterPlayers, candidate], rosterSlots);
+    return !assignments.some(a => a.slot === 'OVERFLOW');
+  }
+
   function renderMyRosterPanel() {
     const rosterSlots = LEAGUE_META.roster_slots;
     const { assignments, slotCounts } = computeSlotAssignments(mockDraft.rosters['Me'], rosterSlots);
@@ -1575,7 +1589,11 @@
         const available = getMockAvailable();
         const ranked = computeVOR(available, numTeams, rosterSlots);
         const withTiers = assignTiers(ranked, LEAGUE_META.gap_threshold_stdevs);
-        const top = withTiers.slice(0, 30);
+        // Only recommend players who'd actually have a roster spot -- e.g. a
+        // 3rd/4th QB once every starter + bench slot that could hold one is
+        // already spoken for isn't a real option, so don't suggest it.
+        const eligible = withTiers.filter(p => wouldHaveRoom(p, mockDraft.rosters['Me'], rosterSlots));
+        const top = eligible.slice(0, 30);
 
         // True stacks only: a QB + his own pass-catcher, or the RB+WR/WR+WR
         // offense-strength combos -- not just "shares an NFL team" (e.g. a
