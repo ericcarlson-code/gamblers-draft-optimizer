@@ -57,10 +57,12 @@ STAT_FIELDS = [
 # handful league-wide per season; the vast majority of "50+" kicks are
 # 50-59). Using a wide range here (e.g. up to 89) would push the midpoint
 # into whatever bucket covers 60+ yards, which -- once that tier scores
-# meaningfully more (as this league's does: 60+ = 9pts vs 50-59 = 5pts) --
-# would systematically overvalue every kicker's 50+ makes. Capping at 59
-# keeps the conservative, realistic assumption: treat the aggregate as
-# 50-59 yard makes unless/until a data source can split it further.
+# meaningfully more (as this league's does: 60+ = 15pts vs 50-59 = 5pts,
+# a 3x premium) -- would systematically overvalue every kicker's 50+
+# makes. Capping at 59 keeps the conservative, realistic assumption:
+# treat the aggregate as 50-59 yard makes unless/until a data source can
+# split it further. Tradeoff: genuine 60+ specialists are currently
+# UNDERVALUED since that premium is never captured at all.
 FG_INPUT_BANDS = [
     ("fg_0_19", 0, 19),
     ("fg_20_29", 20, 29),

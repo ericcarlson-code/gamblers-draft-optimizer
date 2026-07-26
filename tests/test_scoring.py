@@ -78,11 +78,12 @@ def test_kicker_scoring():
 
 def test_kicker_50_plus_aggregate_maps_to_50_59_not_60_plus():
     # Our data source only reports one aggregate "50+ yard" make count, with no way
-    # to split out genuinely rare 60+ yard makes (worth 9 vs 5 in the real config).
-    # Regression test for a bug where a wide assumed distance range pushed this
-    # aggregate's midpoint into the 60+ bucket, overvaluing every kicker's 50+ makes.
+    # to split out genuinely rare 60+ yard makes (worth 15 vs 5 in the real config --
+    # a 3x premium). Regression test for a bug where a wide assumed distance range
+    # pushed this aggregate's midpoint into the 60+ bucket, overvaluing every
+    # kicker's 50+ makes.
     stats = {"position": "K", "fg_50_plus": 1}
-    assert score_player(stats, cfg) == 5.0  # 50-59 tier, not the 9pt 60+ tier
+    assert score_player(stats, cfg) == 5.0  # 50-59 tier, not the 15pt 60+ tier
 
 
 def test_defense_scoring():
