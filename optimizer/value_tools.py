@@ -51,6 +51,44 @@ def team_stack_summary(board: pd.DataFrame, top_n: int = 4) -> pd.DataFrame:
     return result.sort_values("stack_vor", ascending=False).reset_index(drop=True)
 
 
+def stack_combo_summary(board: pd.DataFrame, position_a: str, position_b: str) -> pd.DataFrame:
+    """For each NFL team, the best 2-player combo at the given position slots
+    (e.g. 'QB','WR' -> that team's top QB paired with its top WR). If both
+    positions are the same (e.g. 'WR','WR'), pairs the team's top 2 at that
+    position instead of doubling up one player. Teams missing a player at
+    either slot are excluded. Sorted by combined VOR descending -- these are
+    the specific same-team pairings most worth targeting together, one level
+    more specific than team_stack_summary's whole-team view."""
+    rows = []
+    for team, group in board.groupby("team"):
+        if not team:
+            continue
+
+        if position_a == position_b:
+            candidates = group[group["position"] == position_a].sort_values("vor", ascending=False)
+            if len(candidates) < 2:
+                continue
+            first, second = candidates.iloc[0], candidates.iloc[1]
+        else:
+            a_candidates = group[group["position"] == position_a].sort_values("vor", ascending=False)
+            b_candidates = group[group["position"] == position_b].sort_values("vor", ascending=False)
+            if a_candidates.empty or b_candidates.empty:
+                continue
+            first, second = a_candidates.iloc[0], b_candidates.iloc[0]
+
+        rows.append({
+            "team": team,
+            "combo_vor": float(first["vor"] + second["vor"]),
+            "player_1": f"{first['name']} ({first['position']})",
+            "player_2": f"{second['name']} ({second['position']})",
+        })
+
+    result = pd.DataFrame(rows, columns=["team", "combo_vor", "player_1", "player_2"])
+    if result.empty:
+        return result
+    return result.sort_values("combo_vor", ascending=False).reset_index(drop=True)
+
+
 def evaluate_trade(board: pd.DataFrame, side_a_players: list[str], side_b_players: list[str]) -> dict:
     """VOR given up by each side of a trade. net_for_a is what Side A gains
     (positive = good for A); net_for_b is the mirror for Side B."""

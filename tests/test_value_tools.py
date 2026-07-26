@@ -1,6 +1,6 @@
 import pandas as pd
 
-from optimizer.value_tools import evaluate_trade, team_stack_summary, team_totals
+from optimizer.value_tools import evaluate_trade, stack_combo_summary, team_stack_summary, team_totals
 
 BOARD = pd.DataFrame({
     "name": ["A", "B", "C", "D", "E"],
@@ -14,6 +14,13 @@ STACK_BOARD = pd.DataFrame({
     "position": ["QB", "RB", "WR", "TE", "K", "QB", "RB"],
     "team": ["DET", "DET", "DET", "DET", "DET", "CHI", "CHI"],
     "vor": [40.0, 35.0, 30.0, 25.0, 2.0, 20.0, 5.0],
+})
+
+COMBO_BOARD = pd.DataFrame({
+    "name": ["Lions QB", "Lions WR1", "Lions WR2", "Lions RB", "Bears QB", "Bears WR1"],
+    "position": ["QB", "WR", "WR", "RB", "QB", "WR"],
+    "team": ["DET", "DET", "DET", "DET", "CHI", "CHI"],
+    "vor": [40.0, 30.0, 20.0, 15.0, 10.0, 5.0],
 })
 
 
@@ -78,3 +85,30 @@ def test_team_stack_empty_board():
     empty = pd.DataFrame(columns=["name", "position", "team", "vor"])
     stacks = team_stack_summary(empty)
     assert stacks.empty
+
+
+def test_stack_combo_cross_position_pairs_top_player_at_each_slot():
+    combos = stack_combo_summary(COMBO_BOARD, "QB", "WR")
+    det = combos[combos["team"] == "DET"].iloc[0]
+    assert det["combo_vor"] == 70.0  # Lions QB (40) + best Lions WR (30, not 20)
+    assert "Lions QB" in det["player_1"]
+    assert "Lions WR1" in det["player_2"]
+
+
+def test_stack_combo_ranks_best_pairing_first():
+    combos = stack_combo_summary(COMBO_BOARD, "QB", "WR")
+    assert combos.iloc[0]["team"] == "DET"  # 70 beats CHI's 10+5=15
+
+
+def test_stack_combo_same_position_pairs_top_two():
+    combos = stack_combo_summary(COMBO_BOARD, "WR", "WR")
+    det = combos[combos["team"] == "DET"].iloc[0]
+    assert det["combo_vor"] == 50.0  # top 2 Lions WRs: 30+20
+    # CHI only has 1 WR, so it can't form a WR+WR pair and is excluded
+    assert "CHI" not in set(combos["team"])
+
+
+def test_stack_combo_excludes_team_missing_a_position():
+    # No team here has a TE, so every team should be excluded
+    combos = stack_combo_summary(COMBO_BOARD, "QB", "TE")
+    assert combos.empty

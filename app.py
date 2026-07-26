@@ -41,7 +41,7 @@ st.sidebar.title(cfg["league"]["name"])
 st.sidebar.caption(f"Yahoo League ID {cfg['league']['yahoo_league_id']}")
 page = st.sidebar.radio(
     "Navigate",
-    ["Draft Board", "Mock Draft", "Trade Calculator", "Player Data", "League Settings"],
+    ["Draft Board", "Mock Draft", "Trade Calculator", "Stack Rankings", "Player Data", "League Settings"],
     label_visibility="collapsed",
 )
 
@@ -322,8 +322,8 @@ elif page == "Draft Board":
             st.session_state.drafted_by = {}
             st.rerun()
 
-        tab_full, tab_live, tab_roster, tab_teams, tab_stacks = st.tabs(
-            ["Full Player Pool — Mark Picks", "Best Available (Live)", "My Roster", "Team Power Rankings", "Team Stacks"]
+        tab_full, tab_live, tab_roster, tab_teams = st.tabs(
+            ["Full Player Pool — Mark Picks", "Best Available (Live)", "My Roster", "Team Power Rankings"]
         )
 
         with tab_full:
@@ -416,23 +416,6 @@ elif page == "Draft Board":
                 st.caption("No picks marked yet. Assign players to teams in the Full Player Pool tab.")
             else:
                 st.dataframe(totals, hide_index=True, use_container_width=True)
-
-        with tab_stacks:
-            st.caption(
-                "Which real NFL teams have the most combined value across their best players -- a strong "
-                "offense tends to make several of its own players valuable at once (e.g. a run of games where "
-                "the QB, WR1, and RB1 all score together), so these are good targets for drafting more than "
-                "one player from the same team. Ranked by the combined VOR of each team's best players."
-            )
-            top_n = st.slider("Players per team to count", min_value=2, max_value=6, value=4, key="stack_top_n")
-            stacks = value_tools.team_stack_summary(board, top_n=top_n)
-            st.dataframe(
-                stacks.rename(columns={
-                    "team": "Team", "stack_vor": "Combined VOR", "player_count": "Players Counted", "players": "Top Players",
-                }),
-                hide_index=True,
-                use_container_width=True,
-            )
 
 # =============================================================================
 # PAGE: Mock Draft
@@ -562,6 +545,63 @@ elif page == "Trade Calculator":
             )
         else:
             st.info("Pick at least one player on either side to evaluate.")
+
+# =============================================================================
+# PAGE: Stack Rankings
+# =============================================================================
+elif page == "Stack Rankings":
+    st.header("Stack Rankings")
+    st.caption(
+        f"Data source: {st.session_state.get('data_source', 'unknown')}. Combined value is VOR, computed under "
+        "your current League Settings -- this reflects your league's specific scoring, not a generic ranking."
+    )
+
+    if "canonical_df" not in st.session_state:
+        st.info("No player data loaded. Go to **League Settings > Advanced** to import a CSV.")
+    else:
+        board = compute_scored_board(st.session_state.canonical_df, cfg)
+
+        tab_overall, tab_qbwr, tab_qbte, tab_rbwr, tab_wrwr = st.tabs(
+            ["Overall", "QB + WR", "QB + TE", "RB + WR", "WR + WR"]
+        )
+
+        with tab_overall:
+            st.caption(
+                "Which real NFL teams have the most combined value across their best players -- a strong "
+                "offense tends to make several of its own players valuable at once (e.g. a run of games where "
+                "the QB, WR1, and RB1 all score together), so these are good targets for drafting more than "
+                "one player from the same team."
+            )
+            top_n = st.slider("Players per team to count", min_value=2, max_value=6, value=4, key="stack_top_n")
+            stacks = value_tools.team_stack_summary(board, top_n=top_n)
+            st.dataframe(
+                stacks.rename(columns={
+                    "team": "Team", "stack_vor": "Combined VOR", "player_count": "Players Counted", "players": "Top Players",
+                }),
+                hide_index=True,
+                use_container_width=True,
+            )
+
+        combo_specs = [
+            (tab_qbwr, "QB", "WR", "Each team's best QB paired with its best WR -- the classic stack: when the QB throws well, his top receiver usually benefits directly."),
+            (tab_qbte, "QB", "TE", "Each team's best QB paired with its best TE."),
+            (tab_rbwr, "RB", "WR", "Each team's best RB paired with its best WR -- less directly correlated play-to-play than QB+WR, more a signal of overall offensive strength."),
+            (tab_wrwr, "WR", "WR", "Each team's top two WRs -- betting on the whole passing game, not just one player."),
+        ]
+        for tab, pos_a, pos_b, caption in combo_specs:
+            with tab:
+                st.caption(caption)
+                combos = value_tools.stack_combo_summary(board, pos_a, pos_b)
+                if combos.empty:
+                    st.caption("No teams have players at both positions in the current pool.")
+                else:
+                    st.dataframe(
+                        combos.rename(columns={
+                            "team": "Team", "combo_vor": "Combined VOR", "player_1": "Player 1", "player_2": "Player 2",
+                        }),
+                        hide_index=True,
+                        use_container_width=True,
+                    )
 
 # =============================================================================
 # PAGE: Player Data
