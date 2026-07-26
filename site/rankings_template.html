@@ -508,6 +508,23 @@
 
   .stack-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 
+  .hist-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .hist-controls select {
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .hist-controls input[type="file"] {
+    font-family: 'Public Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .hist-note { font-size: 12.5px; color: var(--ink-muted); margin: 10px 0 20px; }
+
   .kv-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -794,6 +811,21 @@
       <span id="stackTopNValue"></span>
     </div>
     <div class="table-shell"><div class="table-scroll"><table id="stackTable"><thead id="stackTableHead"></thead><tbody id="stackTableBody"></tbody></table></div></div>
+  </section>
+
+  <section id="section-historical" class="app-section" hidden>
+    <p class="section-intro">Upload one of your own past drafts (which round you took each player) and grade it against what actually happened that season, under this league's current scoring. Good for spotting a specific mistake pattern -- e.g. an early QB who busted, or a cheap late pick who massively outperformed.</p>
+    <div class="hist-controls">
+      <label class="field-label" for="histYearSelect" style="margin:0;">Season</label>
+      <select id="histYearSelect"></select>
+      <label class="field-label" for="histCsvInput" style="margin:0;">Upload draft CSV</label>
+      <input type="file" id="histCsvInput" accept=".csv,text/csv" />
+    </div>
+    <p class="hist-note">CSV format: two columns, <code>round,player</code> (a header row is fine, it's detected automatically). Nothing is uploaded anywhere -- the file is parsed entirely in your browser.</p>
+    <p class="hist-note">
+      <strong>Scope limit:</strong> this only has your own picks, not the full 10-team draft, so it can't tell you the exact best alternative pick at your slot the way Mock Draft's grade report can (that needs the full simulated draft). Instead it compares each pick's actual result to what a typical pick in that round should return, and separately surfaces the highest-value players you didn't draft at all that season.
+    </p>
+    <div id="histResults"></div>
   </section>
 
   <section id="section-leaguedetails" class="app-section" hidden>
@@ -1111,6 +1143,7 @@
     { key: 'mockdraft', label: 'Mock Draft' },
     { key: 'trade', label: 'Trade Calculator' },
     { key: 'stacks', label: 'Stack Rankings' },
+    { key: 'historical', label: 'Historical Review' },
     { key: 'leaguedetails', label: 'League Details' },
     { key: 'leaguescores', label: 'League Scores' },
   ];
@@ -1679,6 +1712,129 @@
   }
 
   // ===========================================================================
+  // Historical Draft Review -- upload your own past-season picks (round,player
+  // CSV, parsed entirely client-side) and grade them against that season's
+  // real results, already embedded in DATA_BY_VIEW. Since we don't have the
+  // full 10-team historical draft (who else took whom), this approximates
+  // "expected value" from round*numTeams rather than pointing at one exact
+  // alternative pick the way Mock Draft's grade report can.
+  // ===========================================================================
+  let histEntries = null;
+
+  function parseCsvText(text) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    const entries = [];
+    for (const line of lines) {
+      const parts = line.split(',');
+      if (parts.length < 2) continue;
+      const round = parseInt(parts[0].trim(), 10);
+      const player = parts.slice(1).join(',').trim().replace(/^"|"$/g, '');
+      if (Number.isNaN(round) || !player) continue; // skips a header row too
+      entries.push({ round, player });
+    }
+    return entries;
+  }
+
+  function computeHistoricalReview(year, entries) {
+    const numTeams = LEAGUE_META.num_teams;
+    const pool = DATA_BY_VIEW[year];
+    const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
+    const matchedNames = new Set();
+
+    const rows = entries.map(e => {
+      const p = byName.get(e.player.toLowerCase());
+      if (!p) return { round: e.round, player: e.player, matched: false };
+      matchedNames.add(p.name.toLowerCase());
+      const expectedRank = e.round * numTeams;
+      const ratio = expectedRank / p.overall_rank;
+      let verdict;
+      if (ratio >= 1.5) verdict = { tag: 'great_value', label: 'Steal' };
+      else if (ratio >= 0.6) verdict = { tag: 'solid', label: 'Solid' };
+      else verdict = { tag: 'reach', label: 'Bust' };
+      const reason = `Round ${e.round} pick (expected roughly top-${expectedRank}) finished ranked #${p.overall_rank} (${p.vor.toFixed(1)} VOR) that season.`;
+      return { round: e.round, player: p.name, position: p.position, team: p.team, vor: p.vor, actualRank: p.overall_rank, verdict, reason, matched: true };
+    });
+
+    const misses = pool
+      .filter(p => !matchedNames.has(p.name.toLowerCase()))
+      .sort((a, b) => b.vor - a.vor)
+      .slice(0, 10);
+
+    return { rows, misses };
+  }
+
+  function renderHistoricalReview() {
+    const container = document.getElementById('histResults');
+    if (!histEntries || histEntries.length === 0) {
+      container.innerHTML = '<p class="section-intro">Upload a CSV above to see your draft graded against real results.</p>';
+      return;
+    }
+    const year = document.getElementById('histYearSelect').value;
+    const { rows, misses } = computeHistoricalReview(year, histEntries);
+    const matched = rows.filter(r => r.matched);
+    const unmatched = rows.filter(r => !r.matched);
+
+    const pickRows = matched.map(r => `
+      <tr>
+        <td>${r.round}</td>
+        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span></td>
+        <td><span class="pos-chip">${r.position}</span></td>
+        <td class="num">#${r.actualRank}</td>
+        <td class="num">${r.vor.toFixed(1)}</td>
+        <td><span class="verdict-tag verdict-${r.verdict.tag}">${r.verdict.label}</span></td>
+        <td style="font-size:13px; color:var(--ink-muted);">${r.reason}</td>
+      </tr>`).join('');
+
+    const missRows = misses.map(p => `
+      <tr>
+        <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span></td>
+        <td><span class="pos-chip">${p.position}</span></td>
+        <td class="num">#${p.overall_rank}</td>
+        <td class="num">${p.vor.toFixed(1)}</td>
+      </tr>`).join('');
+
+    const unmatchedNote = unmatched.length
+      ? `<p class="hist-note">Couldn't match ${unmatched.length} name${unmatched.length === 1 ? '' : 's'} to ${year} data (check spelling): ${unmatched.map(r => r.player).join(', ')}</p>`
+      : '';
+
+    container.innerHTML = `
+      <h3 class="subhead">Your ${year} Picks, Graded</h3>
+      ${unmatchedNote}
+      <div class="table-shell" style="margin-bottom:26px;"><div class="table-scroll"><table>
+        <thead><tr><th>Rd</th><th>Player</th><th>Pos</th><th class="num">Actual Rank</th><th class="num">VOR</th><th>Verdict</th><th>Notes</th></tr></thead>
+        <tbody>${pickRows || '<tr><td colspan="7" class="trend-empty">No picks matched.</td></tr>'}</tbody>
+      </table></div></div>
+
+      <h3 class="subhead">Notable Players You Didn't Draft</h3>
+      <p class="section-intro">Highest-value players that season who weren't on your list at all -- the "who did I miss" view.</p>
+      <div class="table-shell"><div class="table-scroll"><table>
+        <thead><tr><th>Player</th><th>Pos</th><th class="num">Actual Rank</th><th class="num">VOR</th></tr></thead>
+        <tbody>${missRows || '<tr><td colspan="4" class="trend-empty">No misses to show.</td></tr>'}</tbody>
+      </table></div></div>
+    `;
+  }
+
+  function initHistoricalReview() {
+    const yearSelect = document.getElementById('histYearSelect');
+    const years = [2025, 2024, 2023, 2022, 2021, 2020];
+    yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    yearSelect.addEventListener('change', renderHistoricalReview);
+
+    document.getElementById('histCsvInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        histEntries = parseCsvText(String(reader.result));
+        renderHistoricalReview();
+      };
+      reader.readAsText(file);
+    });
+
+    renderHistoricalReview();
+  }
+
+  // ===========================================================================
   // League Details -- read-only render of the full league_config.json,
   // bundled into LEAGUE_META by scripts/build_rankings_artifact_data.py.
   // ===========================================================================
@@ -1757,6 +1913,7 @@
   initMockDraft();
   initTradeCalculator();
   initStackRankings();
+  initHistoricalReview();
   renderLeagueDetails();
 
   renderViewPills();
