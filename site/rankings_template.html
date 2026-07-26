@@ -589,6 +589,34 @@
   }
   .notes-list li { margin-bottom: 8px; }
 
+  .league-edit-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+  .league-edit-row > div { flex: 1; min-width: 180px; }
+  .league-edit-input {
+    font-family: 'Public Sans', sans-serif;
+    font-size: 15px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .league-edit-input:focus { outline: none; border-color: var(--accent); }
+  .rs-edit-input {
+    all: unset;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    width: 100%;
+    color: var(--ink);
+    border-bottom: 1px solid transparent;
+  }
+  .rs-edit-input:focus { border-bottom-color: var(--accent); }
+  .league-edit-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 18px 0 26px; }
+  .league-notice { font-size: 13px; color: var(--ink-muted); }
+  .league-notice.warn { color: var(--accent-2); }
+
   .coming-soon {
     border: 1px dashed var(--line);
     border-radius: var(--radius);
@@ -862,11 +890,30 @@
   </section>
 
   <section id="section-leaguedetails" class="app-section" hidden>
-    <p class="section-intro">Read-only reference — the exact league name, roster format, and scoring rules everything else on this site is computed from. Edit these in <code>league_config.json</code> in the repo, not here.</p>
-    <div class="kv-grid" id="leagueInfoGrid"></div>
+    <p class="section-intro">League name, number of teams, and roster slots are editable and apply immediately everywhere on this site (Rankings, Mock Draft, Stack Rankings, Team Rosters) — saved in this browser. Scoring rules further down are still read-only reference for now; editing those live is a separate, bigger project since it needs raw stats shipped to the browser, not just final points.</p>
+
+    <div class="league-edit-row">
+      <div>
+        <label class="field-label" for="leagueNameInput">League Name</label>
+        <input type="text" id="leagueNameInput" class="league-edit-input" />
+      </div>
+      <div>
+        <label class="field-label" for="leagueNumTeamsInput">Number of Teams</label>
+        <input type="number" id="leagueNumTeamsInput" class="league-edit-input" min="2" step="1" />
+      </div>
+    </div>
 
     <h3 class="subhead">Roster Slots</h3>
-    <div class="table-shell" style="margin-bottom:22px;"><div class="table-scroll"><table><thead id="rosterSlotsHead"></thead><tbody id="rosterSlotsBody"></tbody></table></div></div>
+    <p class="section-intro" style="margin-bottom:10px;">Starter count per position (BN = bench, can hold any position).</p>
+    <div class="roster-slot-grid" id="rosterSlotsEditGrid" style="margin-bottom:6px;"></div>
+
+    <div class="league-edit-actions">
+      <button class="btn-primary" id="leagueSaveBtn">Save League Settings</button>
+      <button class="btn-secondary" id="leagueResetBtn">Reset to Defaults</button>
+      <span id="leagueSaveNotice" class="league-notice"></span>
+    </div>
+
+    <div class="kv-grid" id="leagueInfoGrid"></div>
 
     <h3 class="subhead">Offense Scoring</h3>
     <div class="kv-grid" id="offenseScoringGrid"></div>
@@ -905,6 +952,9 @@
 <script>
   const DATA_BY_VIEW = __BOARD_DATA_BY_YEAR_JSON__;
   const LEAGUE_META = DATA_BY_VIEW.meta;
+  // Untouched snapshot of the baked-in config, taken before any user edits --
+  // "Reset to Defaults" in League Details re-applies this.
+  const DEFAULT_LEAGUE_META = JSON.parse(JSON.stringify(DATA_BY_VIEW.meta));
   const GEN_DATE = "__GEN_DATE__";
   const VIEWS = [
     { key: "2026", label: "2026 Projections", primary: true },
@@ -917,7 +967,7 @@
   ];
   const POSITIONS = ["All", "QB", "RB", "WR", "TE", "K", "DEF"];
   let activeView = "2026";
-  let DATA = DATA_BY_VIEW[activeView];
+  let DATA = rescoreBoard(DATA_BY_VIEW[activeView]);
   let activePos = "All";
   let query = "";
   let sortKey = "overall_rank";
@@ -955,7 +1005,7 @@
       btn.setAttribute('aria-pressed', v.key === activeView ? 'true' : 'false');
       btn.addEventListener('click', () => {
         activeView = v.key;
-        DATA = DATA_BY_VIEW[activeView];
+        DATA = rescoreBoard(DATA_BY_VIEW[activeView]);
         renderViewPills();
         updateSubtitle();
         renderStats();
@@ -1166,6 +1216,21 @@
       ordered.forEach((p, i) => tierMap.set(p, tiers[i]));
     }
     return players.map(p => ({ ...p, tier: tierMap.get(p) }));
+  }
+
+  // `points` is baked in at build time (depends only on scoring formulas,
+  // which aren't editable this pass) and never changes. `vor`/`tier`/
+  // `overall_rank` depend on num_teams/roster_slots, which ARE editable in
+  // League Details -- so every consumer of a DATA_BY_VIEW[year] pool must
+  // recompute these fresh from LEAGUE_META rather than trust the embedded
+  // values, or editing league settings would silently do nothing outside
+  // Mock Draft (which already recomputed live). Cheap enough to call on
+  // every render given the dataset size.
+  function rescoreBoard(rows) {
+    const scored = computeVOR(rows, LEAGUE_META.num_teams, LEAGUE_META.roster_slots);
+    const withTiers = assignTiers(scored, LEAGUE_META.gap_threshold_stdevs);
+    withTiers.forEach((p, i) => { p.overall_rank = i + 1; });
+    return withTiers;
   }
 
   // ===========================================================================
@@ -1594,7 +1659,10 @@
   // Trade Calculator -- ported from optimizer/value_tools.evaluate_trade
   // ===========================================================================
   function initTradeCalculator() {
-    const pool = DATA_BY_VIEW['2026'];
+    // Recomputed fresh each call (not cached) so it always reflects the
+    // current league settings, not whatever num_teams/roster_slots were
+    // baked in at build time -- see rescoreBoard().
+    const currentPool = () => rescoreBoard(DATA_BY_VIEW['2026']);
     const state = { A: [], B: [] };
 
     function renderPicklist(side) {
@@ -1602,7 +1670,7 @@
       const listEl = document.getElementById(`tradePicklist${side}`);
       if (!q) { listEl.innerHTML = ''; listEl.style.display = 'none'; return; }
       listEl.style.display = 'block';
-      const matches = pool.filter(p => p.name.toLowerCase().includes(q) && !state[side].includes(p.name)).slice(0, 8);
+      const matches = currentPool().filter(p => p.name.toLowerCase().includes(q) && !state[side].includes(p.name)).slice(0, 8);
       listEl.innerHTML = matches.map(p =>
         `<div class="trade-picklist-item" data-name="${p.name}"><span>${p.name} (${p.position}, ${p.team})</span><span class="vor-val">${p.vor.toFixed(1)}</span></div>`
       ).join('');
@@ -1638,6 +1706,7 @@
         resultEl.innerHTML = '<span class="section-intro" style="margin:0;">Pick at least one player on either side to evaluate.</span>';
         return;
       }
+      const pool = currentPool();
       const vorA = state.A.reduce((sum, name) => sum + (pool.find(p => p.name === name)?.vor || 0), 0);
       const vorB = state.B.reduce((sum, name) => sum + (pool.find(p => p.name === name)?.vor || 0), 0);
       const netForA = vorB - vorA;
@@ -1724,7 +1793,7 @@
   }
 
   function renderStackTable() {
-    const pool = DATA_BY_VIEW['2026'];
+    const pool = rescoreBoard(DATA_BY_VIEW['2026']);
     const head = document.getElementById('stackTableHead');
     const body = document.getElementById('stackTableBody');
     const overallControls = document.getElementById('stackOverallControls');
@@ -1773,7 +1842,7 @@
 
   function computeHistoricalReview(year, entries) {
     const numTeams = LEAGUE_META.num_teams;
-    const pool = DATA_BY_VIEW[year];
+    const pool = rescoreBoard(DATA_BY_VIEW[year]);
     const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
     const matchedNames = new Set();
 
@@ -1919,7 +1988,7 @@
   });
 
   function playerByName(name) {
-    return DATA_BY_VIEW['2026'].find(p => p.name === name);
+    return rescoreBoard(DATA_BY_VIEW['2026']).find(p => p.name === name);
   }
 
   function allRosteredNames() {
@@ -1989,7 +2058,7 @@
     const q = query.trim().toLowerCase();
     if (!q) { picklistEl.innerHTML = ''; picklistEl.style.display = 'none'; return; }
     const taken = allRosteredNames();
-    const matches = DATA_BY_VIEW['2026']
+    const matches = rescoreBoard(DATA_BY_VIEW['2026'])
       .filter(p => p.name.toLowerCase().includes(q) && !taken.has(p.name))
       .slice(0, 8);
     picklistEl.style.display = matches.length ? 'block' : 'none';
@@ -2047,24 +2116,148 @@
     return `${min}-${max} ${unit}`;
   }
 
+  // ---------------------------------------------------------------------------
+  // Editable league config: name / num_teams / roster_slots only (see plan --
+  // scoring formulas stay read-only this pass, since editing those live would
+  // need raw stats shipped to the browser + a JS port of optimizer/scoring.py,
+  // not just this). Persisted to localStorage as an overlay on top of
+  // DEFAULT_LEAGUE_META so "Reset to Defaults" always has a clean baseline.
+  // ---------------------------------------------------------------------------
+  const LEAGUE_OVERRIDES_KEY = 'gamblers-league-overrides-v1';
+
+  function loadLeagueOverrides() {
+    try {
+      const raw = localStorage.getItem(LEAGUE_OVERRIDES_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function saveLeagueOverrides(overrides) {
+    try { localStorage.setItem(LEAGUE_OVERRIDES_KEY, JSON.stringify(overrides)); } catch (e) { /* unavailable -- won't persist */ }
+  }
+  function clearLeagueOverrides() {
+    try { localStorage.removeItem(LEAGUE_OVERRIDES_KEY); } catch (e) { /* no-op */ }
+  }
+
+  function mergeLeagueMeta(overrides) {
+    const merged = JSON.parse(JSON.stringify(DEFAULT_LEAGUE_META));
+    if (overrides) {
+      if (overrides.leagueName) merged.league.name = overrides.leagueName;
+      if (overrides.numTeams) merged.num_teams = overrides.numTeams;
+      if (overrides.rosterSlots) merged.roster_slots = { ...merged.roster_slots, ...overrides.rosterSlots };
+    }
+    return merged;
+  }
+
+  function collectLeagueEditsFromForm() {
+    const name = document.getElementById('leagueNameInput').value.trim() || DEFAULT_LEAGUE_META.league.name;
+    const numTeamsRaw = parseInt(document.getElementById('leagueNumTeamsInput').value, 10);
+    const numTeams = Number.isFinite(numTeamsRaw) && numTeamsRaw >= 2 ? numTeamsRaw : LEAGUE_META.num_teams;
+    const rosterSlots = {};
+    document.querySelectorAll('[data-role="roster-slot-input"]').forEach(input => {
+      const v = parseInt(input.value, 10);
+      rosterSlots[input.dataset.pos] = Number.isFinite(v) && v >= 0 ? v : 0;
+    });
+    return { leagueName: name, numTeams, rosterSlots };
+  }
+
+  // Applies (and optionally persists) a set of league overrides, then cascades
+  // every downstream consequence: TEAM_IDS/rosterState reconciliation (Team
+  // Rosters), the Mock Draft slot-input's max, resetting an in-progress mock
+  // draft (its bot roster shape no longer matches otherwise), and re-rendering
+  // every view that depends on num_teams/roster_slots.
+  function applyLeagueOverrides(overrides, { persist = true } = {}) {
+    const merged = mergeLeagueMeta(overrides);
+    LEAGUE_META.league.name = merged.league.name;
+    LEAGUE_META.num_teams = merged.num_teams;
+    LEAGUE_META.roster_slots = merged.roster_slots;
+
+    if (persist) {
+      if (overrides) saveLeagueOverrides(overrides); else clearLeagueOverrides();
+    }
+
+    const newIds = buildTeamIds(LEAGUE_META.num_teams);
+    const droppedIds = TEAM_IDS.filter(id => !newIds.includes(id));
+    const droppedInfo = droppedIds
+      .map(id => ({ name: rosterState.teamNames[id], count: (rosterState.rosters[id] || []).length }))
+      .filter(d => d.count > 0);
+    TEAM_IDS.length = 0;
+    TEAM_IDS.push(...newIds);
+    for (const id of droppedIds) { delete rosterState.teamNames[id]; delete rosterState.rosters[id]; }
+    const backfillDefaults = defaultRosterState();
+    for (const id of TEAM_IDS) {
+      if (!(id in rosterState.teamNames)) rosterState.teamNames[id] = backfillDefaults.teamNames[id];
+      if (!(id in rosterState.rosters)) rosterState.rosters[id] = [];
+    }
+    saveRosterState();
+
+    const slotInput = document.getElementById('mockSlotInput');
+    if (slotInput) slotInput.max = LEAGUE_META.num_teams;
+    let mockWasReset = false;
+    if (typeof mockDraft !== 'undefined' && mockDraft !== null) {
+      resetMockDraft();
+      mockWasReset = true;
+    }
+
+    // DATA is a cached scored snapshot for activeView (only otherwise
+    // refreshed on a view-pill click) -- refresh it here too, or a save
+    // while already sitting on a view would keep showing stale VOR/tiers.
+    DATA = rescoreBoard(DATA_BY_VIEW[activeView]);
+    renderStats();
+    renderTable();
+    renderStackTable();
+    renderTeamRosters();
+    renderLeagueDetails();
+
+    return { droppedInfo, mockWasReset };
+  }
+
+  function initLeagueEditForm() {
+    document.getElementById('leagueSaveBtn').addEventListener('click', () => {
+      const overrides = collectLeagueEditsFromForm();
+      const { droppedInfo, mockWasReset } = applyLeagueOverrides(overrides);
+      const notes = ['Saved — applied everywhere on this site.'];
+      if (mockWasReset) notes.push('Your in-progress mock draft was reset since league settings changed.');
+      if (droppedInfo.length) {
+        notes.push('Removed from Team Rosters (no longer fit): ' + droppedInfo.map(d => `${d.name} (${d.count} player${d.count === 1 ? '' : 's'})`).join(', ') + '.');
+      }
+      const noticeEl = document.getElementById('leagueSaveNotice');
+      noticeEl.textContent = notes.join(' ');
+      noticeEl.classList.toggle('warn', droppedInfo.length > 0);
+    });
+
+    document.getElementById('leagueResetBtn').addEventListener('click', () => {
+      const { droppedInfo, mockWasReset } = applyLeagueOverrides(null);
+      const notes = ['Reset to defaults.'];
+      if (mockWasReset) notes.push('Mock draft was reset.');
+      if (droppedInfo.length) notes.push('Team Rosters entries beyond the default team count were removed.');
+      const noticeEl = document.getElementById('leagueSaveNotice');
+      noticeEl.textContent = notes.join(' ');
+      noticeEl.classList.toggle('warn', droppedInfo.length > 0);
+    });
+  }
+
   function renderLeagueDetails() {
     const league = LEAGUE_META.league;
     const scoring = LEAGUE_META.scoring;
 
+    document.getElementById('leagueNameInput').value = league.name;
+    document.getElementById('leagueNumTeamsInput').value = LEAGUE_META.num_teams;
+
     document.getElementById('leagueInfoGrid').innerHTML = [
-      kvCell('League Name', league.name),
       kvCell('Yahoo League ID', league.yahoo_league_id),
-      kvCell('Teams', league.num_teams),
       kvCell('Platform', league.platform),
       kvCell('Draft Type', league.draft_type),
       kvCell('Scoring Type', league.scoring_type),
     ].join('');
 
     const rosterSlots = LEAGUE_META.roster_slots;
-    document.getElementById('rosterSlotsHead').innerHTML =
-      '<tr>' + Object.keys(rosterSlots).map(pos => `<th>${pos}</th>`).join('') + '</tr>';
-    document.getElementById('rosterSlotsBody').innerHTML =
-      '<tr>' + Object.values(rosterSlots).map(n => `<td class="num">${n}</td>`).join('') + '</tr>';
+    document.getElementById('rosterSlotsEditGrid').innerHTML = Object.keys(rosterSlots).map(pos => `
+      <div class="roster-slot-cell">
+        <span class="rs-pos">${pos}</span>
+        <input type="number" class="rs-edit-input" data-role="roster-slot-input" data-pos="${pos}" min="0" step="1" value="${rosterSlots[pos]}" />
+      </div>`).join('');
 
     document.getElementById('offenseScoringGrid').innerHTML = [
       kvCell('Pass Yards/Point', scoring.passing.yards_per_point),
@@ -2108,12 +2301,18 @@
     renderStackTable();
   }
 
+  // Apply any saved league-config overrides before anything else renders, so
+  // Team Rosters/Mock Draft/Stack Rankings never show a flash of the default
+  // (baked-in) team count before snapping to the user's saved edits.
+  applyLeagueOverrides(loadLeagueOverrides(), { persist: false });
+
   renderSectionTabs();
   initMockDraft();
   initTradeCalculator();
   initStackRankings();
   initHistoricalReview();
   initTeamRosters();
+  initLeagueEditForm();
   renderLeagueDetails();
 
   renderViewPills();
