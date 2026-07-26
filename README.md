@@ -34,11 +34,22 @@ streamlit run app.py
 
 ## Using the app
 
-Three pages, navigated from the sidebar:
+No upload needed to get started — the app auto-loads its own projections on launch. Five pages, navigated from the sidebar:
 
-1. **Upload & Map Data** — upload a projections CSV, confirm which column feeds each stat.
-2. **League Settings** — every roster slot count and scoring value, editable with no built-in limits (e.g. any number of WR/K/QB slots). Changes apply to the board immediately; "Save" writes them to `league_config.json` so they persist next launch.
-3. **Draft Board** — full player pool with pick tracking, a live-reranked "Best Available" view (VOR/tiers recomputed from only the undrafted pool after every pick), and a roster tracker showing your slots filled vs. open.
+1. **Draft Board** — full player pool with pick tracking (attributable to "Me" or a specific opponent), a live-reranked "Best Available" view (VOR/tiers recomputed from only the undrafted pool after every pick), a roster tracker, and Team Power Rankings.
+2. **Mock Draft** — practice against bot opponents that draft by need + VOR, snake order, fully separate from your real draft picks.
+3. **Trade Calculator** — compares net VOR swing for any two sets of players.
+4. **Player Data** — reference views by year: our own 2026 projections (see below), 2025 actual results, and a Playoffs tab (coming soon).
+5. **League Settings** — every roster slot count and scoring value, editable with no built-in limits (e.g. any number of WR/K/QB slots). Changes apply to the board immediately; "Save" writes them to `league_config.json` so they persist next launch. An "Advanced" section lets you import your own projections CSV instead, if you have one.
+
+## Player data
+
+Instead of requiring a projections upload, the app ships with its own data, generated from ESPN's public stats API (no auth needed):
+
+- `scripts/fetch_actuals.py <season>` pulls real final-season stats (QB/RB/WR/TE/K; team defense isn't covered yet) into `data/historical/{season}_actual_stats.csv`.
+- `scripts/build_2026_projections.py` builds `data/historical/2026_projections.csv` — a recency-weighted average of each player's real 2023-2025 stats (`optimizer/projections.py`). This is what the Draft Board uses by default.
+
+Re-run these next season to refresh the data.
 
 ## League settings
 
