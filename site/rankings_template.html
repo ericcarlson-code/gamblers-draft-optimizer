@@ -1,0 +1,594 @@
+<meta charset="utf-8">
+<title>The Gamblers — Draft Rankings</title>
+<style>
+  @font-face {
+    font-family: 'Bebas Neue';
+    font-style: normal;
+    font-weight: 400;
+    src: url(data:font/woff2;base64,__BEBAS_B64__) format('woff2');
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Public Sans';
+    font-style: normal;
+    font-weight: 400 700;
+    src: url(data:font/woff2;base64,__PUBLIC_B64__) format('woff2');
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 400 700;
+    src: url(data:font/woff2;base64,__MONO_B64__) format('woff2');
+    font-display: swap;
+  }
+
+  :root {
+    --bg: #F1F2ED;
+    --surface: #FFFFFF;
+    --surface-2: #E7E9E0;
+    --ink: #1B2420;
+    --ink-muted: #5B655C;
+    --accent: #2F6E3B;
+    --accent-ink: #F5FBF3;
+    --accent-2: #B87A1F;
+    --line: #D8DBD1;
+    --shadow: 0 1px 2px rgba(27,36,32,0.06), 0 8px 24px rgba(27,36,32,0.05);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10140F;
+      --surface: #171D15;
+      --surface-2: #1D241A;
+      --ink: #E8EBE3;
+      --ink-muted: #93A38F;
+      --accent: #5FBE72;
+      --accent-ink: #0C170D;
+      --accent-2: #E3A94A;
+      --line: #29322A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10140F; --surface: #171D15; --surface-2: #1D241A; --ink: #E8EBE3;
+    --ink-muted: #93A38F; --accent: #5FBE72; --accent-ink: #0C170D; --accent-2: #E3A94A;
+    --line: #29322A; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #F1F2ED; --surface: #FFFFFF; --surface-2: #E7E9E0; --ink: #1B2420;
+    --ink-muted: #5B655C; --accent: #2F6E3B; --accent-ink: #F5FBF3; --accent-2: #B87A1F;
+    --line: #D8DBD1; --shadow: 0 1px 2px rgba(27,36,32,0.06), 0 8px 24px rgba(27,36,32,0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Public Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  a { color: var(--accent); }
+
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+
+  header.masthead {
+    padding: 40px 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  h1.title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-weight: 400;
+    font-size: clamp(40px, 7vw, 64px);
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--ink-muted);
+    font-size: 15px;
+    max-width: 62ch;
+    line-height: 1.5;
+  }
+
+  .view-switcher {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .view-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+  }
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 24px 0 8px;
+    box-shadow: var(--shadow);
+  }
+  .stat {
+    background: var(--surface);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 22px;
+  }
+  .stat .label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+  }
+
+  .controls {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    padding: 16px 0 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 7px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--ink); }
+  .pill-sm {
+    font-size: 10.5px;
+    padding: 4px 9px;
+    font-weight: 600;
+  }
+  .pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .pill:focus-visible, .search input:focus-visible, th button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .search {
+    margin-left: auto;
+    position: relative;
+  }
+  .search input {
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 12px 8px 32px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    width: 200px;
+    transition: width 0.15s ease, border-color 0.15s ease;
+  }
+  .search input:focus { width: 240px; border-color: var(--accent); }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); opacity: 0.5; pointer-events: none; }
+
+  .trend-cell { min-width: 92px; }
+  .sparkline { display: block; }
+  .trend-empty { color: var(--ink-muted); font-size: 11px; }
+
+  .table-shell {
+    margin-top: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .table-scroll { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; min-width: 620px; }
+  thead th {
+    background: var(--surface-2);
+    text-align: left;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  thead th button {
+    all: unset;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  thead th button:hover { color: var(--ink); }
+  .sort-arrow { font-size: 9px; opacity: 0; }
+  thead th[data-active] .sort-arrow { opacity: 1; color: var(--accent); }
+
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface-2); }
+
+  td.num, th.num { text-align: right; }
+  td.num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  .rank { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; }
+  .player-name { font-weight: 600; }
+  .team { color: var(--ink-muted); font-size: 12.5px; margin-left: 6px; }
+
+  .pos-chip {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .tier-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .vor-bar-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .vor-bar-track {
+    width: 64px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .vor-bar-fill {
+    height: 100%;
+    background: var(--accent-2);
+    border-radius: 3px;
+  }
+
+  .empty-state {
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--ink-muted);
+  }
+
+  footer {
+    margin-top: 28px;
+    color: var(--ink-muted);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  @media (max-width: 640px) {
+    .search { margin-left: 0; width: 100%; }
+    .search input { width: 100%; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">The Gamblers · Yahoo League 732599</div>
+    <h1 class="title">Draft Rankings</h1>
+    <div class="subtitle" id="subtitleText"></div>
+  </header>
+
+  <div class="view-switcher">
+    <span class="view-label">Season</span>
+    <div class="pills" id="viewPills"></div>
+  </div>
+
+  <div class="stat-strip" id="statStrip"></div>
+
+  <div class="controls">
+    <div class="pills" id="posPills"></div>
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="Find a player…" aria-label="Search players" />
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="overall_rank">Rank</th>
+            <th data-key="name">Player</th>
+            <th data-key="position">Pos</th>
+            <th class="num" data-key="points">Pts</th>
+            <th class="num" data-key="vor">VOR</th>
+            <th class="num" data-key="tier">Tier</th>
+            <th class="num trend-cell" title="Each player's VOR across 2020–2025 under current league scoring — the trajectory behind the 2026 projection">Trend</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="emptyState" hidden>No players match that search.</div>
+  </div>
+
+  <footer>
+    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). This is a static snapshot — open the live app for real-time draft tracking, mock drafts, and a trade calculator.
+  </footer>
+</div>
+
+<script>
+  const DATA_BY_VIEW = __BOARD_DATA_BY_YEAR_JSON__;
+  const GEN_DATE = "__GEN_DATE__";
+  const VIEWS = [
+    { key: "2026", label: "2026 Projections", primary: true },
+    { key: "2025", label: "2025" },
+    { key: "2024", label: "2024" },
+    { key: "2023", label: "2023" },
+    { key: "2022", label: "2022" },
+    { key: "2021", label: "2021" },
+    { key: "2020", label: "2020" },
+  ];
+  const POSITIONS = ["All", "QB", "RB", "WR", "TE", "K", "DEF"];
+  let activeView = "2026";
+  let DATA = DATA_BY_VIEW[activeView];
+  let activePos = "All";
+  let query = "";
+  let sortKey = "overall_rank";
+  let sortDir = 1;
+
+  function getMaxVor() { return Math.max(...DATA.map(d => d.vor), 1); }
+
+  function tierColor(tier) {
+    // Intensity fades as tier number increases (1 = strongest signal).
+    const clamped = Math.min(tier, 8);
+    const alpha = 0.95 - (clamped - 1) * 0.10;
+    return `color-mix(in srgb, var(--accent) ${Math.round(alpha * 100)}%, var(--surface-2))`;
+  }
+  function tierTextColor(tier) {
+    return tier <= 4 ? 'var(--accent-ink)' : 'var(--ink)';
+  }
+
+  function updateSubtitle() {
+    const el = document.getElementById('subtitleText');
+    if (activeView === '2026') {
+      el.textContent = "2026 season projections, ranked by Value Over Replacement under this league's custom scoring. A recency-weighted average of each player's real 2023–2025 stats — no paid consensus data, generated " + GEN_DATE + ".";
+    } else {
+      el.textContent = "What actually happened in the " + activeView + " season, ranked by Value Over Replacement under this league's current custom scoring.";
+    }
+  }
+
+  function renderViewPills() {
+    const wrap = document.getElementById('viewPills');
+    wrap.innerHTML = '';
+    for (const v of VIEWS) {
+      const btn = document.createElement('button');
+      const sizeClass = v.primary ? '' : ' pill-sm';
+      btn.className = 'pill' + sizeClass + (v.key === activeView ? ' active' : '');
+      btn.textContent = v.label;
+      btn.setAttribute('aria-pressed', v.key === activeView ? 'true' : 'false');
+      btn.addEventListener('click', () => {
+        activeView = v.key;
+        DATA = DATA_BY_VIEW[activeView];
+        renderViewPills();
+        updateSubtitle();
+        renderStats();
+        renderTable();
+      });
+      wrap.appendChild(btn);
+    }
+  }
+
+  function sparklineSvg(history) {
+    if (!history || history.length === 0) {
+      return '<span class="trend-empty">no history</span>';
+    }
+    const w = 80, h = 26, padX = 3, padY = 4;
+    const vors = history.map(pt => pt.vor);
+    const minV = Math.min(...vors), maxV = Math.max(...vors);
+    const range = (maxV - minV) || 1;
+    const n = history.length;
+    const coords = history.map((pt, i) => {
+      const x = n === 1 ? w / 2 : padX + (i / (n - 1)) * (w - padX * 2);
+      const y = padY + (1 - (pt.vor - minV) / range) * (h - padY * 2);
+      return [x, y];
+    });
+    const pointsAttr = coords.map(c => c.join(',')).join(' ');
+    const [lastX, lastY] = coords[coords.length - 1];
+    const years = history.map(pt => pt.year).join(', ');
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" class="sparkline" role="img" aria-label="VOR trend for ${years}">
+      <polyline points="${pointsAttr}" fill="none" stroke="var(--accent-2)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />
+      <circle cx="${lastX}" cy="${lastY}" r="2.6" fill="var(--accent)" />
+    </svg>`;
+  }
+
+  function renderPills() {
+    const wrap = document.getElementById('posPills');
+    wrap.innerHTML = '';
+    for (const pos of POSITIONS) {
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (pos === activePos ? ' active' : '');
+      btn.textContent = pos;
+      btn.setAttribute('aria-pressed', pos === activePos ? 'true' : 'false');
+      btn.addEventListener('click', () => { activePos = pos; renderPills(); renderTable(); });
+      wrap.appendChild(btn);
+    }
+  }
+
+  function renderStats() {
+    const total = DATA.length;
+    const counts = {};
+    for (const d of DATA) counts[d.position] = (counts[d.position] || 0) + 1;
+    const items = [
+      { label: 'Players Ranked', value: total },
+      { label: 'Running Backs', value: counts.RB || 0 },
+      { label: 'Wide Receivers', value: counts.WR || 0 },
+      { label: 'Top Tier (Overall)', value: 'T' + Math.min(...DATA.map(d => d.tier)) },
+    ];
+    const strip = document.getElementById('statStrip');
+    strip.innerHTML = '';
+    for (const it of items) {
+      const cell = document.createElement('div');
+      cell.className = 'stat';
+      cell.innerHTML = `<span class="value">${it.value}</span><span class="label">${it.label}</span>`;
+      strip.appendChild(cell);
+    }
+  }
+
+  function sortedFiltered() {
+    let rows = DATA;
+    if (activePos !== 'All') rows = rows.filter(d => d.position === activePos);
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      rows = rows.filter(d => d.name.toLowerCase().includes(q) || d.team.toLowerCase().includes(q));
+    }
+    rows = [...rows].sort((a, b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+      return (av - bv) * sortDir;
+    });
+    return rows;
+  }
+
+  function renderTable() {
+    const rows = sortedFiltered();
+    const tbody = document.getElementById('tbody');
+    const empty = document.getElementById('emptyState');
+    tbody.innerHTML = '';
+    empty.hidden = rows.length !== 0;
+    const maxVor = getMaxVor();
+
+    for (const d of rows) {
+      const tr = document.createElement('tr');
+      const barPct = Math.max(2, Math.round((d.vor / maxVor) * 100));
+      tr.innerHTML = `
+        <td class="rank">${d.overall_rank}</td>
+        <td><span class="player-name">${d.name}</span><span class="team">${d.team}</span></td>
+        <td><span class="pos-chip">${d.position}</span></td>
+        <td class="num">${d.points.toFixed(1)}</td>
+        <td class="num">
+          <div class="vor-bar-wrap">
+            <div class="vor-bar-track"><div class="vor-bar-fill" style="width:${barPct}%"></div></div>
+            <span>${d.vor.toFixed(1)}</span>
+          </div>
+        </td>
+        <td class="num"><span class="tier-chip" style="background:${tierColor(d.tier)}; color:${tierTextColor(d.tier)}">${d.tier}</span></td>
+        <td class="num trend-cell">${sparklineSvg(d.history)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderSortHeaders() {
+    document.querySelectorAll('thead th[data-key]').forEach(th => {
+      const key = th.dataset.key;
+      th.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.innerHTML = th.dataset.label || key;
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      btn.appendChild(arrow);
+      btn.addEventListener('click', () => {
+        if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = key === 'name' || key === 'position' ? 1 : -1; }
+        updateHeaderState();
+        renderTable();
+      });
+      th.appendChild(btn);
+    });
+    updateHeaderState();
+  }
+  function updateHeaderState() {
+    document.querySelectorAll('thead th[data-key]').forEach(th => {
+      const active = th.dataset.key === sortKey;
+      th.toggleAttribute('data-active', active);
+      const arrow = th.querySelector('.sort-arrow');
+      if (arrow) arrow.textContent = active ? (sortDir === 1 ? '▲' : '▼') : '▲';
+    });
+  }
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    query = e.target.value;
+    renderTable();
+  });
+
+  // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
+  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier' };
+  document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
+
+  renderViewPills();
+  updateSubtitle();
+  renderPills();
+  renderStats();
+  renderSortHeaders();
+  renderTable();
+</script>

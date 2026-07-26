@@ -44,14 +44,8 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
     return board[["overall_rank", "name", "position", "team", "points", "vor", "tier"]].round(1).to_dict("records")
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/build_rankings_artifact_data.py <output_path.json>")
-        sys.exit(1)
-    out_path = Path(sys.argv[1])
-
-    cfg = load_config()
-
+def build_data_bundle(cfg: dict) -> dict:
+    """{'2026': [...rows with history...], '2025': [...], ..., '2020': [...]}"""
     year_boards = {
         year: score_file(DATA_DIR / f"{year}_actual_stats.csv", cfg)
         for year in HISTORY_YEARS
@@ -77,6 +71,17 @@ def main() -> None:
     bundle = {"2026": projection_rows}
     for year, board in year_boards.items():
         bundle[str(year)] = to_rows(board)
+    return bundle
+
+
+def main() -> None:
+    if len(sys.argv) != 2:
+        print("Usage: python scripts/build_rankings_artifact_data.py <output_path.json>")
+        sys.exit(1)
+    out_path = Path(sys.argv[1])
+
+    cfg = load_config()
+    bundle = build_data_bundle(cfg)
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(bundle, f)
@@ -84,8 +89,8 @@ def main() -> None:
     print(f"Wrote {out_path}")
     for key, rows in bundle.items():
         print(f"  {key}: {len(rows)} rows")
-    with_history = sum(1 for r in projection_rows if r["history"])
-    print(f"  2026 rows with >=1 year of history: {with_history}/{len(projection_rows)}")
+    with_history = sum(1 for r in bundle["2026"] if r["history"])
+    print(f"  2026 rows with >=1 year of history: {with_history}/{len(bundle['2026'])}")
 
 
 if __name__ == "__main__":

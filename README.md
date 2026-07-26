@@ -34,13 +34,14 @@ streamlit run app.py
 
 ## Using the app
 
-No upload needed to get started — the app auto-loads its own projections on launch. Five pages, navigated from the sidebar:
+No upload needed to get started — the app auto-loads its own projections on launch. Six pages, navigated from the sidebar:
 
 1. **Draft Board** — full player pool with pick tracking (attributable to "Me" or a specific opponent), a live-reranked "Best Available" view (VOR/tiers recomputed from only the undrafted pool after every pick), a roster tracker, and Team Power Rankings.
 2. **Mock Draft** — practice against bot opponents that draft by need + VOR, snake order, fully separate from your real draft picks.
 3. **Trade Calculator** — compares net VOR swing for any two sets of players.
-4. **Player Data** — reference views by year: our own 2026 projections (see below), 2025 actual results, and a Playoffs tab (coming soon).
-5. **League Settings** — every roster slot count and scoring value, editable with no built-in limits (e.g. any number of WR/K/QB slots). Changes apply to the board immediately; "Save" writes them to `league_config.json` so they persist next launch. An "Advanced" section lets you import your own projections CSV instead, if you have one.
+4. **Stack Rankings** — which real NFL teams (and specific position-combo pairings like QB+WR) are worth drafting more than one player from, ranked by combined VOR.
+5. **Player Data** — reference views by year: our own 2026 projections (see below), 2025 actual results, and a Playoffs tab (coming soon).
+6. **League Settings** — every roster slot count and scoring value, editable with no built-in limits (e.g. any number of WR/K/QB slots). Changes apply to the board immediately; "Save" writes them to `league_config.json` so they persist next launch. An "Advanced" section lets you import your own projections CSV instead, if you have one.
 
 ## Player data
 
@@ -54,3 +55,13 @@ Re-run these next season to refresh the data.
 ## League settings
 
 All scoring and roster rules live in [`league_config.json`](league_config.json) — nothing is hardcoded in the app logic. Edit them there directly, or through the League Settings page in the app.
+
+## Published rankings site
+
+There's also a static, shareable snapshot of the rankings (separate from the live app — no draft tracking, mock draft, or trade calculator, just a browsable/sortable table with a year switcher and per-player trend sparklines). It's **not** auto-updated; regenerate and republish it by hand whenever the data or `league_config.json` changes:
+
+```bash
+python scripts/build_rankings_site.py path/to/output.html
+```
+
+This one command scores every year (2020-2025 actual + 2026 projection) under the *current* `league_config.json`, embeds the fonts from `site/fonts/`, and injects everything into `site/rankings_template.html` (the versioned source of truth for the page) to produce a single self-contained HTML file. Hand that file to the Artifact tool to publish/update the live link.
