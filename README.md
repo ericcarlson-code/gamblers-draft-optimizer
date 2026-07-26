@@ -46,7 +46,7 @@ No upload needed to get started — the app auto-loads its own projections on la
 
 Instead of requiring a projections upload, the app ships with its own data, generated from ESPN's public stats API (no auth needed):
 
-- `scripts/fetch_actuals.py <season>` pulls real final-season stats (QB/RB/WR/TE/K; team defense isn't covered yet) into `data/historical/{season}_actual_stats.csv`.
+- `scripts/fetch_actuals.py <season>` pulls real final-season stats (QB/RB/WR/TE/K, plus all 32 team defenses' points allowed) into `data/historical/{season}_actual_stats.csv`. DEF only has points allowed for now -- defensive TDs/safeties/return TDs/XP-returned aren't available from this data source yet.
 - `scripts/build_2026_projections.py` builds `data/historical/2026_projections.csv` — a recency-weighted average of each player's real 2023-2025 stats (`optimizer/projections.py`). This is what the Draft Board uses by default.
 
 Re-run these next season to refresh the data.

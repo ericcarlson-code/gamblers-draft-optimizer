@@ -595,7 +595,8 @@ elif page == "Player Data":
             "Our own projection model: a recency-weighted average of each player's real 2023-2025 stats "
             "(60% 2025 / 25% 2024 / 15% 2023, renormalized for players missing some years). "
             "This is what Draft Board, Mock Draft, and Trade Calculator use by default. "
-            "Known gap: team defense (DEF) isn't included yet."
+            "Known gap: DEF scoring only counts points allowed -- defensive TDs, safeties, "
+            "return TDs, and XP-returned aren't available from this data source yet, so they score as 0."
         )
         _year_board(PROJECTIONS_2026_PATH, "python scripts/build_2026_projections.py")
 
@@ -606,7 +607,8 @@ elif page == "Player Data":
         selected_year = int(selected_year) if selected_year else ACTUAL_YEARS[0]
         st.caption(
             f"What actually happened in the {selected_year} season, scored under your current League Settings. "
-            "Known gap: team defense (DEF) isn't included yet."
+            "Known gap: DEF scoring only counts points allowed -- defensive TDs, safeties, "
+            "return TDs, and XP-returned aren't available from this data source yet, so they score as 0."
         )
         _year_board(HISTORICAL_DIR / f"{selected_year}_actual_stats.csv", f"python scripts/fetch_actuals.py {selected_year}")
 

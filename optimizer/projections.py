@@ -39,8 +39,8 @@ def build_projection(history: dict[int, pd.DataFrame], weights: dict[int, float]
         return pd.DataFrame(columns=["name", "position", "team"] + STAT_FIELDS)
 
     combined = pd.concat(frames, ignore_index=True)
-    # Only average stat fields the source data actually has (e.g. fetch_actuals.py
-    # doesn't cover team defense, so def_* fields simply won't be in these CSVs).
+    # Only average stat fields the source data actually has (e.g. fetch_actuals.py's
+    # DEF rows only populate def_points_allowed -- other def_* fields stay 0).
     available_stat_fields = [f for f in STAT_FIELDS if f in combined.columns]
 
     # Only project players who appeared in the most recent season -- otherwise a

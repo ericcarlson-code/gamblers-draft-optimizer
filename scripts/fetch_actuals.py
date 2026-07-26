@@ -11,9 +11,10 @@ Usage:
 This is NOT called at app runtime -- the app just reads the CSVs this
 script produces, so draft day doesn't depend on ESPN being reachable.
 
-Known gap: team defense (DEF) stats aren't included. ESPN's by-athlete
-endpoint only covers individual players; team defense would need a
-separate team-stats endpoint that hasn't been wired up yet.
+Team defense (DEF) rows are included via ESPN's standings endpoint, but
+only points allowed (the dominant scoring category in this league's
+D/ST rules) -- defensive TDs/safeties/return TDs/XP-returned aren't
+exposed by that endpoint and are left at 0 pending a better source.
 """
 import csv
 import json
@@ -23,6 +24,7 @@ import urllib.request
 from pathlib import Path
 
 BASE_URL = "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/statistics/byathlete"
+STANDINGS_URL = "https://site.api.espn.com/apis/v2/sports/football/nfl/standings"
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 
 # (sort key, how many pages of 50 to pull) -- covers players whose primary
@@ -42,6 +44,7 @@ CSV_FIELDS = [
     "rec", "rec_yds", "rec_td",
     "return_td", "off_fumble_return_td", "two_pt",
     "fg_0_19", "fg_20_29", "fg_30_39", "fg_40_49", "fg_50_plus", "pat_made",
+    "def_td", "def_safety", "def_return_td", "def_xp_returned", "def_points_allowed",
 ]
 
 
@@ -66,6 +69,35 @@ def category_values(athlete_record: dict, category_names: dict[str, list[str]]) 
         for name, value in zip(names, cat.get("values", [])):
             out[name] = value
     return out
+
+
+def fetch_team_defense(season: int) -> dict[str, dict]:
+    """Team-level DEF rows keyed by team abbreviation, sourced from the standings
+    endpoint's pointsAgainst (season total). Only points allowed is available here --
+    see module docstring for the gap on TDs/safeties/return TDs/XP-returned."""
+    url = f"{STANDINGS_URL}?season={season}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read())
+
+    defenses: dict[str, dict] = {}
+    for conference in data.get("children", []):
+        for entry in conference.get("standings", {}).get("entries", []):
+            team = entry["team"]
+            points_against = next(
+                (s["value"] for s in entry["stats"] if s["name"] == "pointsAgainst"), 0
+            )
+            defenses[team["abbreviation"]] = {
+                "name": team.get("displayName", team["abbreviation"]),
+                "position": "DEF",
+                "team": team["abbreviation"],
+                "def_td": 0,
+                "def_safety": 0,
+                "def_return_td": 0,
+                "def_xp_returned": 0,
+                "def_points_allowed": points_against,
+            }
+    return defenses
 
 
 def fetch_season(season: int) -> dict[str, dict]:
@@ -129,15 +161,21 @@ def main() -> None:
     print(f"Fetching {season} actual stats...")
     players = fetch_season(season)
 
+    print(f"Fetching {season} team defense (points allowed)...")
+    defenses = fetch_team_defense(season)
+    print(f"  {len(defenses)} teams")
+
+    all_rows = list(players.values()) + list(defenses.values())
+
     out_path = DATA_DIR / f"{season}_actual_stats.csv"
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
         writer.writeheader()
-        for row in sorted(players.values(), key=lambda r: r["name"]):
+        for row in sorted(all_rows, key=lambda r: r["name"]):
             writer.writerow(row)
 
-    print(f"Wrote {len(players)} players to {out_path}")
+    print(f"Wrote {len(all_rows)} players/teams to {out_path}")
 
 
 if __name__ == "__main__":
