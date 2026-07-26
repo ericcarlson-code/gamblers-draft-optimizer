@@ -304,6 +304,15 @@
   .btn-primary.btn-sm { padding: 4px 10px; font-size: 11.5px; }
   .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
 
+  .stack-reason {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 3px;
+    max-width: 220px;
+  }
+  .stack-reason.reason-clear { color: var(--accent); }
+  .stack-reason.reason-reach { color: var(--accent-2); }
   .stack-badge {
     display: inline-block;
     font-size: 11.5px;
@@ -1124,6 +1133,41 @@
   const STACK_PAIRS = new Set(['QB|WR', 'WR|QB', 'QB|TE', 'TE|QB', 'RB|WR', 'WR|RB', 'WR|WR']);
   function isStackPair(posA, posB) { return STACK_PAIRS.has(posA + '|' + posB); }
 
+  function stackWithFor(candidate, myRosterPlayers) {
+    return myRosterPlayers
+      .filter(mine => mine.team === candidate.team && isStackPair(candidate.position, mine.position))
+      .map(mine => mine.name);
+  }
+
+  // The best available player who would NOT complete a stack with your
+  // current roster -- i.e. what you'd take instead if you passed on every
+  // stack option right now. `rankedFull` must already be sorted best-to-worst.
+  function bestNonStackAlternative(rankedFull, myRosterPlayers) {
+    for (const p of rankedFull) {
+      if (stackWithFor(p, myRosterPlayers).length === 0) return p;
+    }
+    return null;
+  }
+
+  // Plain-language verdict on whether a stack pick is worth its value hit,
+  // comparing it to the best non-stack alternative available at this exact
+  // pick. This is the core "don't just sell the stack, evaluate it" ask --
+  // a stack is only a good idea when the correlated-upside bet is cheap.
+  function stackTradeoffReason(candidate, bestAlt) {
+    if (!bestAlt || bestAlt.name === candidate.name) return null;
+    if (candidate.vor >= bestAlt.vor) {
+      return { text: `Also the top value pick right now — no tradeoff.`, tier: 'clear' };
+    }
+    const gapPct = ((bestAlt.vor - candidate.vor) / bestAlt.vor) * 100;
+    if (gapPct <= 5) {
+      return { text: `Essentially even with ${bestAlt.name} (${bestAlt.vor.toFixed(1)} VOR) — negligible value hit.`, tier: 'clear' };
+    }
+    if (gapPct <= 20) {
+      return { text: `${bestAlt.name} has ${gapPct.toFixed(0)}% higher VOR (${bestAlt.vor.toFixed(1)}) — reasonable value hit for the stack.`, tier: 'reasonable' };
+    }
+    return { text: `${bestAlt.name} has ${gapPct.toFixed(0)}% higher VOR (${bestAlt.vor.toFixed(1)}) — significant reach just for the stack.`, tier: 'reach' };
+  }
+
   function myRosterSlotAssignments() {
     const rosterSlots = LEAGUE_META.roster_slots;
     const myPicks = [...mockDraft.rosters['Me']].sort((a, b) => b.vor - a.vor);
@@ -1252,14 +1296,19 @@
         // offense-strength combos -- not just "shares an NFL team" (e.g. a
         // same-team kicker isn't a meaningful correlation play). Surfaced
         // live so stacking is visible while you're actually picking, not
-        // just in the separate Stack Rankings tab.
+        // just in the separate Stack Rankings tab. Each stack candidate is
+        // also weighed against the best non-stack alternative available
+        // right now -- the point isn't "it stacks" alone, it's whether the
+        // correlated-upside bet is actually worth the value hit.
+        const bestAlt = bestNonStackAlternative(withTiers, mockDraft.rosters['Me']);
         const rows = top.map(p => {
-          const stackWith = mockDraft.rosters['Me']
-            .filter(mine => mine.team === p.team && isStackPair(p.position, mine.position))
-            .map(mine => mine.name);
-          const stackCell = stackWith.length
-            ? `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>`
-            : '<span class="trend-empty">—</span>';
+          const stackWith = stackWithFor(p, mockDraft.rosters['Me']);
+          let stackCell = '<span class="trend-empty">—</span>';
+          if (stackWith.length) {
+            const reason = stackTradeoffReason(p, bestAlt);
+            const reasonHtml = reason ? `<span class="stack-reason reason-${reason.tier}">${reason.text}</span>` : '';
+            stackCell = `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>${reasonHtml}`;
+          }
           return `
             <tr>
               <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span></td>
