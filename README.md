@@ -32,6 +32,14 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## Using the app
+
+Three pages, navigated from the sidebar:
+
+1. **Upload & Map Data** — upload a projections CSV, confirm which column feeds each stat.
+2. **League Settings** — every roster slot count and scoring value, editable with no built-in limits (e.g. any number of WR/K/QB slots). Changes apply to the board immediately; "Save" writes them to `league_config.json` so they persist next launch.
+3. **Draft Board** — full player pool with pick tracking, a live-reranked "Best Available" view (VOR/tiers recomputed from only the undrafted pool after every pick), and a roster tracker showing your slots filled vs. open.
+
 ## League settings
 
-All scoring and roster rules live in [`league_config.json`](league_config.json) — nothing is hardcoded in the app logic, so you can edit the numbers there if Yahoo's actual settings differ from what's currently configured.
+All scoring and roster rules live in [`league_config.json`](league_config.json) — nothing is hardcoded in the app logic. Edit them there directly, or through the League Settings page in the app.
