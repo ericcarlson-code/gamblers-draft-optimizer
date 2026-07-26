@@ -301,7 +301,19 @@
   .btn-primary { background: var(--accent); color: var(--accent-ink); }
   .btn-primary:hover { opacity: 0.88; }
   .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary.btn-sm { padding: 4px 10px; font-size: 11.5px; }
   .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
+
+  .stack-badge {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 18%, var(--surface-2));
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
   .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
   #mockSlotInput {
@@ -991,9 +1003,12 @@
     return Object.values(rosterSlots).reduce((a, b) => a + b, 0);
   }
 
-  function pickForBot(availableRanked, teamPositions, rosterSlots) {
+  function pickForBot(availableRanked, teamRoster, rosterSlots) {
+    // teamRoster: array of already-drafted player objects (not just position strings) --
+    // storing full players (not just their positions) is what lets the UI also flag
+    // stacks against your own roster while drafting, not just count position needs.
     const counts = {};
-    for (const pos of teamPositions) counts[pos] = (counts[pos] || 0) + 1;
+    for (const p of teamRoster) counts[p.position] = (counts[p.position] || 0) + 1;
     const starterPositions = Object.keys(rosterSlots).filter(
       pos => pos !== 'BN' && (counts[pos] || 0) < rosterSlots[pos]
     );
@@ -1019,7 +1034,7 @@
       position: pick.position,
       vor: pick.vor,
     });
-    mockDraft.rosters[teamLabel].push(pick.position);
+    mockDraft.rosters[teamLabel].push(pick);
     mockDraft.draftedNames.add(pick.name);
     mockDraft.pickIdx += 1;
   }
@@ -1086,20 +1101,45 @@
         const ranked = computeVOR(available, numTeams, rosterSlots);
         const withTiers = assignTiers(ranked, LEAGUE_META.gap_threshold_stdevs);
         const top = withTiers.slice(0, 30);
-        const options = top.map(p =>
-          `<option value="${p.name}">${p.name} (${p.position}, ${p.team}) — VOR ${p.vor.toFixed(1)}, Tier ${p.tier}</option>`
-        ).join('');
+
+        // Which of my already-drafted players share a team with each candidate --
+        // surfaced live so stacking is visible while you're actually picking,
+        // not just in the separate Stack Rankings tab.
+        const myTeammatesByTeam = {};
+        for (const p of mockDraft.rosters['Me']) {
+          (myTeammatesByTeam[p.team] = myTeammatesByTeam[p.team] || []).push(p.name);
+        }
+
+        const rows = top.map(p => {
+          const stackWith = myTeammatesByTeam[p.team];
+          const stackCell = stackWith
+            ? `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>`
+            : '<span class="trend-empty">—</span>';
+          return `
+            <tr>
+              <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span></td>
+              <td><span class="pos-chip">${p.position}</span></td>
+              <td class="num">${p.vor.toFixed(1)}</td>
+              <td class="num">${p.tier}</td>
+              <td>${stackCell}</td>
+              <td><button class="btn-primary btn-sm" data-name="${p.name}">Draft</button></td>
+            </tr>`;
+        }).join('');
+
         pickPanel.innerHTML = `
           <div class="mock-pick-card">
-            <label class="field-label" for="mockPickSelect">Your pick — top 30 available</label>
-            <select id="mockPickSelect">${options}</select>
-            <div style="margin-top:10px;"><button class="btn-primary" id="mockDraftBtn">Draft This Player</button></div>
+            <label class="field-label">Your pick — top 30 available (stacks with your roster flagged)</label>
+            <div class="table-shell"><div class="table-scroll"><table>
+              <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th><th class="num">Tier</th><th>Stack</th><th></th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table></div></div>
           </div>`;
-        document.getElementById('mockDraftBtn').addEventListener('click', () => {
-          const name = document.getElementById('mockPickSelect').value;
-          const pick = withTiers.find(p => p.name === name);
-          recordMockPick(pick, 'Me');
-          runMockDraftStep();
+        pickPanel.querySelectorAll('button[data-name]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pick = withTiers.find(p => p.name === btn.dataset.name);
+            recordMockPick(pick, 'Me');
+            runMockDraftStep();
+          });
         });
       } else {
         pickPanel.innerHTML = '';
