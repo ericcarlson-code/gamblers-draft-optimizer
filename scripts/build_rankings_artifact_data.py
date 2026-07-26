@@ -76,6 +76,9 @@ def build_data_bundle(cfg: dict) -> dict:
             "num_teams": cfg["league"]["num_teams"],
             "roster_slots": cfg["roster"]["slots"],
             "gap_threshold_stdevs": cfg["tiering"]["gap_threshold_stdevs"],
+            "league": cfg["league"],
+            "scoring": cfg["scoring"],
+            "notes": cfg.get("notes", []),
         },
         "2026": projection_rows,
     }
