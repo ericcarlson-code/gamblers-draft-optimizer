@@ -64,11 +64,29 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--bg);
+    /* A faint diagonal hash, like yard markers on a field -- decorative,
+       low-contrast enough to never compete with the data. */
+    background:
+      repeating-linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--line) 55%, transparent) 0px,
+        color-mix(in srgb, var(--line) 55%, transparent) 1px,
+        transparent 1px,
+        transparent 68px
+      ),
+      var(--bg);
     color: var(--ink);
     font-family: 'Public Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--accent);
+    z-index: 20;
   }
   ::selection { background: var(--accent); color: var(--accent-ink); }
 
@@ -224,6 +242,174 @@
   .sparkline { display: block; }
   .trend-empty { color: var(--ink-muted); font-size: 11px; }
 
+  /* Yard-line style section nav: a dashed "field marking" runs under the tab bar. */
+  .section-tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 28px;
+    border-bottom: 2px dashed var(--line);
+    overflow-x: auto;
+  }
+  .section-tab {
+    all: unset;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    padding: 10px 16px 12px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+  }
+  .section-tab:hover { color: var(--ink); }
+  .section-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .app-section { padding-top: 20px; }
+
+  .section-intro { color: var(--ink-muted); font-size: 14.5px; max-width: 68ch; line-height: 1.55; margin: 0 0 18px; }
+  .field-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+  }
+  .subhead {
+    font-family: 'Bebas Neue', sans-serif;
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    margin: 0 0 8px;
+  }
+
+  .btn-primary, .btn-secondary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  #mockSlotInput {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    width: 70px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .mock-setup-row { display: flex; align-items: center; gap: 10px; }
+  .mock-status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .mock-on-clock {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+  }
+  .mock-on-clock .clock-team { color: var(--accent); }
+  .mock-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 22px; }
+  @media (max-width: 780px) { .mock-columns { grid-template-columns: 1fr; } }
+
+  .mock-pick-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .mock-pick-card select {
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .trade-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 780px) { .trade-columns { grid-template-columns: 1fr; } }
+  .trade-search {
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14px;
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .trade-picklist {
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .trade-picklist-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 12px;
+    font-size: 13.5px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line);
+  }
+  .trade-picklist-item:last-child { border-bottom: none; }
+  .trade-picklist-item:hover { background: var(--surface-2); }
+  .trade-picklist-item .vor-val { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; }
+  .trade-selected { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 20px; }
+  .trade-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    padding: 4px 6px 4px 10px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .trade-chip button {
+    all: unset;
+    cursor: pointer;
+    color: var(--ink-muted);
+    font-weight: 700;
+    padding: 0 4px;
+  }
+  .trade-chip button:hover { color: var(--accent-2); }
+  .trade-result {
+    margin-top: 22px;
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .trade-result-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 8px; }
+  .trade-result-stat .value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 20px; }
+  .trade-result-stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); }
+  .trade-verdict { font-weight: 700; }
+
+  .stack-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+
   .table-shell {
     margin-top: 4px;
     border: 1px solid var(--line);
@@ -281,6 +467,7 @@
     padding: 2px 6px;
     border-radius: 4px;
     background: var(--surface-2);
+    border: 1px solid var(--line);
     color: var(--ink-muted);
     letter-spacing: 0.02em;
   }
@@ -347,48 +534,111 @@
     <div class="subtitle" id="subtitleText"></div>
   </header>
 
-  <div class="view-switcher">
-    <span class="view-label">Season</span>
-    <div class="pills" id="viewPills"></div>
-  </div>
+  <nav class="section-tabs" id="sectionTabs"></nav>
 
-  <div class="stat-strip" id="statStrip"></div>
-
-  <div class="controls">
-    <div class="pills" id="posPills"></div>
-    <div class="search">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="searchInput" type="text" placeholder="Find a player…" aria-label="Search players" />
+  <section id="section-rankings" class="app-section">
+    <div class="view-switcher">
+      <span class="view-label">Season</span>
+      <div class="pills" id="viewPills"></div>
     </div>
-  </div>
 
-  <div class="table-shell">
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th data-key="overall_rank">Rank</th>
-            <th data-key="name">Player</th>
-            <th data-key="position">Pos</th>
-            <th class="num" data-key="points">Pts</th>
-            <th class="num" data-key="vor">VOR</th>
-            <th class="num" data-key="tier">Tier</th>
-            <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <div class="stat-strip" id="statStrip"></div>
+
+    <div class="controls">
+      <div class="pills" id="posPills"></div>
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" placeholder="Find a player…" aria-label="Search players" />
+      </div>
     </div>
-    <div class="empty-state" id="emptyState" hidden>No players match that search.</div>
-  </div>
+
+    <div class="table-shell">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-key="overall_rank">Rank</th>
+              <th data-key="name">Player</th>
+              <th data-key="position">Pos</th>
+              <th class="num" data-key="points">Pts</th>
+              <th class="num" data-key="vor">VOR</th>
+              <th class="num" data-key="tier">Tier</th>
+              <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState" hidden>No players match that search.</div>
+    </div>
+  </section>
+
+  <section id="section-mockdraft" class="app-section" hidden>
+    <div id="mockDraftSetup">
+      <p class="section-intro">Bot opponents draft by need + VOR in snake order, using the same 2026 Projections as the Rankings tab. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
+      <label class="field-label" for="mockSlotInput">Your draft slot (1–<span id="mockNumTeams"></span>)</label>
+      <div class="mock-setup-row">
+        <input type="number" id="mockSlotInput" min="1" value="1" />
+        <button class="btn-primary" id="mockStartBtn">Start Mock Draft</button>
+      </div>
+    </div>
+    <div id="mockDraftBoard" hidden>
+      <div class="mock-status-row">
+        <div id="mockOnClock" class="mock-on-clock"></div>
+        <button class="btn-secondary" id="mockResetBtn">Reset Mock Draft</button>
+      </div>
+      <div id="mockPickPanel"></div>
+      <div class="mock-columns">
+        <div>
+          <h3 class="subhead">Draft Log</h3>
+          <div class="table-shell"><div class="table-scroll"><table id="mockLogTable"><thead><tr><th>Pick</th><th>Rd</th><th>Team</th><th>Player</th><th>Pos</th><th class="num">VOR</th></tr></thead><tbody id="mockLogBody"></tbody></table></div></div>
+        </div>
+        <div>
+          <h3 class="subhead">Team Power Rankings</h3>
+          <div class="table-shell"><div class="table-scroll"><table id="mockTeamsTable"><thead><tr><th>Team</th><th class="num">Total VOR</th><th class="num">Players</th></tr></thead><tbody id="mockTeamsBody"></tbody></table></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-trade" class="app-section" hidden>
+    <p class="section-intro">Pick players for each side of a trade to compare net VOR swing under current league scoring. Uses the 2026 Projections values.</p>
+    <div class="trade-columns">
+      <div class="trade-side">
+        <h3 class="subhead">Side A gives up</h3>
+        <input type="text" class="trade-search" id="tradeSearchA" placeholder="Search players to add…" />
+        <div class="trade-picklist" id="tradePicklistA"></div>
+        <div class="trade-selected" id="tradeSelectedA"></div>
+      </div>
+      <div class="trade-side">
+        <h3 class="subhead">Side B gives up</h3>
+        <input type="text" class="trade-search" id="tradeSearchB" placeholder="Search players to add…" />
+        <div class="trade-picklist" id="tradePicklistB"></div>
+        <div class="trade-selected" id="tradeSelectedB"></div>
+      </div>
+    </div>
+    <div class="trade-result" id="tradeResult"></div>
+  </section>
+
+  <section id="section-stacks" class="app-section" hidden>
+    <p class="section-intro">Which real NFL teams have the most combined value across their best players — a strong offense tends to make several of its own players valuable at once, so these are good targets for drafting more than one player from the same team.</p>
+    <nav class="stack-tabs" id="stackTabs"></nav>
+    <div id="stackOverallControls">
+      <label class="field-label" for="stackTopN">Players per team to count</label>
+      <input type="range" id="stackTopN" min="2" max="6" value="4" />
+      <span id="stackTopNValue"></span>
+    </div>
+    <div class="table-shell"><div class="table-scroll"><table id="stackTable"><thead id="stackTableHead"></thead><tbody id="stackTableBody"></tbody></table></div></div>
+  </section>
 
   <footer>
-    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). In the Trend column, the solid line is actual results (2020–2025); the dashed segment and hollow dot are the 2026 projection, not an observed result. This is a static snapshot — open the live app for real-time draft tracking, mock drafts, and a trade calculator.
+    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). In the Trend column, the solid line is actual results (2020–2025); the dashed segment and hollow dot are the 2026 projection, not an observed result. Mock Draft, Trade Calculator, and Stack Rankings all run entirely in your browser from the 2026 Projections dataset — nothing is sent anywhere. This is a static snapshot; open the live app for real-time draft tracking against your actual draft.
   </footer>
 </div>
 
 <script>
   const DATA_BY_VIEW = __BOARD_DATA_BY_YEAR_JSON__;
+  const LEAGUE_META = DATA_BY_VIEW.meta;
   const GEN_DATE = "__GEN_DATE__";
   const VIEWS = [
     { key: "2026", label: "2026 Projections", primary: true },
@@ -604,6 +854,411 @@
   // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
   const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier' };
   document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
+
+  // ===========================================================================
+  // Shared VOR / tiers logic -- ported from optimizer/vor.py and optimizer/tiers.py
+  // so Mock Draft can recompute value live from whatever's left in the pool,
+  // exactly like the live app does.
+  // ===========================================================================
+  function computeVOR(players, numTeams, rosterSlots) {
+    const byPosition = {};
+    for (const p of players) (byPosition[p.position] = byPosition[p.position] || []).push(p);
+    const baselines = {};
+    for (const pos in byPosition) {
+      const pool = [...byPosition[pos]].sort((a, b) => b.points - a.points);
+      const starters = rosterSlots[pos] || 0;
+      const rank = numTeams * starters;
+      if (rank <= 0 || pool.length === 0) baselines[pos] = 0;
+      else if (rank > pool.length) baselines[pos] = pool[pool.length - 1].points;
+      else baselines[pos] = pool[rank - 1].points;
+    }
+    const withVor = players.map(p => ({ ...p, vor: p.points - (baselines[p.position] ?? 0) }));
+    withVor.sort((a, b) => b.vor - a.vor);
+    return withVor;
+  }
+
+  function assignTiers(players, gapThresholdStdevs) {
+    const byPosition = {};
+    for (const p of players) (byPosition[p.position] = byPosition[p.position] || []).push(p);
+    const tierMap = new Map();
+    for (const pos in byPosition) {
+      const ordered = [...byPosition[pos]].sort((a, b) => b.vor - a.vor);
+      const vors = ordered.map(p => p.vor);
+      let tiers;
+      if (vors.length <= 1) {
+        tiers = vors.map(() => 1);
+      } else {
+        const gaps = [];
+        for (let i = 0; i < vors.length - 1; i++) gaps.push(vors[i] - vors[i + 1]);
+        const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+        const variance = gaps.reduce((a, b) => a + (b - mean) * (b - mean), 0) / gaps.length;
+        const threshold = mean + gapThresholdStdevs * Math.sqrt(variance);
+        tiers = [1];
+        let cur = 1;
+        for (const g of gaps) { if (g > threshold) cur += 1; tiers.push(cur); }
+      }
+      ordered.forEach((p, i) => tierMap.set(p, tiers[i]));
+    }
+    return players.map(p => ({ ...p, tier: tierMap.get(p) }));
+  }
+
+  // ===========================================================================
+  // Section switcher: Rankings / Mock Draft / Trade Calculator / Stack Rankings
+  // ===========================================================================
+  const SECTIONS = [
+    { key: 'rankings', label: 'Rankings' },
+    { key: 'mockdraft', label: 'Mock Draft' },
+    { key: 'trade', label: 'Trade Calculator' },
+    { key: 'stacks', label: 'Stack Rankings' },
+  ];
+  let activeSection = 'rankings';
+
+  function renderSectionTabs() {
+    const wrap = document.getElementById('sectionTabs');
+    wrap.innerHTML = '';
+    for (const s of SECTIONS) {
+      const btn = document.createElement('button');
+      btn.className = 'section-tab' + (s.key === activeSection ? ' active' : '');
+      btn.textContent = s.label;
+      btn.addEventListener('click', () => {
+        activeSection = s.key;
+        renderSectionTabs();
+        for (const sec of SECTIONS) {
+          document.getElementById(`section-${sec.key}`).hidden = sec.key !== activeSection;
+        }
+      });
+      wrap.appendChild(btn);
+    }
+  }
+
+  // ===========================================================================
+  // Mock Draft -- ported from optimizer/mock_draft.py. Bots draft the best-VOR
+  // player at a position they still need a starter for, falling back to best
+  // available once starters are full. Fully separate from the Rankings tab.
+  // ===========================================================================
+  let mockDraft = null;
+
+  function buildSnakeOrder(numTeams, totalRounds) {
+    const order = [];
+    for (let rnd = 0; rnd < totalRounds; rnd++) {
+      const roundOrder = [];
+      for (let i = 0; i < numTeams; i++) roundOrder.push(i);
+      if (rnd % 2 === 1) roundOrder.reverse();
+      order.push(...roundOrder);
+    }
+    return order;
+  }
+
+  function totalRoundsFor(rosterSlots) {
+    return Object.values(rosterSlots).reduce((a, b) => a + b, 0);
+  }
+
+  function pickForBot(availableRanked, teamPositions, rosterSlots) {
+    const counts = {};
+    for (const pos of teamPositions) counts[pos] = (counts[pos] || 0) + 1;
+    const starterPositions = Object.keys(rosterSlots).filter(
+      pos => pos !== 'BN' && (counts[pos] || 0) < rosterSlots[pos]
+    );
+    if (starterPositions.length > 0) {
+      const eligible = availableRanked.filter(p => starterPositions.includes(p.position));
+      if (eligible.length > 0) return eligible[0];
+    }
+    return availableRanked[0];
+  }
+
+  function getMockAvailable() {
+    const base = DATA_BY_VIEW['2026'];
+    return base.filter(p => !mockDraft.draftedNames.has(p.name));
+  }
+
+  function recordMockPick(pick, teamLabel) {
+    const numTeams = LEAGUE_META.num_teams;
+    mockDraft.picksLog.push({
+      pick: mockDraft.picksLog.length + 1,
+      round: Math.floor(mockDraft.pickIdx / numTeams) + 1,
+      team: teamLabel,
+      name: pick.name,
+      position: pick.position,
+      vor: pick.vor,
+    });
+    mockDraft.rosters[teamLabel].push(pick.position);
+    mockDraft.draftedNames.add(pick.name);
+    mockDraft.pickIdx += 1;
+  }
+
+  function startMockDraft() {
+    const yourSlot = parseInt(document.getElementById('mockSlotInput').value, 10) || 1;
+    const numTeams = LEAGUE_META.num_teams;
+    const rosterSlots = LEAGUE_META.roster_slots;
+    const order = buildSnakeOrder(numTeams, totalRoundsFor(rosterSlots));
+    const teamLabels = [];
+    for (let i = 0; i < numTeams; i++) teamLabels.push((i + 1) === yourSlot ? 'Me' : `Team ${i + 1}`);
+
+    mockDraft = {
+      teamLabels,
+      order,
+      pickIdx: 0,
+      rosters: Object.fromEntries(teamLabels.map(l => [l, []])),
+      picksLog: [],
+      draftedNames: new Set(),
+    };
+
+    document.getElementById('mockDraftSetup').hidden = true;
+    document.getElementById('mockDraftBoard').hidden = false;
+    runMockDraftStep();
+  }
+
+  function resetMockDraft() {
+    mockDraft = null;
+    document.getElementById('mockDraftSetup').hidden = false;
+    document.getElementById('mockDraftBoard').hidden = true;
+  }
+
+  function runMockDraftStep() {
+    const numTeams = LEAGUE_META.num_teams;
+    const rosterSlots = LEAGUE_META.roster_slots;
+    while (mockDraft.pickIdx < mockDraft.order.length) {
+      const teamLabel = mockDraft.teamLabels[mockDraft.order[mockDraft.pickIdx]];
+      if (teamLabel === 'Me') break;
+      const available = getMockAvailable();
+      if (available.length === 0) break;
+      const ranked = computeVOR(available, numTeams, rosterSlots);
+      const pick = pickForBot(ranked, mockDraft.rosters[teamLabel], rosterSlots);
+      recordMockPick(pick, teamLabel);
+    }
+    renderMockDraft();
+  }
+
+  function renderMockDraft() {
+    const numTeams = LEAGUE_META.num_teams;
+    const rosterSlots = LEAGUE_META.roster_slots;
+    const onClockEl = document.getElementById('mockOnClock');
+    const pickPanel = document.getElementById('mockPickPanel');
+
+    if (mockDraft.pickIdx >= mockDraft.order.length) {
+      onClockEl.innerHTML = 'Mock draft complete — see results below.';
+      pickPanel.innerHTML = '';
+    } else {
+      const teamLabel = mockDraft.teamLabels[mockDraft.order[mockDraft.pickIdx]];
+      const round = Math.floor(mockDraft.pickIdx / numTeams) + 1;
+      onClockEl.innerHTML = `Round ${round}, Pick ${mockDraft.pickIdx + 1} — <span class="clock-team">${teamLabel}</span> on the clock`;
+
+      if (teamLabel === 'Me') {
+        const available = getMockAvailable();
+        const ranked = computeVOR(available, numTeams, rosterSlots);
+        const withTiers = assignTiers(ranked, LEAGUE_META.gap_threshold_stdevs);
+        const top = withTiers.slice(0, 30);
+        const options = top.map(p =>
+          `<option value="${p.name}">${p.name} (${p.position}, ${p.team}) — VOR ${p.vor.toFixed(1)}, Tier ${p.tier}</option>`
+        ).join('');
+        pickPanel.innerHTML = `
+          <div class="mock-pick-card">
+            <label class="field-label" for="mockPickSelect">Your pick — top 30 available</label>
+            <select id="mockPickSelect">${options}</select>
+            <div style="margin-top:10px;"><button class="btn-primary" id="mockDraftBtn">Draft This Player</button></div>
+          </div>`;
+        document.getElementById('mockDraftBtn').addEventListener('click', () => {
+          const name = document.getElementById('mockPickSelect').value;
+          const pick = withTiers.find(p => p.name === name);
+          recordMockPick(pick, 'Me');
+          runMockDraftStep();
+        });
+      } else {
+        pickPanel.innerHTML = '';
+      }
+    }
+
+    const logBody = document.getElementById('mockLogBody');
+    logBody.innerHTML = mockDraft.picksLog.map(r =>
+      `<tr><td>${r.pick}</td><td>${r.round}</td><td>${r.team}</td><td>${r.name}</td><td>${r.position}</td><td class="num">${r.vor.toFixed(1)}</td></tr>`
+    ).join('');
+
+    const totals = {};
+    for (const r of mockDraft.picksLog) {
+      totals[r.team] = totals[r.team] || { vor: 0, count: 0 };
+      totals[r.team].vor += r.vor;
+      totals[r.team].count += 1;
+    }
+    const rows = Object.entries(totals).sort((a, b) => b[1].vor - a[1].vor);
+    document.getElementById('mockTeamsBody').innerHTML = rows.map(([team, t]) =>
+      `<tr><td>${team}</td><td class="num">${t.vor.toFixed(1)}</td><td class="num">${t.count}</td></tr>`
+    ).join('');
+  }
+
+  function initMockDraft() {
+    document.getElementById('mockNumTeams').textContent = LEAGUE_META.num_teams;
+    document.getElementById('mockSlotInput').max = LEAGUE_META.num_teams;
+    document.getElementById('mockStartBtn').addEventListener('click', startMockDraft);
+    document.getElementById('mockResetBtn').addEventListener('click', resetMockDraft);
+  }
+
+  // ===========================================================================
+  // Trade Calculator -- ported from optimizer/value_tools.evaluate_trade
+  // ===========================================================================
+  function initTradeCalculator() {
+    const pool = DATA_BY_VIEW['2026'];
+    const state = { A: [], B: [] };
+
+    function renderPicklist(side) {
+      const q = document.getElementById(`tradeSearch${side}`).value.trim().toLowerCase();
+      const listEl = document.getElementById(`tradePicklist${side}`);
+      if (!q) { listEl.innerHTML = ''; listEl.style.display = 'none'; return; }
+      listEl.style.display = 'block';
+      const matches = pool.filter(p => p.name.toLowerCase().includes(q) && !state[side].includes(p.name)).slice(0, 8);
+      listEl.innerHTML = matches.map(p =>
+        `<div class="trade-picklist-item" data-name="${p.name}"><span>${p.name} (${p.position}, ${p.team})</span><span class="vor-val">${p.vor.toFixed(1)}</span></div>`
+      ).join('');
+      listEl.querySelectorAll('.trade-picklist-item').forEach(el => {
+        el.addEventListener('click', () => {
+          state[side].push(el.dataset.name);
+          document.getElementById(`tradeSearch${side}`).value = '';
+          renderPicklist(side);
+          renderSelected(side);
+          renderTradeResult();
+        });
+      });
+    }
+
+    function renderSelected(side) {
+      const el = document.getElementById(`tradeSelected${side}`);
+      el.innerHTML = state[side].map(name =>
+        `<span class="trade-chip">${name} <button data-name="${name}" data-side="${side}">×</button></span>`
+      ).join('');
+      el.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const s = btn.dataset.side;
+          state[s] = state[s].filter(n => n !== btn.dataset.name);
+          renderSelected(s);
+          renderTradeResult();
+        });
+      });
+    }
+
+    function renderTradeResult() {
+      const resultEl = document.getElementById('tradeResult');
+      if (state.A.length === 0 && state.B.length === 0) {
+        resultEl.innerHTML = '<span class="section-intro" style="margin:0;">Pick at least one player on either side to evaluate.</span>';
+        return;
+      }
+      const vorA = state.A.reduce((sum, name) => sum + (pool.find(p => p.name === name)?.vor || 0), 0);
+      const vorB = state.B.reduce((sum, name) => sum + (pool.find(p => p.name === name)?.vor || 0), 0);
+      const netForA = vorB - vorA;
+      let verdict = 'Even trade';
+      if (Math.abs(netForA) >= 1e-6) verdict = netForA > 0 ? 'Favors Side A' : 'Favors Side B';
+      resultEl.innerHTML = `
+        <div class="trade-result-row">
+          <div class="trade-result-stat"><div class="value">${vorA.toFixed(1)}</div><div class="label">Side A VOR Given Up</div></div>
+          <div class="trade-result-stat"><div class="value">${vorB.toFixed(1)}</div><div class="label">Side B VOR Given Up</div></div>
+          <div class="trade-result-stat"><div class="value trade-verdict">${verdict}</div><div class="label">Verdict</div></div>
+        </div>
+        <div class="section-intro" style="margin:0;">Net VOR swing — Side A: ${netForA >= 0 ? '+' : ''}${netForA.toFixed(1)} · Side B: ${(-netForA) >= 0 ? '+' : ''}${(-netForA).toFixed(1)} (positive means that side comes out ahead)</div>
+      `;
+    }
+
+    document.getElementById('tradeSearchA').addEventListener('input', () => renderPicklist('A'));
+    document.getElementById('tradeSearchB').addEventListener('input', () => renderPicklist('B'));
+    renderTradeResult();
+  }
+
+  // ===========================================================================
+  // Stack Rankings -- ported from optimizer/value_tools.team_stack_summary
+  // and stack_combo_summary
+  // ===========================================================================
+  function teamStackSummary(players, topN) {
+    const byTeam = {};
+    for (const p of players) { if (p.team) (byTeam[p.team] = byTeam[p.team] || []).push(p); }
+    const rows = [];
+    for (const team in byTeam) {
+      const top = [...byTeam[team]].sort((a, b) => b.vor - a.vor).slice(0, topN);
+      rows.push({
+        team,
+        stack_vor: top.reduce((s, p) => s + p.vor, 0),
+        player_count: top.length,
+        players: top.map(p => `${p.name} (${p.position})`).join(', '),
+      });
+    }
+    rows.sort((a, b) => b.stack_vor - a.stack_vor);
+    return rows;
+  }
+
+  function stackComboSummary(players, posA, posB) {
+    const byTeam = {};
+    for (const p of players) { if (p.team) (byTeam[p.team] = byTeam[p.team] || []).push(p); }
+    const rows = [];
+    for (const team in byTeam) {
+      const group = byTeam[team];
+      let first, second;
+      if (posA === posB) {
+        const candidates = group.filter(p => p.position === posA).sort((a, b) => b.vor - a.vor);
+        if (candidates.length < 2) continue;
+        [first, second] = candidates;
+      } else {
+        const aCandidates = group.filter(p => p.position === posA).sort((a, b) => b.vor - a.vor);
+        const bCandidates = group.filter(p => p.position === posB).sort((a, b) => b.vor - a.vor);
+        if (aCandidates.length === 0 || bCandidates.length === 0) continue;
+        [first, second] = [aCandidates[0], bCandidates[0]];
+      }
+      rows.push({ team, combo_vor: first.vor + second.vor, player_1: `${first.name} (${first.position})`, player_2: `${second.name} (${second.position})` });
+    }
+    rows.sort((a, b) => b.combo_vor - a.combo_vor);
+    return rows;
+  }
+
+  const STACK_VIEWS = [
+    { key: 'overall', label: 'Overall' },
+    { key: 'QB_WR', label: 'QB + WR', a: 'QB', b: 'WR' },
+    { key: 'QB_TE', label: 'QB + TE', a: 'QB', b: 'TE' },
+    { key: 'RB_WR', label: 'RB + WR', a: 'RB', b: 'WR' },
+    { key: 'WR_WR', label: 'WR + WR', a: 'WR', b: 'WR' },
+  ];
+  let activeStackView = 'overall';
+
+  function renderStackTabs() {
+    const wrap = document.getElementById('stackTabs');
+    wrap.innerHTML = '';
+    for (const v of STACK_VIEWS) {
+      const btn = document.createElement('button');
+      btn.className = 'pill pill-sm' + (v.key === activeStackView ? ' active' : '');
+      btn.textContent = v.label;
+      btn.addEventListener('click', () => { activeStackView = v.key; renderStackTabs(); renderStackTable(); });
+      wrap.appendChild(btn);
+    }
+  }
+
+  function renderStackTable() {
+    const pool = DATA_BY_VIEW['2026'];
+    const head = document.getElementById('stackTableHead');
+    const body = document.getElementById('stackTableBody');
+    const overallControls = document.getElementById('stackOverallControls');
+
+    if (activeStackView === 'overall') {
+      overallControls.style.display = 'flex';
+      const topN = parseInt(document.getElementById('stackTopN').value, 10);
+      document.getElementById('stackTopNValue').textContent = topN;
+      const rows = teamStackSummary(pool, topN);
+      head.innerHTML = '<tr><th>Team</th><th class="num">Combined VOR</th><th class="num">Players Counted</th><th>Top Players</th></tr>';
+      body.innerHTML = rows.map(r => `<tr><td>${r.team}</td><td class="num">${r.stack_vor.toFixed(1)}</td><td class="num">${r.player_count}</td><td>${r.players}</td></tr>`).join('');
+    } else {
+      overallControls.style.display = 'none';
+      const spec = STACK_VIEWS.find(v => v.key === activeStackView);
+      const rows = stackComboSummary(pool, spec.a, spec.b);
+      head.innerHTML = '<tr><th>Team</th><th class="num">Combined VOR</th><th>Player 1</th><th>Player 2</th></tr>';
+      body.innerHTML = rows.length
+        ? rows.map(r => `<tr><td>${r.team}</td><td class="num">${r.combo_vor.toFixed(1)}</td><td>${r.player_1}</td><td>${r.player_2}</td></tr>`).join('')
+        : '<tr><td colspan="4" class="trend-empty">No teams have players at both positions in the current pool.</td></tr>';
+    }
+  }
+
+  function initStackRankings() {
+    renderStackTabs();
+    document.getElementById('stackTopN').addEventListener('input', renderStackTable);
+    renderStackTable();
+  }
+
+  renderSectionTabs();
+  initMockDraft();
+  initTradeCalculator();
+  initStackRankings();
 
   renderViewPills();
   updateSubtitle();

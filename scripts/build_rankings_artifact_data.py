@@ -71,7 +71,14 @@ def build_data_bundle(cfg: dict) -> dict:
         history.append({"year": 2026, "vor": row["vor"], "projected": True})
         row["history"] = history
 
-    bundle = {"2026": projection_rows}
+    bundle = {
+        "meta": {
+            "num_teams": cfg["league"]["num_teams"],
+            "roster_slots": cfg["roster"]["slots"],
+            "gap_threshold_stdevs": cfg["tiering"]["gap_threshold_stdevs"],
+        },
+        "2026": projection_rows,
+    }
     for year, board in year_boards.items():
         bundle[str(year)] = to_rows(board)
     return bundle
@@ -91,6 +98,8 @@ def main() -> None:
 
     print(f"Wrote {out_path}")
     for key, rows in bundle.items():
+        if key == "meta":
+            continue
         print(f"  {key}: {len(rows)} rows")
     with_history = sum(1 for r in bundle["2026"] if r["history"])
     print(f"  2026 rows with >=1 year of history: {with_history}/{len(bundle['2026'])}")
