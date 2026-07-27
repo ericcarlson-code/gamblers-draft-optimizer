@@ -37,6 +37,12 @@
     --line: #D8DBD1;
     --shadow: 0 1px 2px rgba(27,36,32,0.06), 0 8px 24px rgba(27,36,32,0.05);
     --radius: 10px;
+    /* Position-identity accents for player cards/draft board -- companion
+       earthy tones (clay, teal, slate) alongside the existing green/amber
+       so all 6 positions read as distinct at a glance, not a rebrand. */
+    --pos-rb: #9C5A34;
+    --pos-wr: #2E6E86;
+    --pos-def: #52607A;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -51,18 +57,30 @@
       --danger: #E0716B;
       --line: #29322A;
       --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+      --pos-rb: #C97E4F;
+      --pos-wr: #4FA0BA;
+      --pos-def: #7E8FB0;
     }
   }
   :root[data-theme="dark"] {
     --bg: #10140F; --surface: #171D15; --surface-2: #1D241A; --ink: #E8EBE3;
     --ink-muted: #93A38F; --accent: #5FBE72; --accent-ink: #0C170D; --accent-2: #E3A94A; --danger: #E0716B;
     --line: #29322A; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    --pos-rb: #C97E4F; --pos-wr: #4FA0BA; --pos-def: #7E8FB0;
   }
   :root[data-theme="light"] {
     --bg: #F1F2ED; --surface: #FFFFFF; --surface-2: #E7E9E0; --ink: #1B2420;
     --ink-muted: #5B655C; --accent: #2F6E3B; --accent-ink: #F5FBF3; --accent-2: #B87A1F; --danger: #B23B3B;
     --line: #D8DBD1; --shadow: 0 1px 2px rgba(27,36,32,0.06), 0 8px 24px rgba(27,36,32,0.05);
+    --pos-rb: #9C5A34; --pos-wr: #2E6E86; --pos-def: #52607A;
   }
+  /* Position-accent identity, shared by .player-card and .draft-board-cell */
+  .pos-QB  { --pos-accent: var(--accent-2); }
+  .pos-RB  { --pos-accent: var(--pos-rb); }
+  .pos-WR  { --pos-accent: var(--pos-wr); }
+  .pos-TE  { --pos-accent: var(--accent); }
+  .pos-K   { --pos-accent: var(--ink-muted); }
+  .pos-DEF { --pos-accent: var(--pos-def); }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -434,6 +452,19 @@
   .stack-callout-item { margin-top: 6px; }
   .stack-callout-item:first-of-type { margin-top: 8px; }
   .stack-callout .stack-reason { display: inline-block; margin: 2px 0 0 4px; max-width: none; }
+
+  #stacksTeamGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .stacks-team-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+  }
+  .stacks-team-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .stacks-team-logo { width: 26px; height: 26px; object-fit: contain; }
+  .stacks-team-name { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.02em; }
+  .stacks-team-card .stack-reason { display: inline-block; margin: 2px 0 0 4px; max-width: none; }
   .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
   #mockSlotInput {
@@ -454,8 +485,162 @@
     letter-spacing: 0.01em;
   }
   .mock-on-clock .clock-team { color: var(--accent); }
+  .mock-on-clock .mock-overall-pick { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--ink-muted); }
   .mock-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 22px; }
   @media (max-width: 780px) { .mock-columns { grid-template-columns: 1fr; } }
+
+  /* Persistent draft-board grid: teams as columns, rounds as rows, filling
+     in live as picks happen -- the signature Mock Draft element. */
+  .draft-board-wrap { margin-bottom: 18px; }
+  .draft-board-toolbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+  .draft-board-wrap.expanded {
+    position: fixed;
+    inset: 16px;
+    z-index: 50;
+    margin-bottom: 0;
+    background: var(--bg);
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    display: flex;
+    flex-direction: column;
+  }
+  .draft-board-wrap.expanded .draft-board-scroll { max-height: none; flex: 1; }
+  .draft-board-scroll {
+    overflow: auto;
+    max-height: 440px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .draft-board-grid {
+    display: grid;
+    grid-template-columns: 38px repeat(var(--board-cols, 10), minmax(92px, 1fr));
+    gap: 1px;
+    background: var(--line);
+  }
+  .draft-board-header-cell {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface-2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 8px 5px;
+    text-align: center;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .draft-board-header-cell.draft-board-me { color: var(--accent); }
+  .draft-board-header-cell[data-team] { cursor: pointer; }
+  .draft-board-header-cell[data-team]:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
+  .draft-board-grid > .draft-board-header-cell:first-child { position: sticky; left: 0; z-index: 3; }
+  .draft-board-round-cell {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface-2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .draft-board-cell {
+    background: var(--surface);
+    min-height: 52px;
+    padding: 4px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    text-align: center;
+    border-top: 2px solid transparent;
+  }
+  .draft-board-cell.filled { border-top-color: var(--pos-accent); }
+  .draft-board-cell.filled:hover { background: var(--surface-2); }
+  .draft-board-cell.empty { color: var(--ink-muted); }
+  .draft-board-cell.on-clock { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .draft-board-onclock-dot { color: var(--accent); font-size: 16px; line-height: 1; animation: onClockPulse 1.4s ease-in-out infinite; }
+  .draft-board-avatar { width: 24px; height: 24px; margin: 0; }
+  .draft-board-name { font-size: 10.5px; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .draft-board-cell.just-picked { animation: justPicked 1.3s ease-out; }
+  @keyframes onClockPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes justPicked {
+    from { background: color-mix(in srgb, var(--pos-accent, var(--accent)) 45%, var(--surface)); }
+    to { background: var(--surface); }
+  }
+
+  /* Richer player card grid, replacing the old dense available-players table */
+  .mock-pool-controls { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; flex-wrap: wrap; }
+  .mock-pool-controls .trade-search { margin-bottom: 0; max-width: 220px; flex: 1; min-width: 140px; }
+  .player-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .player-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--pos-accent, var(--line));
+    border-radius: var(--radius);
+    padding: 12px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .player-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(27,36,32,0.10), 0 14px 28px rgba(27,36,32,0.08);
+  }
+  .player-card.has-stack { box-shadow: var(--shadow), inset 0 0 0 1.5px color-mix(in srgb, var(--accent-2) 50%, transparent); }
+  .player-card.ineligible { opacity: 0.55; filter: grayscale(0.6); }
+  .player-card.ineligible:hover { transform: none; box-shadow: var(--shadow); }
+  .player-card-noroom { font-size: 11px; color: var(--danger); text-align: center; margin-bottom: 6px; }
+  .player-card-top { display: flex; align-items: flex-start; gap: 8px; }
+  .player-card-avatar { width: 40px; height: 40px; margin: 0; flex-shrink: 0; }
+  .player-card-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .player-card-id .player-name { font-weight: 700; }
+  .player-card-meta { font-size: 11.5px; }
+  .player-card-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+  .player-card-stat { background: var(--surface); padding: 6px 4px; text-align: center; }
+  .player-card-stat .stat-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .player-card-stat .stat-value { display: block; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; font-weight: 700; margin-top: 1px; }
+  .player-card .pos-chip {
+    background: color-mix(in srgb, var(--pos-accent, var(--ink-muted)) 20%, var(--surface-2));
+    color: var(--pos-accent, var(--ink-muted));
+    border-color: color-mix(in srgb, var(--pos-accent, var(--ink-muted)) 40%, var(--line));
+    flex-shrink: 0;
+  }
+  .player-card-stack { margin-bottom: 10px; }
+  .player-card-draft { margin-top: auto; width: 100%; }
 
   .roster-slot-grid {
     display: grid;
@@ -669,6 +854,11 @@
     background: var(--surface);
     padding: 14px 16px;
     box-shadow: var(--shadow);
+    /* Without this, the nested roster table's global `min-width: 620px`
+       forces each 1fr grid column past its share of the page, blowing the
+       whole grid out past .wrap's max-width and making it read as pushed
+       right relative to the Team Power Rankings table above it. */
+    min-width: 0;
   }
   .team-name-input {
     all: unset;
@@ -865,6 +1055,7 @@
   .cell-muted { color: var(--ink-muted); }
   .value-positive { color: var(--accent); font-weight: 600; }
   .value-negative { color: var(--danger); font-weight: 600; }
+  .flock-flag { color: var(--danger); margin-left: 4px; cursor: help; font-size: 12px; }
 
   .pos-chip {
     display: inline-block;
@@ -976,7 +1167,7 @@
       </div>
     </div>
 
-    <div class="table-shell">
+    <div class="table-shell" id="rankingsTableShell">
       <div class="table-scroll">
         <table>
           <thead>
@@ -992,6 +1183,7 @@
               <th class="num" data-key="proj_rush_rec_td" title="Projected rushing + receiving touchdowns (defense/special-teams TDs bucketed in here too).">Rush/Rec TD</th>
               <th class="num" data-key="adp" title="Consensus 2-QB-format Average Draft Position from Fantasy Football Calculator -- real ADP, historical where available (2020-2024), live for 2026. Not shown for 2025 (no historical data source for that season).">ADP</th>
               <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
+              <th class="num" data-key="flock_overall_rank" title="Flock Fantasy's consensus overall rank -- standard 2026 PPR scoring, NOT this league's custom rules. A reference/cross-check only, never blended into our own VOR or rankings. A flagged (⚠) row means our rank differs from Flock's by 35+ spots -- often a sign of a real data bug worth checking, not just a legitimate scoring difference.">Flock</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
           </thead>
@@ -999,6 +1191,7 @@
         </table>
       </div>
       <div class="empty-state" id="emptyState" hidden>No players match that search.</div>
+      <div class="empty-state" id="thisWeekComingSoon" hidden>Real per-week projections aren't available yet -- that needs actual week-by-week game/matchup data this build doesn't have wired up (see League Details' note on the current flat-rate approximation). Rather than show a ranking that's mathematically identical to Rest of Season underneath the surface, this view is a placeholder until real per-week data lands.</div>
     </div>
   </section>
 
@@ -1015,6 +1208,14 @@
       <div class="mock-status-row">
         <div id="mockOnClock" class="mock-on-clock"></div>
         <button class="btn-secondary" id="mockResetBtn">Reset Mock Draft</button>
+      </div>
+      <div class="draft-board-wrap" id="mockDraftBoardWrap">
+        <div class="draft-board-toolbar">
+          <button class="btn-secondary btn-sm" id="mockBoardExpandBtn" title="Expand draft board to full screen">⛶ Expand</button>
+        </div>
+        <div class="draft-board-scroll">
+          <div id="mockDraftBoardGrid" class="draft-board-grid"></div>
+        </div>
       </div>
       <div class="mock-pick-card">
         <label class="field-label">My Roster</label>
@@ -1034,6 +1235,11 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <section id="section-stacks" class="app-section" hidden>
+    <p class="section-intro">Every real NFL team ranked by its best internal stack (QB+pass-catcher, RB+RB backfields, and other same-team combos) -- the same correlated-upside evaluation Mock Draft uses for pick recommendations, applied across the whole 2026 pool instead of just your current roster.</p>
+    <div id="stacksTeamGrid"></div>
   </section>
 
   <section id="section-trade" class="app-section" hidden>
@@ -1153,6 +1359,13 @@
   <div class="modal-box modal-box-wide">
     <button class="modal-close" id="playerModalClose" aria-label="Close">×</button>
     <div id="playerModalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="teamRosterModalOverlay" hidden>
+  <div class="modal-box">
+    <button class="modal-close" id="teamRosterModalClose" aria-label="Close">×</button>
+    <div id="teamRosterModalContent"></div>
   </div>
 </div>
 
@@ -1317,6 +1530,23 @@
     const cls = value > 0 ? 'value-positive' : value < 0 ? 'value-negative' : '';
     const sign = value > 0 ? '+' : '';
     return `<span class="${cls}">${sign}${value.toFixed(1)}</span>`;
+  }
+
+  // Flock Fantasy consensus reference (standard 2026 PPR -- NOT this
+  // league's custom scoring) -- display/sanity-check only, never read by
+  // compute_vor/assign_tiers on the Python side. The flag isn't "Flock is
+  // right and we're wrong" -- it's "these two disagree by enough that it's
+  // worth a human second look," since a real data bug (stale team, missing
+  // depth-chart signal) reads exactly like this divergence.
+  function flockCellHtml(player) {
+    if (player.flock_overall_rank == null) return '<span class="cell-muted">—</span>';
+    const detail = `Flock: #${player.flock_overall_rank} overall` +
+      (player.flock_pos_rank != null ? `, ${player.position}${player.flock_pos_rank}` : '') +
+      (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '');
+    const flagHtml = player.flock_diverges
+      ? `<span class="flock-flag" title="Our rank (#${player.overall_rank}) differs from Flock's (#${player.flock_overall_rank}) by ${Math.abs(player.overall_rank - player.flock_overall_rank)} spots -- worth reviewing, often a sign of a data bug rather than a legitimate scoring difference.">⚠</span>`
+      : '';
+    return `<span title="${detail}">#${player.flock_overall_rank}</span>${flagHtml}`;
   }
 
   let activeView = "2026";
@@ -1496,11 +1726,11 @@
   // the stat grid is built from a per-position field list rather than
   // dumping every canonical stat field for every player.
   const POSITION_STAT_FIELDS = {
-    QB: [['pass_yds', 'Pass Yds'], ['pass_td', 'Pass TD'], ['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['two_pt', '2-PT']],
-    RB: [['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['rec', 'Rec'], ['rec_yds', 'Rec Yds'], ['rec_td', 'Rec TD'], ['two_pt', '2-PT']],
-    WR: [['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['rec', 'Rec'], ['rec_yds', 'Rec Yds'], ['rec_td', 'Rec TD'], ['two_pt', '2-PT']],
-    TE: [['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['rec', 'Rec'], ['rec_yds', 'Rec Yds'], ['rec_td', 'Rec TD'], ['two_pt', '2-PT']],
-    K: [['fg_0_19', 'FG 0-19'], ['fg_20_29', 'FG 20-29'], ['fg_30_39', 'FG 30-39'], ['fg_40_49', 'FG 40-49'], ['fg_50_plus', 'FG 50+'], ['pat_made', 'PAT Made']],
+    QB: [['pass_att', 'Pass Att'], ['pass_cmp', 'Comp'], ['pass_yds', 'Pass Yds'], ['pass_td', 'Pass TD'], ['pass_int', 'INT'], ['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['two_pt', '2-PT']],
+    RB: [['carries', 'Carries'], ['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['targets', 'Targets'], ['rec', 'Rec'], ['rec_yds', 'Rec Yds'], ['rec_td', 'Rec TD'], ['two_pt', '2-PT']],
+    WR: [['targets', 'Targets'], ['rec', 'Rec'], ['rec_yds', 'Rec Yds'], ['rec_td', 'Rec TD'], ['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['two_pt', '2-PT']],
+    TE: [['targets', 'Targets'], ['rec', 'Rec'], ['rec_yds', 'Rec Yds'], ['rec_td', 'Rec TD'], ['rush_yds', 'Rush Yds'], ['rush_td', 'Rush TD'], ['two_pt', '2-PT']],
+    K: [['fg_0_19', 'FG 0-19'], ['fg_20_29', 'FG 20-29'], ['fg_30_39', 'FG 30-39'], ['fg_40_49', 'FG 40-49'], ['fg_50_plus', 'FG 50-59'], ['fg_60_plus', 'FG 60+'], ['pat_made', 'PAT Made']],
     DEF: [['def_td', 'Def TD'], ['def_safety', 'Safety'], ['def_return_td', 'Return TD'], ['def_points_allowed', 'Pts Allowed']],
   };
 
@@ -1743,9 +1973,24 @@
   }
 
   function renderTable() {
+    const tableShell = document.getElementById('rankingsTableShell');
+    const comingSoon = document.getElementById('thisWeekComingSoon');
+    const empty = document.getElementById('emptyState');
+    // "This Week" currently has no real per-week/matchup data behind it --
+    // it's a uniform per-player scalar, which cancels out of every relative
+    // VOR/rank comparison, so it would otherwise render an ordering that's
+    // silently identical to Rest of Season. Show an honest placeholder
+    // instead of that confusing near-duplicate.
+    const isThisWeek = activeView === '2026' && projectionMode === 'thisweek';
+    tableShell.hidden = isThisWeek;
+    comingSoon.hidden = !isThisWeek;
+    if (isThisWeek) {
+      empty.hidden = true;
+      return;
+    }
+
     const rows = sortedFiltered();
     const tbody = document.getElementById('tbody');
-    const empty = document.getElementById('emptyState');
     tbody.innerHTML = '';
     empty.hidden = rows.length !== 0;
     const maxVor = getMaxVor();
@@ -1770,6 +2015,7 @@
         <td class="num">${(d.proj_rush_rec_td ?? 0).toFixed(1)}</td>
         <td class="num">${adpHtml(d.adp)}</td>
         <td class="num">${valueVsAdpHtml(d.value_vs_adp)}</td>
+        <td class="num">${flockCellHtml(d)}</td>
         <td class="num trend-cell">${sparklineSvg(d.history, d.name)}</td>
       `;
       tbody.appendChild(tr);
@@ -1809,7 +2055,7 @@
   });
 
   // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
-  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_rec_td: 'Rush/Rec TD', adp: 'ADP', value_vs_adp: 'Value vs ADP' };
+  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_rec_td: 'Rush/Rec TD', adp: 'ADP', value_vs_adp: 'Value vs ADP', flock_overall_rank: 'Flock' };
   document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
 
   // ===========================================================================
@@ -1895,6 +2141,7 @@
   const SECTIONS = [
     { key: 'rankings', label: 'Rankings' },
     { key: 'mockdraft', label: 'Mock Draft' },
+    { key: 'stacks', label: 'Stacks' },
     { key: 'trade', label: 'Trade Calculator' },
     { key: 'historical', label: 'Historical Review' },
     { key: 'teamrosters', label: 'Team Rosters' },
@@ -1927,6 +2174,14 @@
   // available once starters are full. Fully separate from the Rankings tab.
   // ===========================================================================
   let mockDraft = null;
+  let mockSortKey = 'value'; // 'value' | 'adp' | 'position'
+  let mockQuery = '';
+  const MOCK_SORT_OPTIONS = [
+    { key: 'value', label: 'Value' },
+    { key: 'adp', label: 'ADP' },
+    { key: 'position', label: 'Position' },
+  ];
+  const MOCK_POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
 
   function buildSnakeOrder(numTeams, totalRounds) {
     const order = [];
@@ -2035,6 +2290,67 @@
       return { text: `${bestAlt.name} has ${gapPct.toFixed(0)}% higher VOR (${bestAlt.vor.toFixed(1)}) — reasonable value hit for the stack.`, tier: 'reasonable' };
     }
     return { text: `${bestAlt.name} has ${gapPct.toFixed(0)}% higher VOR (${bestAlt.vor.toFixed(1)}) — significant reach just for the stack.`, tier: 'reach' };
+  }
+
+  // ===========================================================================
+  // Stacks tab -- every real NFL team ranked by its best internal stack combo.
+  // Reuses the exact same STACK_PAIRS/isStackPair/HIGH_TD_DEPENDENCY_THRESHOLD
+  // machinery Mock Draft's live recommendations use, just applied across a
+  // whole team's roster instead of "does this candidate stack with MY roster."
+  // ===========================================================================
+  function computeTeamStacks() {
+    const pool = rescoreBoard(DATA_BY_VIEW['2026']);
+    const byTeam = {};
+    for (const p of pool) {
+      if (!p.team || p.position === 'DEF') continue;
+      (byTeam[p.team] = byTeam[p.team] || []).push(p);
+    }
+    const teams = Object.entries(byTeam).map(([team, players]) => {
+      const combos = [];
+      for (let i = 0; i < players.length; i++) {
+        for (let j = i + 1; j < players.length; j++) {
+          const a = players[i], b = players[j];
+          if (!isStackPair(a.position, b.position)) continue;
+          const highTd = (a.td_dependency_pct ?? 0) >= HIGH_TD_DEPENDENCY_THRESHOLD && (b.td_dependency_pct ?? 0) >= HIGH_TD_DEPENDENCY_THRESHOLD;
+          const injured = ['Out', 'IR', 'Doubtful'].includes(a.injuryStatus) || ['Out', 'IR', 'Doubtful'].includes(b.injuryStatus);
+          combos.push({ a, b, combinedVor: a.vor + b.vor, highTd, injured });
+        }
+      }
+      combos.sort((x, y) => y.combinedVor - x.combinedVor);
+      return { team, combos: combos.slice(0, 5) };
+    }).filter(t => t.combos.length > 0);
+    teams.sort((x, y) => y.combos[0].combinedVor - x.combos[0].combinedVor);
+    return teams;
+  }
+
+  function renderStacksTab() {
+    const wrap = document.getElementById('stacksTeamGrid');
+    if (!wrap) return;
+    const teams = computeTeamStacks();
+    wrap.innerHTML = teams.map(({ team, combos }) => {
+      const logo = TEAM_LOGOS[team];
+      const comboRows = combos.map(c => {
+        const injuredNames = [c.a, c.b].filter(p => ['Out', 'IR', 'Doubtful'].includes(p.injuryStatus)).map(p => p.name);
+        const reasonHtml = c.injured
+          ? `<span class="stack-reason reason-reach">${injuredNames.join(', ')} currently ${[c.a, c.b].find(p => ['Out', 'IR', 'Doubtful'].includes(p.injuryStatus)).injuryStatus} -- this stack isn't live right now.</span>`
+          : c.highTd
+          ? `<span class="stack-reason reason-clear">High TD-correlation: both share ${(c.a.td_dependency_pct ?? 0).toFixed(0)}%+/${(c.b.td_dependency_pct ?? 0).toFixed(0)}%+ of their points from TDs, not just a team.</span>`
+          : '';
+        return `
+          <div class="stack-callout-item">
+            <span class="stack-badge">${c.a.name} (${c.a.position}) + ${c.b.name} (${c.b.position}) — ${c.combinedVor.toFixed(1)} combined VOR</span>
+            ${reasonHtml}
+          </div>`;
+      }).join('');
+      return `
+        <div class="stacks-team-card">
+          <div class="stacks-team-header">
+            ${logo ? `<img src="${logo}" class="stacks-team-logo" alt="" />` : ''}
+            <span class="stacks-team-name">${team}</span>
+          </div>
+          ${comboRows}
+        </div>`;
+    }).join('');
   }
 
   // ===========================================================================
@@ -2195,6 +2511,55 @@
       : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
   }
 
+  // Same slot-fill rendering as My Roster, generalized to any team so an
+  // opponent's roster during a live mock draft is just as easy to check as
+  // your own -- opened by clicking a team's column header on the draft board.
+  function openTeamRosterModal(teamLabel) {
+    const rosterSlots = LEAGUE_META.roster_slots;
+    const { assignments, slotCounts } = computeSlotAssignments(mockDraft.rosters[teamLabel] || [], rosterSlots);
+    const slotGridHtml = Object.keys(rosterSlots).map(pos => {
+      const filled = slotCounts[pos] || 0;
+      const total = rosterSlots[pos];
+      const fullClass = filled >= total ? ' rs-full' : '';
+      return `<div class="roster-slot-cell${fullClass}"><span class="rs-pos">${pos}</span><span class="rs-count">${filled}/${total}</span></div>`;
+    }).join('');
+    const rowsHtml = assignments.length
+      ? assignments.map(a => `<tr><td>${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
+    document.getElementById('teamRosterModalContent').innerHTML = `
+      <h2 class="subhead">${teamLabel}${teamLabel === 'Me' ? ' (You)' : ''}</h2>
+      <div class="roster-slot-grid">${slotGridHtml}</div>
+      <div class="table-shell"><div class="table-scroll"><table><thead><tr><th>Player</th><th>Pos</th><th>Slot</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></div>
+    `;
+    document.getElementById('teamRosterModalOverlay').hidden = false;
+  }
+
+  function closeTeamRosterModal() {
+    document.getElementById('teamRosterModalOverlay').hidden = true;
+  }
+
+  function initTeamRosterModal() {
+    document.getElementById('teamRosterModalClose').addEventListener('click', closeTeamRosterModal);
+    document.getElementById('teamRosterModalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'teamRosterModalOverlay') closeTeamRosterModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeTeamRosterModal();
+    });
+    // Delegated once on the grid's stable container -- renderDraftBoardGrid()
+    // replaces the grid's innerHTML every pick, so a per-render listener
+    // would either never attach in time or pile up duplicates.
+    document.getElementById('mockDraftBoardGrid').addEventListener('click', (e) => {
+      const cell = e.target.closest('.draft-board-header-cell[data-team]');
+      if (cell) openTeamRosterModal(cell.dataset.team);
+    });
+    document.getElementById('mockDraftBoardGrid').addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const cell = e.target.closest('.draft-board-header-cell[data-team]');
+      if (cell) { e.preventDefault(); openTeamRosterModal(cell.dataset.team); }
+    });
+  }
+
   function getMockAvailable() {
     const base = attachInjuryStatus(DATA_BY_VIEW['2026']);
     return base.filter(p => !mockDraft.draftedNames.has(p.name));
@@ -2209,6 +2574,7 @@
       name: pick.name,
       position: pick.position,
       vor: pick.vor,
+      nflTeam: pick.team, // the player's real NFL team, for photo/logo fallback -- distinct from `team` above (the fantasy roster label)
     });
     mockDraft.rosters[teamLabel].push(pick);
     mockDraft.draftedNames.add(pick.name);
@@ -2259,12 +2625,61 @@
     renderMockDraft();
   }
 
+  // Teams as columns (fixed by original draft slot, not snake order --
+  // that's the standard convention: arrows alternate direction row to row,
+  // columns don't move), rounds as rows, filling in live as picks happen.
+  function renderDraftBoardGrid() {
+    const numTeams = LEAGUE_META.num_teams;
+    const rosterSlots = LEAGUE_META.roster_slots;
+    const totalRounds = totalRoundsFor(rosterSlots);
+    const teamLabels = mockDraft.teamLabels;
+    const grid = document.getElementById('mockDraftBoardGrid');
+    grid.style.setProperty('--board-cols', numTeams);
+
+    const byRoundTeam = {};
+    let lastEntry = null;
+    for (const entry of mockDraft.picksLog) {
+      const teamIndex = teamLabels.indexOf(entry.team);
+      byRoundTeam[`${entry.round}-${teamIndex}`] = entry;
+      lastEntry = entry;
+    }
+
+    const onClockRound = mockDraft.pickIdx < mockDraft.order.length
+      ? Math.floor(mockDraft.pickIdx / numTeams) + 1 : null;
+    const onClockTeamIndex = mockDraft.pickIdx < mockDraft.order.length
+      ? mockDraft.order[mockDraft.pickIdx] : null;
+
+    let html = `<div class="draft-board-header-cell">Rd</div>`;
+    teamLabels.forEach(label => {
+      html += `<div class="draft-board-header-cell${label === 'Me' ? ' draft-board-me' : ''}" data-team="${label}" title="View ${label}'s roster" role="button" tabindex="0">${label}</div>`;
+    });
+
+    for (let round = 1; round <= totalRounds; round++) {
+      html += `<div class="draft-board-round-cell">${round}</div>`;
+      for (let teamIndex = 0; teamIndex < numTeams; teamIndex++) {
+        const entry = byRoundTeam[`${round}-${teamIndex}`];
+        const isOnClock = round === onClockRound && teamIndex === onClockTeamIndex;
+        if (entry) {
+          const isJustPicked = lastEntry && entry === lastEntry;
+          html += `<div class="draft-board-cell filled pos-${entry.position}${isJustPicked ? ' just-picked' : ''}" title="${entry.name} (${entry.position}) -- Rd ${entry.round}, ${entry.team}">
+            ${playerImageHtml(entry.name, entry.nflTeam, 'draft-board-avatar')}
+            <span class="draft-board-name">${entry.name}</span>
+          </div>`;
+        } else {
+          html += `<div class="draft-board-cell empty${isOnClock ? ' on-clock' : ''}">${isOnClock ? '<span class="draft-board-onclock-dot">●</span>' : ''}</div>`;
+        }
+      }
+    }
+    grid.innerHTML = html;
+  }
+
   function renderMockDraft() {
     const numTeams = LEAGUE_META.num_teams;
     const rosterSlots = LEAGUE_META.roster_slots;
     const onClockEl = document.getElementById('mockOnClock');
     const pickPanel = document.getElementById('mockPickPanel');
 
+    renderDraftBoardGrid();
     renderMyRosterPanel();
 
     if (mockDraft.pickIdx >= mockDraft.order.length) {
@@ -2275,7 +2690,8 @@
       document.getElementById('mockGradeReport').innerHTML = '';
       const teamLabel = mockDraft.teamLabels[mockDraft.order[mockDraft.pickIdx]];
       const round = Math.floor(mockDraft.pickIdx / numTeams) + 1;
-      onClockEl.innerHTML = `Round ${round}, Pick ${mockDraft.pickIdx + 1} — <span class="clock-team">${teamLabel}</span> on the clock`;
+      const pickInRound = (mockDraft.pickIdx % numTeams) + 1;
+      onClockEl.innerHTML = `Round ${round}, Pick ${pickInRound} <span class="mock-overall-pick">(#${mockDraft.pickIdx + 1} overall)</span> — <span class="clock-team">${teamLabel}</span> on the clock`;
 
       if (teamLabel === 'Me') {
         const available = getMockAvailable();
@@ -2288,11 +2704,53 @@
         // would redefine what the number means mid-draft, which is more
         // confusing than useful.
         const withTiers = assignTiers(ranked, LEAGUE_META.gap_threshold_stdevs);
-        // Only recommend players who'd actually have a roster spot -- e.g. a
-        // 3rd/4th QB once every starter + bench slot that could hold one is
-        // already spoken for isn't a real option, so don't suggest it.
+        // Room-filtered pool: used for stack-opportunity suggestions and the
+        // post-draft grade snapshot, where recommending/crediting a player
+        // who has nowhere to actually go on the roster (e.g. a 3rd/4th QB
+        // once every starter + bench slot that could hold one is already
+        // spoken for) would be actively wrong, not just unhelpful.
         const eligible = withTiers.filter(p => wouldHaveRoom(p, mockDraft.rosters['Me'], rosterSlots));
-        const top = eligible.slice(0, 30);
+        const eligibleNames = new Set(eligible.map(p => p.name));
+        // Stack callout is a fixed recommendation, not a search result -- it
+        // should keep suggesting real opportunities regardless of whatever
+        // is currently typed in the pool's search box.
+        const eligibleTop = eligible.slice(0, 30);
+
+        // Card-grid display pool: respects the sort/search controls below.
+        const searchedPool = mockQuery.trim()
+          ? withTiers.filter(p => p.name.toLowerCase().includes(mockQuery.trim().toLowerCase()))
+          : withTiers;
+        const sortedPool = [...searchedPool].sort((a, b) => {
+          if (mockSortKey === 'adp') {
+            if (a.adp == null && b.adp == null) return 0;
+            if (a.adp == null) return 1;
+            if (b.adp == null) return -1;
+            return a.adp - b.adp;
+          }
+          if (mockSortKey === 'position') {
+            const ia = MOCK_POSITION_ORDER.indexOf(a.position), ib = MOCK_POSITION_ORDER.indexOf(b.position);
+            return ia !== ib ? ia - ib : b.vor - a.vor;
+          }
+          return b.vor - a.vor; // 'value' -- VOR desc, withTiers' own native order
+        });
+
+        // The card grid shows the top 30 of the sorted/searched pool
+        // regardless of roster room -- a thin single-BN-slot bench (this
+        // league's roster.slots) means a whole position (most often TE,
+        // with only 1 starter slot) can lose all room by round 5-8.
+        // Silently vanishing those cards read as a bug ("why did TEs
+        // disappear?"); showing them greyed with a reason makes the real
+        // constraint visible instead of hidden.
+        const valueTop = sortedPool.slice(0, 30);
+        // Guarantee every currently-legal pick matching the search is
+        // actually reachable, even late in a draft when the only remaining
+        // legal position (often K or DEF) naturally ranks below the
+        // top-30 cutoff -- without this, the human could be shown 30 cards
+        // and NONE of them draftable.
+        const eligibleMatchingSearch = sortedPool.filter(p => eligibleNames.has(p.name));
+        const valueTopNames = new Set(valueTop.map(p => p.name));
+        const strandedEligible = eligibleMatchingSearch.filter(p => !valueTopNames.has(p.name));
+        const top = strandedEligible.length ? [...valueTop, ...strandedEligible] : valueTop;
 
         // True stacks only: a QB + his own pass-catcher, or the RB+WR/WR+WR/
         // RB+RB offense-strength combos -- not just "shares an NFL team"
@@ -2311,7 +2769,7 @@
         // stack beats a "significant reach" one) then by the candidate's own
         // VOR, and only shown for live, non-injured stacks.
         const TIER_RANK = { clear: 0, reasonable: 1, reach: 2 };
-        const stackOpportunities = top
+        const stackOpportunities = eligibleTop
           .map(p => {
             const stackWith = stackWithFor(p, mockDraft.rosters['Me']);
             if (!stackWith.length) return null;
@@ -2337,7 +2795,7 @@
             </div>`
           : '';
 
-        const rows = top.map(p => {
+        const cards = top.map(p => {
           const stackWith = stackWithFor(p, mockDraft.rosters['Me']);
           let stackCell = '<span class="trend-empty">—</span>';
           if (stackWith.length) {
@@ -2358,28 +2816,65 @@
               : '';
             stackCell = `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>${reasonHtml}${tdHtml}${injuryWarningHtml}`;
           }
+          const hasStack = stackWith.length > 0;
+          const isEligible = eligibleNames.has(p.name);
+          const draftControlHtml = isEligible
+            ? `<button class="btn-primary btn-sm player-card-draft" data-name="${p.name}">Draft</button>`
+            : `<button class="btn-primary btn-sm player-card-draft" disabled title="No roster room left for ${p.position} -- every starter slot and the shared bench slot are already spoken for.">No room</button>`;
           return `
-            <tr>
-              <td>${playerImageHtml(p.name, p.team)}<span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</td>
-              <td><span class="pos-chip">${p.position}</span></td>
-              <td class="num">${p.vor.toFixed(1)}</td>
-              <td class="num">${p.tier}</td>
-              <td class="num">${adpHtml(p.adp)}</td>
-              <td class="num">${valueVsAdpHtml(p.value_vs_adp)}</td>
-              <td>${stackCell}</td>
-              <td><button class="btn-primary btn-sm" data-name="${p.name}">Draft</button></td>
-            </tr>`;
+            <div class="player-card pos-${p.position}${hasStack ? ' has-stack' : ''}${isEligible ? '' : ' ineligible'}">
+              <div class="player-card-top">
+                ${playerImageHtml(p.name, p.team, 'player-card-avatar')}
+                <div class="player-card-id">
+                  <span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>
+                  <span class="player-card-meta"><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</span>
+                </div>
+                <span class="pos-chip">${p.position}</span>
+              </div>
+              <div class="player-card-stats">
+                <div class="player-card-stat"><span class="stat-label">VOR</span><span class="stat-value">${p.vor.toFixed(1)}</span></div>
+                <div class="player-card-stat"><span class="stat-label">Tier</span><span class="stat-value">${p.tier}</span></div>
+                <div class="player-card-stat"><span class="stat-label" title="Consensus 2-QB-format ADP from Fantasy Football Calculator.">ADP</span><span class="stat-value">${adpHtml(p.adp)}</span></div>
+                <div class="player-card-stat"><span class="stat-label" title="This player's VOR vs. the VOR our own model has at their ADP slot.">vs ADP</span><span class="stat-value">${valueVsAdpHtml(p.value_vs_adp)}</span></div>
+              </div>
+              ${hasStack ? `<div class="player-card-stack">${stackCell}</div>` : ''}
+              ${isEligible ? '' : '<div class="player-card-noroom">No roster room left</div>'}
+              ${draftControlHtml}
+            </div>`;
         }).join('');
 
+        const mockQueryEscaped = mockQuery.replace(/"/g, '&quot;');
         pickPanel.innerHTML = `
           <div class="mock-pick-card">
             ${stackCalloutHtml}
-            <label class="field-label">Your pick — top 30 available (stacks with your roster flagged)</label>
-            <div class="table-shell"><div class="table-scroll"><table>
-              <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th><th class="num">Tier</th><th class="num" title="Consensus 2-QB-format ADP from Fantasy Football Calculator.">ADP</th><th class="num" title="This player's VOR vs. the VOR our own model has at their ADP slot.">Value vs ADP</th><th>Stack</th><th></th></tr></thead>
-              <tbody>${rows}</tbody>
-            </table></div></div>
+            <label class="field-label">Your pick — ranked by value (greyed cards have no roster room right now)</label>
+            <div class="mock-pool-controls">
+              <div class="pills" id="mockSortPills">
+                ${MOCK_SORT_OPTIONS.map(o => `<button class="pill pill-sm${mockSortKey === o.key ? ' active' : ''}" data-sort="${o.key}">${o.label}</button>`).join('')}
+              </div>
+              <input type="text" class="trade-search" id="mockSearchInput" placeholder="Find a player…" value="${mockQueryEscaped}" />
+            </div>
+            <div class="player-card-grid">${cards}</div>
           </div>`;
+        pickPanel.querySelectorAll('#mockSortPills button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            mockSortKey = btn.dataset.sort;
+            renderMockDraft();
+          });
+        });
+        const mockSearchInput = pickPanel.querySelector('#mockSearchInput');
+        mockSearchInput.addEventListener('input', () => {
+          mockQuery = mockSearchInput.value;
+          const cursorPos = mockSearchInput.selectionStart;
+          renderMockDraft();
+          // Re-render replaces the input node entirely (full innerHTML swap),
+          // which would otherwise silently drop focus after every keystroke.
+          const freshInput = document.getElementById('mockSearchInput');
+          if (freshInput) {
+            freshInput.focus();
+            freshInput.setSelectionRange(cursorPos, cursorPos);
+          }
+        });
         pickPanel.querySelectorAll('button[data-name]').forEach(btn => {
           btn.addEventListener('click', () => {
             const pick = withTiers.find(p => p.name === btn.dataset.name);
@@ -2387,9 +2882,13 @@
             // Snapshot the best-available player at this exact pick (any
             // position) so the post-draft grade report can show what the
             // alternative would have been -- this only exists for Me picks.
+            // Must be room-eligible (`eligible`, not the full `withTiers`
+            // pool) or the grade report can credit an illegal alternative,
+            // e.g. suggesting a 3rd/4th QB this league's roster has no slot
+            // for.
             const logEntry = mockDraft.picksLog[mockDraft.picksLog.length - 1];
-            logEntry.bestAvailableVor = withTiers[0].vor;
-            logEntry.bestAvailableName = withTiers[0].name;
+            logEntry.bestAvailableVor = eligible[0].vor;
+            logEntry.bestAvailableName = eligible[0].name;
             runMockDraftStep();
           });
         });
@@ -2400,7 +2899,7 @@
 
     const logBody = document.getElementById('mockLogBody');
     logBody.innerHTML = mockDraft.picksLog.map(r =>
-      `<tr><td>${r.pick}</td><td>${r.round}</td><td>${r.team}</td><td>${r.name}</td><td>${r.position}</td><td class="num">${r.vor.toFixed(1)}</td></tr>`
+      `<tr><td>${r.pick}</td><td>${r.round}</td><td>${r.team}</td><td>${playerImageHtml(r.name, r.nflTeam)}${r.name}</td><td>${r.position}</td><td class="num">${r.vor.toFixed(1)}</td></tr>`
     ).join('');
 
     const totals = {};
@@ -2420,6 +2919,18 @@
     document.getElementById('mockSlotInput').max = LEAGUE_META.num_teams;
     document.getElementById('mockStartBtn').addEventListener('click', startMockDraft);
     document.getElementById('mockResetBtn').addEventListener('click', resetMockDraft);
+
+    const boardWrap = document.getElementById('mockDraftBoardWrap');
+    const expandBtn = document.getElementById('mockBoardExpandBtn');
+    function setExpanded(expanded) {
+      boardWrap.classList.toggle('expanded', expanded);
+      expandBtn.textContent = expanded ? '✕ Collapse' : '⛶ Expand';
+      expandBtn.title = expanded ? 'Collapse draft board' : 'Expand draft board to full screen';
+    }
+    expandBtn.addEventListener('click', () => setExpanded(!boardWrap.classList.contains('expanded')));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && boardWrap.classList.contains('expanded')) setExpanded(false);
+    });
   }
 
   // ===========================================================================
@@ -3127,6 +3638,7 @@
   initTeamRosters();
   initLeagueEditForm();
   initPlayerModal();
+  initTeamRosterModal();
   initPlayerTooltips();
   renderLeagueDetails();
 
@@ -3137,4 +3649,5 @@
   renderStats();
   renderSortHeaders();
   renderTable();
+  renderStacksTab();
 </script>
