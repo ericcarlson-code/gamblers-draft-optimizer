@@ -383,6 +383,16 @@
     color: var(--accent);
     border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
   }
+  .stack-callout {
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+  .stack-callout-item { margin-top: 6px; }
+  .stack-callout-item:first-of-type { margin-top: 8px; }
+  .stack-callout .stack-reason { display: inline-block; margin: 2px 0 0 4px; max-width: none; }
   .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
   #mockSlotInput {
@@ -925,7 +935,7 @@
               <th class="num" data-key="td_dependency_pct" title="Share of this player's points that come from touchdowns rather than yardage/volume -- a proxy for week-to-week boom/bust variance, and for why a QB and his own pass-catcher are unusually correlated (a passing TD and a receiving TD are the same play).">TD%</th>
               <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
               <th class="num" data-key="proj_rush_rec_td" title="Projected rushing + receiving touchdowns (defense/special-teams TDs bucketed in here too).">Rush/Rec TD</th>
-              <th class="num" data-key="adp" title="Live consensus Average Draft Position from ESPN's real fantasy drafts. Only meaningful for the current 2026 Projections view -- not shown for past seasons.">ADP</th>
+              <th class="num" data-key="adp" title="Consensus 2-QB-format Average Draft Position from Fantasy Football Calculator -- real ADP, historical where available (2020-2024), live for 2026. Not shown for 2025 (no historical data source for that season).">ADP</th>
               <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
@@ -1714,11 +1724,15 @@
     return availableRanked[0];
   }
 
-  // A "true stack" is a QB paired with his own pass-catcher, or the secondary
-  // offense-strength combos already used in Stack Rankings (RB+WR, WR+WR) --
+  // A "true stack" is a QB paired with his own pass-catcher, the secondary
+  // offense-strength combos (RB+WR, WR+WR), or a same-team RB+RB backfield --
   // not just "any two players who happen to share an NFL team" (e.g. a
-  // same-team kicker isn't a meaningful correlation play).
-  const STACK_PAIRS = new Set(['QB|WR', 'WR|QB', 'QB|TE', 'TE|QB', 'RB|WR', 'WR|RB', 'WR|WR']);
+  // same-team kicker isn't a meaningful correlation play). RB+RB is a
+  // different kind of correlation than the TD-sharing logic behind the
+  // others (backfield mates split touches more than they "boom together"),
+  // but a run-heavy team's positive game script still lifts both -- and it
+  // reuses the exact same tradeoff-verdict machinery below either way.
+  const STACK_PAIRS = new Set(['QB|WR', 'WR|QB', 'QB|TE', 'TE|QB', 'RB|WR', 'WR|RB', 'WR|WR', 'RB|RB']);
   function isStackPair(posA, posB) { return STACK_PAIRS.has(posA + '|' + posB); }
 
   function stackWithFor(candidate, myRosterPlayers) {
@@ -2039,6 +2053,39 @@
         // point isn't "it stacks" alone, it's whether the correlated-upside
         // bet is actually worth the value hit.
         const bestAlt = bestNonStackAlternative(withTiers, mockDraft.rosters['Me']);
+
+        // Surfaced as its own callout above the table too (not just a column
+        // in row 17 of 30) -- stack value is a core part of the recommendation,
+        // not something to bury. Ranked by tradeoff tier (a "no tradeoff"
+        // stack beats a "significant reach" one) then by the candidate's own
+        // VOR, and only shown for live, non-injured stacks.
+        const TIER_RANK = { clear: 0, reasonable: 1, reach: 2 };
+        const stackOpportunities = top
+          .map(p => {
+            const stackWith = stackWithFor(p, mockDraft.rosters['Me']);
+            if (!stackWith.length) return null;
+            return { p, stackWith, reason: stackTradeoffReason(p, bestAlt) };
+          })
+          .filter(Boolean)
+          .filter(o => !['Out', 'IR', 'Doubtful'].includes(o.p.injuryStatus))
+          .sort((a, b) => {
+            const ta = a.reason ? TIER_RANK[a.reason.tier] : 3;
+            const tb = b.reason ? TIER_RANK[b.reason.tier] : 3;
+            return ta !== tb ? ta - tb : b.p.vor - a.p.vor;
+          })
+          .slice(0, 3);
+
+        const stackCalloutHtml = stackOpportunities.length
+          ? `<div class="stack-callout">
+              <label class="field-label">Stack opportunities right now</label>
+              ${stackOpportunities.map(o => `
+                <div class="stack-callout-item">
+                  <span class="stack-badge">${o.p.name} stacks w/ ${o.stackWith.join(', ')}</span>
+                  ${o.reason ? `<span class="stack-reason reason-${o.reason.tier}">${o.reason.text}</span>` : ''}
+                </div>`).join('')}
+            </div>`
+          : '';
+
         const rows = top.map(p => {
           const stackWith = stackWithFor(p, mockDraft.rosters['Me']);
           let stackCell = '<span class="trend-empty">—</span>';
@@ -2075,9 +2122,10 @@
 
         pickPanel.innerHTML = `
           <div class="mock-pick-card">
+            ${stackCalloutHtml}
             <label class="field-label">Your pick — top 30 available (stacks with your roster flagged)</label>
             <div class="table-shell"><div class="table-scroll"><table>
-              <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th><th class="num">Tier</th><th class="num" title="Live consensus ADP from ESPN's real fantasy drafts.">ADP</th><th class="num" title="This player's VOR vs. the VOR our own model has at their ADP slot.">Value vs ADP</th><th>Stack</th><th></th></tr></thead>
+              <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th><th class="num">Tier</th><th class="num" title="Consensus 2-QB-format ADP from Fantasy Football Calculator.">ADP</th><th class="num" title="This player's VOR vs. the VOR our own model has at their ADP slot.">Value vs ADP</th><th>Stack</th><th></th></tr></thead>
               <tbody>${rows}</tbody>
             </table></div></div>
           </div>`;
