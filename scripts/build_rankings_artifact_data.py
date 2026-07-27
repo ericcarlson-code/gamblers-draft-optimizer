@@ -150,26 +150,49 @@ FLOCK_DIVERGENCE_THRESHOLD = 35
 
 
 def load_flock_rankings() -> dict[str, dict]:
-    """name -> {overall_rank, pos_rank, fpts} from Flock Fantasy's 2026 PPR
-    consensus rankings (data/historical/flock_fantasy_2026.csv, manually
-    compiled -- see scripts/ for no fetch script, this is pasted reference
-    data, not a live source). Standard PPR scoring, NOT this league's custom
-    rules -- used only as a display/sanity-check reference (see
-    attach_flock_reference), never blended into VOR or any actual ranking
-    math. Returns {} if the file doesn't exist rather than erroring, since
-    this reference is optional polish, not a build dependency."""
+    """name -> {overall_rank, pos_rank, fpts, prior_ovr_rank, prior_pos_rank}
+    from Flock Fantasy's 2026 consensus rankings (data/historical/
+    flock_fantasy_2026.csv, manually compiled -- no fetch script, this is
+    pasted reference data, not a live source). Standard PPR scoring, NOT
+    this league's custom rules -- used only as a display/sanity-check
+    reference (see attach_flock_reference), never blended into VOR or any
+    actual ranking math.
+
+    IMPORTANT: the source table has TWO different rankings easy to confuse.
+    The row's own sequential position in the list (flock_list_no) is the
+    forward-looking 2026 consensus rank -- that's what "overall_rank"/
+    "pos_rank" mean here. The CSV's own separate "overall_rank"/"pos_rank"
+    COLUMNS are something else entirely: a retrospective rank by actual 2025
+    output only (kept here as prior_ovr_rank/prior_pos_rank for context --
+    e.g. Jayden Daniels is Flock's forward #8 overall/QB3, but only played 7
+    games in 2025 and ranked #34/#17 by that season's actual production).
+    Confirmed by cross-checking players where both agree (Josh Allen: #1
+    list position, #1 in both columns) against ones where they diverge
+    sharply due to an injury-shortened prior season (Daniels, Lamar
+    Jackson). Comparing OUR forward 2026 projection against Flock's
+    RETROSPECTIVE column would have been comparing the wrong two things.
+
+    Returns {} if the file doesn't exist rather than erroring, since this
+    reference is optional polish, not a build dependency."""
     path = DATA_DIR / "flock_fantasy_2026.csv"
     if not path.exists():
         return {}
     df = pd.read_csv(path)
+    df = df[df["flock_list_no"].notna()].copy()
+    df["flock_list_no"] = df["flock_list_no"].astype(int)
+    # Forward-looking position rank: this position's players, in the SAME
+    # list order, numbered 1..N -- not the CSV's separate (retrospective)
+    # pos_rank column.
+    df["derived_pos_rank"] = df.groupby("position")["flock_list_no"].rank(method="first").astype(int)
+
     out = {}
     for row in df.itertuples():
-        if pd.isna(row.overall_rank):
-            continue
         out[row.name] = {
-            "overall_rank": int(row.overall_rank),
-            "pos_rank": None if pd.isna(row.pos_rank) else int(row.pos_rank),
+            "overall_rank": row.flock_list_no,
+            "pos_rank": row.derived_pos_rank,
             "fpts": None if pd.isna(row.fpts) else float(row.fpts),
+            "prior_ovr_rank": None if pd.isna(row.overall_rank) else int(row.overall_rank),
+            "prior_pos_rank": None if pd.isna(row.pos_rank) else int(row.pos_rank),
         }
     return out
 
@@ -189,6 +212,11 @@ def attach_flock_reference(board: pd.DataFrame, flock_lookup: dict[str, dict]) -
     board["flock_overall_rank"] = flock_data.map(lambda d: d["overall_rank"] if d else None)
     board["flock_pos_rank"] = flock_data.map(lambda d: d["pos_rank"] if d else None)
     board["flock_fpts"] = flock_data.map(lambda d: d["fpts"] if d else None)
+    # Retrospective context only (last season's actual-output-based rank) --
+    # shown in the tooltip to explain a big divergence (e.g. an injury-
+    # shortened prior season), never used for flock_diverges itself.
+    board["flock_prior_ovr_rank"] = flock_data.map(lambda d: d["prior_ovr_rank"] if d else None)
+    board["flock_prior_pos_rank"] = flock_data.map(lambda d: d["prior_pos_rank"] if d else None)
 
     def diverges(row):
         if pd.isna(row["flock_overall_rank"]):
@@ -244,6 +272,8 @@ def score_file(
         board["flock_overall_rank"] = None
         board["flock_pos_rank"] = None
         board["flock_fpts"] = None
+        board["flock_prior_ovr_rank"] = None
+        board["flock_prior_pos_rank"] = None
         board["flock_diverges"] = False
     return board
 
@@ -268,6 +298,10 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
         row["flock_pos_rank"] = None if pd.isna(flock_pos_rank) else int(flock_pos_rank)
         row["flock_fpts"] = None if pd.isna(flock_fpts) else round(float(flock_fpts), 1)
         row["flock_diverges"] = bool(board["flock_diverges"].iloc[i])
+        prior_ovr = board["flock_prior_ovr_rank"].iloc[i]
+        prior_pos = board["flock_prior_pos_rank"].iloc[i]
+        row["flock_prior_ovr_rank"] = None if pd.isna(prior_ovr) else int(prior_ovr)
+        row["flock_prior_pos_rank"] = None if pd.isna(prior_pos) else int(prior_pos)
         # Full raw stat line for the player detail page -- nested under its
         # own key rather than flattened, so it doesn't collide with any of
         # the derived column names above (e.g. Rankings' "TD%" column key).

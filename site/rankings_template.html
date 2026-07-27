@@ -1183,7 +1183,7 @@
               <th class="num" data-key="proj_rush_rec_td" title="Projected rushing + receiving touchdowns (defense/special-teams TDs bucketed in here too).">Rush/Rec TD</th>
               <th class="num" data-key="adp" title="Consensus 2-QB-format Average Draft Position from Fantasy Football Calculator -- real ADP, historical where available (2020-2024), live for 2026. Not shown for 2025 (no historical data source for that season).">ADP</th>
               <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
-              <th class="num" data-key="flock_overall_rank" title="Flock Fantasy's consensus overall rank -- standard 2026 PPR scoring, NOT this league's custom rules. A reference/cross-check only, never blended into our own VOR or rankings. A flagged (⚠) row means our rank differs from Flock's by 35+ spots -- often a sign of a real data bug worth checking, not just a legitimate scoring difference.">Flock</th>
+              <th class="num" data-key="flock_overall_rank" title="Flock Fantasy's forward-looking 2026 consensus rank -- standard PPR scoring, NOT this league's custom rules. A reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to Flock's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ by enough that it's often a real data bug worth checking, not just a legitimate scoring difference.">Flock</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
           </thead>
@@ -1538,15 +1538,51 @@
   // right and we're wrong" -- it's "these two disagree by enough that it's
   // worth a human second look," since a real data bug (stale team, missing
   // depth-chart signal) reads exactly like this divergence.
-  function flockCellHtml(player) {
-    if (player.flock_overall_rank == null) return '<span class="cell-muted">—</span>';
-    const detail = `Flock: #${player.flock_overall_rank} overall` +
-      (player.flock_pos_rank != null ? `, ${player.position}${player.flock_pos_rank}` : '') +
-      (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '');
-    const flagHtml = player.flock_diverges
-      ? `<span class="flock-flag" title="Our rank (#${player.overall_rank}) differs from Flock's (#${player.flock_overall_rank}) by ${Math.abs(player.overall_rank - player.flock_overall_rank)} spots -- worth reviewing, often a sign of a data bug rather than a legitimate scoring difference.">⚠</span>`
+  //
+  // Position-filtered view (activePos !== 'All') shows Flock's POSITION
+  // rank instead of overall (e.g. "QB3"), matching how Flock's own site
+  // presents it -- compared against our own model's position rank in the
+  // current pool, not our overall rank, since "our #118 vs Flock's QB3"
+  // wouldn't mean anything.
+  const FLOCK_POS_DIVERGENCE_THRESHOLD = 10;
+
+  function computeOurPositionRanks(pool) {
+    const byPosition = {};
+    for (const p of pool) (byPosition[p.position] = byPosition[p.position] || []).push(p);
+    const ranks = new Map();
+    for (const pos in byPosition) {
+      [...byPosition[pos]].sort((a, b) => a.overall_rank - b.overall_rank)
+        .forEach((p, i) => ranks.set(p.name, i + 1));
+    }
+    return ranks;
+  }
+
+  function flockCellHtml(player, ourPosRank) {
+    if (activePos === 'All') {
+      if (player.flock_overall_rank == null) return '<span class="cell-muted">—</span>';
+      const priorNote = player.flock_prior_ovr_rank != null
+        ? ` (last season's actual output ranked #${player.flock_prior_ovr_rank} overall -- a big gap here is often an injury-shortened prior season, not a bug)`
+        : '';
+      const detail = `Flock's forward 2026 consensus: #${player.flock_overall_rank} overall` +
+        (player.flock_pos_rank != null ? `, ${player.position}${player.flock_pos_rank}` : '') +
+        (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '') + priorNote;
+      const flagHtml = player.flock_diverges
+        ? `<span class="flock-flag" title="Our rank (#${player.overall_rank}) differs from Flock's (#${player.flock_overall_rank}) by ${Math.abs(player.overall_rank - player.flock_overall_rank)} spots -- worth reviewing, often a sign of a data bug rather than a legitimate scoring difference.">⚠</span>`
+        : '';
+      return `<span title="${detail}">#${player.flock_overall_rank}</span>${flagHtml}`;
+    }
+
+    if (player.flock_pos_rank == null) return '<span class="cell-muted">—</span>';
+    const posDiverges = ourPosRank != null && Math.abs(ourPosRank - player.flock_pos_rank) >= FLOCK_POS_DIVERGENCE_THRESHOLD;
+    const priorNote = player.flock_prior_pos_rank != null
+      ? ` (last season's actual output ranked ${player.position}${player.flock_prior_pos_rank})`
       : '';
-    return `<span title="${detail}">#${player.flock_overall_rank}</span>${flagHtml}`;
+    const detail = `Flock's forward 2026 consensus: ${player.position}${player.flock_pos_rank}` +
+      (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '') + priorNote;
+    const flagHtml = posDiverges
+      ? `<span class="flock-flag" title="Our position rank (${player.position}${ourPosRank}) differs from Flock's (${player.position}${player.flock_pos_rank}) by ${Math.abs(ourPosRank - player.flock_pos_rank)} spots -- worth reviewing.">⚠</span>`
+      : '';
+    return `<span title="${detail}">${player.position}${player.flock_pos_rank}</span>${flagHtml}`;
   }
 
   let activeView = "2026";
@@ -1994,6 +2030,7 @@
     tbody.innerHTML = '';
     empty.hidden = rows.length !== 0;
     const maxVor = getMaxVor();
+    const ourPositionRanks = activePos !== 'All' ? computeOurPositionRanks(DATA) : null;
 
     for (const d of rows) {
       const tr = document.createElement('tr');
@@ -2015,7 +2052,7 @@
         <td class="num">${(d.proj_rush_rec_td ?? 0).toFixed(1)}</td>
         <td class="num">${adpHtml(d.adp)}</td>
         <td class="num">${valueVsAdpHtml(d.value_vs_adp)}</td>
-        <td class="num">${flockCellHtml(d)}</td>
+        <td class="num">${flockCellHtml(d, ourPositionRanks ? ourPositionRanks.get(d.name) : null)}</td>
         <td class="num trend-cell">${sparklineSvg(d.history, d.name)}</td>
       `;
       tbody.appendChild(tr);
