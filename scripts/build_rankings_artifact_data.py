@@ -64,7 +64,41 @@ def td_counts(stats: dict) -> tuple[float, float]:
     return 0.0, 0.0
 
 
-def score_file(path: Path, cfg: dict) -> pd.DataFrame:
+def load_adp() -> dict[str, float]:
+    """name -> live ESPN consensus ADP (see scripts/fetch_adp.py). This is
+    real-time data, not a frozen historical snapshot, so it's only wired
+    into the current 2026 projection board -- not the 2020-2025 actual-
+    results boards, where a "today's ADP" number wouldn't mean anything."""
+    path = DATA_DIR / "adp.csv"
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    return dict(zip(df["name"], df["adp"]))
+
+
+def attach_adp_value(board: pd.DataFrame, adp_lookup: dict[str, float]) -> pd.DataFrame:
+    """Adds 'adp' and 'value_vs_adp' columns. value_vs_adp compares a player's
+    VOR to the VOR of whoever OUR OWN model ranks at their ADP slot -- e.g. if
+    a player's ADP is 40 but our model's 40th-ranked player has much lower VOR,
+    that player is a "value" relative to where the market is drafting them.
+    Requires `board` already sorted by vor descending with no gaps in index
+    (i.e. called after the same sort/overall_rank step as everything else)."""
+    board = board.copy()
+    board["adp"] = board["name"].map(adp_lookup)
+    n = len(board)
+
+    def value_vs_adp(row):
+        if pd.isna(row["adp"]) or n == 0:
+            return None
+        rank = min(max(int(round(row["adp"])), 1), n)
+        expected_vor = board.iloc[rank - 1]["vor"]
+        return round(row["vor"] - expected_vor, 1)
+
+    board["value_vs_adp"] = board.apply(value_vs_adp, axis=1)
+    return board
+
+
+def score_file(path: Path, cfg: dict, adp_lookup: dict[str, float] | None = None) -> pd.DataFrame:
     raw = pd.read_csv(path)
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
     df = apply_mapping(raw, mapping)
@@ -83,6 +117,11 @@ def score_file(path: Path, cfg: dict) -> pd.DataFrame:
     board = assign_tiers(board, cfg)
     board = board.sort_values("vor", ascending=False).reset_index(drop=True)
     board["overall_rank"] = range(1, len(board) + 1)
+    if adp_lookup:
+        board = attach_adp_value(board, adp_lookup)
+    else:
+        board["adp"] = None
+        board["value_vs_adp"] = None
     return board
 
 
@@ -92,8 +131,12 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
         "td_dependency_pct", "proj_pass_td", "proj_rush_rec_td",
     ]
     rows = board[cols].round(1).to_dict("records")
-    for row, source in zip(rows, board["projection_source"]):
-        row["projection_source"] = source
+    for i, row in enumerate(rows):
+        row["projection_source"] = board["projection_source"].iloc[i]
+        adp = board["adp"].iloc[i]
+        value_vs_adp = board["value_vs_adp"].iloc[i]
+        row["adp"] = None if pd.isna(adp) else round(float(adp), 1)
+        row["value_vs_adp"] = None if pd.isna(value_vs_adp) else float(value_vs_adp)
     return rows
 
 
@@ -103,7 +146,7 @@ def build_data_bundle(cfg: dict) -> dict:
         year: score_file(DATA_DIR / f"{year}_actual_stats.csv", cfg)
         for year in HISTORY_YEARS
     }
-    projection_board = score_file(DATA_DIR / "2026_projections.csv", cfg)
+    projection_board = score_file(DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_adp())
 
     # Index each year's VOR by (name, position) for fast per-player lookup.
     year_vor_lookup = {

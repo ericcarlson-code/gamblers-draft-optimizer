@@ -770,6 +770,9 @@
     color: var(--accent);
   }
   .team { color: var(--ink-muted); font-size: 12.5px; margin-left: 6px; }
+  .cell-muted { color: var(--ink-muted); }
+  .value-positive { color: var(--accent); font-weight: 600; }
+  .value-negative { color: var(--danger); font-weight: 600; }
 
   .pos-chip {
     display: inline-block;
@@ -895,6 +898,8 @@
               <th class="num" data-key="td_dependency_pct" title="Share of this player's points that come from touchdowns rather than yardage/volume -- a proxy for week-to-week boom/bust variance, and for why a QB and his own pass-catcher are unusually correlated (a passing TD and a receiving TD are the same play).">TD%</th>
               <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
               <th class="num" data-key="proj_rush_rec_td" title="Projected rushing + receiving touchdowns (defense/special-teams TDs bucketed in here too).">Rush/Rec TD</th>
+              <th class="num" data-key="adp" title="Live consensus Average Draft Position from ESPN's real fantasy drafts. Only meaningful for the current 2026 Projections view -- not shown for past seasons.">ADP</th>
+              <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
           </thead>
@@ -1203,6 +1208,16 @@
     return `<span class="rookie-badge" title="Rookie with no NFL stat history -- projected from NFL draft round/position only, not real stats.">R</span>`;
   }
 
+  function adpHtml(adp) {
+    return adp == null ? '<span class="cell-muted">—</span>' : adp.toFixed(1);
+  }
+  function valueVsAdpHtml(value) {
+    if (value == null) return '<span class="cell-muted">—</span>';
+    const cls = value > 0 ? 'value-positive' : value < 0 ? 'value-negative' : '';
+    const sign = value > 0 ? '+' : '';
+    return `<span class="${cls}">${sign}${value.toFixed(1)}</span>`;
+  }
+
   let activeView = "2026";
   let DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
   let activePos = "All";
@@ -1456,6 +1471,11 @@
     }
     rows = [...rows].sort((a, b) => {
       const av = a[sortKey], bv = b[sortKey];
+      // Nulls (e.g. no ADP data for this player) always sort last, regardless
+      // of sort direction -- "unknown" shouldn't look like "best" or "worst".
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
       if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
       return (av - bv) * sortDir;
     });
@@ -1488,6 +1508,8 @@
         <td class="num">${(d.td_dependency_pct ?? 0).toFixed(1)}%</td>
         <td class="num">${(d.proj_pass_td ?? 0).toFixed(1)}</td>
         <td class="num">${(d.proj_rush_rec_td ?? 0).toFixed(1)}</td>
+        <td class="num">${adpHtml(d.adp)}</td>
+        <td class="num">${valueVsAdpHtml(d.value_vs_adp)}</td>
         <td class="num trend-cell">${sparklineSvg(d.history, d.name)}</td>
       `;
       tbody.appendChild(tr);
@@ -1527,7 +1549,7 @@
   });
 
   // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
-  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_rec_td: 'Rush/Rec TD' };
+  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_rec_td: 'Rush/Rec TD', adp: 'ADP', value_vs_adp: 'Value vs ADP' };
   document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
 
   // ===========================================================================
@@ -1585,11 +1607,26 @@
   // values, or editing league settings would silently do nothing outside
   // Mock Draft (which already recomputed live). Cheap enough to call on
   // every render given the dataset size.
+  // "Value vs ADP" compares a player's VOR to the VOR of whoever OUR OWN
+  // model ranks at their ADP slot -- recomputed here (not just baked in at
+  // Python build time) so it stays correct if league settings change and
+  // shift the VOR order, same reasoning as vor/tier themselves.
+  function attachAdpValue(rows) {
+    const n = rows.length;
+    rows.forEach(p => {
+      if (p.adp == null || n === 0) { p.value_vs_adp = null; return; }
+      const rank = Math.min(Math.max(Math.round(p.adp), 1), n);
+      const expectedVor = rows[rank - 1].vor;
+      p.value_vs_adp = Math.round((p.vor - expectedVor) * 10) / 10;
+    });
+    return rows;
+  }
+
   function rescoreBoard(rows) {
     const scored = computeVOR(rows, LEAGUE_META.num_teams, LEAGUE_META.roster_slots);
     const withTiers = assignTiers(scored, LEAGUE_META.gap_threshold_stdevs);
     withTiers.forEach((p, i) => { p.overall_rank = i + 1; });
-    return withTiers;
+    return attachAdpValue(withTiers);
   }
 
   // ===========================================================================
@@ -1964,6 +2001,13 @@
       if (teamLabel === 'Me') {
         const available = getMockAvailable();
         const ranked = computeVOR(available, numTeams, rosterSlots);
+        // NOT re-attaching ADP value here on purpose: it's a static pre-draft
+        // metric (this player's VOR vs. the FULL board's ADP-implied slot),
+        // computed once against the full 550-player pool via rescoreBoard()
+        // in Rankings and carried through by object-spread from there --
+        // recomputing it against just the shrinking "still available" pool
+        // would redefine what the number means mid-draft, which is more
+        // confusing than useful.
         const withTiers = assignTiers(ranked, LEAGUE_META.gap_threshold_stdevs);
         // Only recommend players who'd actually have a roster spot -- e.g. a
         // 3rd/4th QB once every starter + bench slot that could hold one is
@@ -2007,6 +2051,8 @@
               <td><span class="pos-chip">${p.position}</span></td>
               <td class="num">${p.vor.toFixed(1)}</td>
               <td class="num">${p.tier}</td>
+              <td class="num">${adpHtml(p.adp)}</td>
+              <td class="num">${valueVsAdpHtml(p.value_vs_adp)}</td>
               <td>${stackCell}</td>
               <td><button class="btn-primary btn-sm" data-name="${p.name}">Draft</button></td>
             </tr>`;
@@ -2016,7 +2062,7 @@
           <div class="mock-pick-card">
             <label class="field-label">Your pick — top 30 available (stacks with your roster flagged)</label>
             <div class="table-shell"><div class="table-scroll"><table>
-              <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th><th class="num">Tier</th><th>Stack</th><th></th></tr></thead>
+              <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th><th class="num">Tier</th><th class="num" title="Live consensus ADP from ESPN's real fantasy drafts.">ADP</th><th class="num" title="This player's VOR vs. the VOR our own model has at their ADP slot.">Value vs ADP</th><th>Stack</th><th></th></tr></thead>
               <tbody>${rows}</tbody>
             </table></div></div>
           </div>`;
