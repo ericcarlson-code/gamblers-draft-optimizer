@@ -48,6 +48,22 @@ def td_points(stats: dict, cfg: dict) -> float:
     return 0.0
 
 
+def td_counts(stats: dict) -> tuple[float, float]:
+    """Projected touchdown COUNTS (not point value), split passing vs.
+    rushing+receiving -- the user wants these differentiated rather than
+    blended into one dependency percentage. QBs are the only position that
+    can throw a TD; DEF's return/defensive TDs are bucketed into the
+    rush/rec column for simplicity since they aren't passing plays either."""
+    position = stats.get("position")
+    if position == "QB":
+        return stats.get("pass_td", 0), stats.get("rush_td", 0)
+    if position in ("RB", "WR", "TE"):
+        return 0.0, stats.get("rush_td", 0) + stats.get("rec_td", 0)
+    if position == "DEF":
+        return 0.0, stats.get("def_td", 0) + stats.get("def_return_td", 0)
+    return 0.0, 0.0
+
+
 def score_file(path: Path, cfg: dict) -> pd.DataFrame:
     raw = pd.read_csv(path)
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
@@ -56,6 +72,10 @@ def score_file(path: Path, cfg: dict) -> pd.DataFrame:
     board["points"] = df.apply(lambda r: score_player(r.to_dict(), cfg), axis=1)
     td_pts = df.apply(lambda r: td_points(r.to_dict(), cfg), axis=1)
     board["td_dependency_pct"] = (td_pts / board["points"].where(board["points"] > 0)).fillna(0.0) * 100
+    td_count_cols = df.apply(lambda r: td_counts(r.to_dict()), axis=1, result_type="expand")
+    td_count_cols.columns = ["proj_pass_td", "proj_rush_rec_td"]
+    board["proj_pass_td"] = td_count_cols["proj_pass_td"]
+    board["proj_rush_rec_td"] = td_count_cols["proj_rush_rec_td"]
     board = compute_vor(board, cfg)
     board = assign_tiers(board, cfg)
     board = board.sort_values("vor", ascending=False).reset_index(drop=True)
@@ -64,7 +84,10 @@ def score_file(path: Path, cfg: dict) -> pd.DataFrame:
 
 
 def to_rows(board: pd.DataFrame) -> list[dict]:
-    cols = ["overall_rank", "name", "position", "team", "points", "vor", "tier", "td_dependency_pct"]
+    cols = [
+        "overall_rank", "name", "position", "team", "points", "vor", "tier",
+        "td_dependency_pct", "proj_pass_td", "proj_rush_rec_td",
+    ]
     return board[cols].round(1).to_dict("records")
 
 

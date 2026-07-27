@@ -864,6 +864,8 @@
               <th class="num" data-key="vor">VOR</th>
               <th class="num" data-key="tier">Tier</th>
               <th class="num" data-key="td_dependency_pct" title="Share of this player's points that come from touchdowns rather than yardage/volume -- a proxy for week-to-week boom/bust variance, and for why a QB and his own pass-catcher are unusually correlated (a passing TD and a receiving TD are the same play).">TD%</th>
+              <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
+              <th class="num" data-key="proj_rush_rec_td" title="Projected rushing + receiving touchdowns (defense/special-teams TDs bucketed in here too).">Rush/Rec TD</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
           </thead>
@@ -1299,6 +1301,8 @@
         </td>
         <td class="num"><span class="tier-chip" style="background:${tierColor(d.tier)}; color:${tierTextColor(d.tier)}">${d.tier}</span></td>
         <td class="num">${(d.td_dependency_pct ?? 0).toFixed(1)}%</td>
+        <td class="num">${(d.proj_pass_td ?? 0).toFixed(1)}</td>
+        <td class="num">${(d.proj_rush_rec_td ?? 0).toFixed(1)}</td>
         <td class="num trend-cell">${sparklineSvg(d.history, d.name)}</td>
       `;
       tbody.appendChild(tr);
@@ -1338,7 +1342,7 @@
   });
 
   // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
-  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%' };
+  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_rec_td: 'Rush/Rec TD' };
   document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
 
   // ===========================================================================
