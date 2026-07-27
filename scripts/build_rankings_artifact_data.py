@@ -101,11 +101,21 @@ def attach_adp_value(board: pd.DataFrame, adp_lookup: dict[str, float]) -> pd.Da
     return board
 
 
+RAW_STAT_FIELDS = [f for f in ALL_CANONICAL_FIELDS if f not in ("name", "position", "team")]
+
+
 def score_file(path: Path, cfg: dict, adp_lookup: dict[str, float] | None = None) -> pd.DataFrame:
     raw = pd.read_csv(path)
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
     df = apply_mapping(raw, mapping)
     board = df[["name", "position", "team"]].copy()
+    # Carried through for the player detail page (full stat line, not just
+    # derived points/vor) -- must be added here, before compute_vor/
+    # assign_tiers/sort_values, so the values stay aligned to the right
+    # player through the row reordering that follows.
+    for field in RAW_STAT_FIELDS:
+        if field in df.columns:
+            board[field] = df[field]
     # Only 2026_projections.csv has this column (real_stats vs draft_capital_model,
     # see optimizer/rookie_projections.py) -- actual-year stat files are all real.
     board["projection_source"] = raw["projection_source"] if "projection_source" in raw.columns else "real_stats"
@@ -134,12 +144,17 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
         "td_dependency_pct", "proj_pass_td", "proj_rush_rec_td",
     ]
     rows = board[cols].round(1).to_dict("records")
+    stat_cols = [f for f in RAW_STAT_FIELDS if f in board.columns]
     for i, row in enumerate(rows):
         row["projection_source"] = board["projection_source"].iloc[i]
         adp = board["adp"].iloc[i]
         value_vs_adp = board["value_vs_adp"].iloc[i]
         row["adp"] = None if pd.isna(adp) else round(float(adp), 1)
         row["value_vs_adp"] = None if pd.isna(value_vs_adp) else float(value_vs_adp)
+        # Full raw stat line for the player detail page -- nested under its
+        # own key rather than flattened, so it doesn't collide with any of
+        # the derived column names above (e.g. Rankings' "TD%" column key).
+        row["stats"] = {f: round(float(board[f].iloc[i]), 1) for f in stat_cols}
     return rows
 
 
