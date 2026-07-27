@@ -2,3 +2,13 @@ streamlit>=1.35
 pandas>=2.2
 pytest>=8.0
 requests>=2.31
+openpyxl>=3.1
+nflreadpy>=0.1.5
+# Standard `polars` crashes on this Windows-ARM/win-64-emulation dev machine
+# with "RuntimeError: unknown feature flag: 'sse3'" (its native binary does a
+# runtime CPU-feature check that the emulation layer doesn't satisfy).
+# polars-lts-cpu is a real upstream build for exactly this case (older/limited
+# CPUs) and provides the same `polars` import -- install this INSTEAD of
+# plain polars, never both (pip install polars-lts-cpu after uninstalling
+# polars if it's already present).
+polars-lts-cpu>=1.33

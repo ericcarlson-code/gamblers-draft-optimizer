@@ -56,17 +56,40 @@ def slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
+SUFFIX_RE = re.compile(r"\s+(Jr\.?|Sr\.?|II|III|IV|V)$", re.IGNORECASE)
+
+
+def strip_suffix(name: str) -> str:
+    """Our board's canonical name (from nflreadpy) and ESPN's displayName
+    don't always agree on whether a generational suffix is included -- e.g.
+    our data has plain "James Cook" and "Travis Etienne", but ESPN's own
+    headshot-endpoint records them as "James Cook III" and "Travis Etienne
+    Jr.". A bare-name match would miss both. Used as a fallback key, not the
+    primary one, so a real same-suffix-stripped-name collision (rare, but
+    possible) still prefers an exact match first."""
+    return SUFFIX_RE.sub("", name).strip()
+
+
 def fetch_json(url: str) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=20) as resp:
         return json.loads(resp.read())
 
 
-def fetch_veteran_headshots() -> dict[str, str]:
-    """name -> headshot URL, from the same byathlete endpoint fetch_actuals.py
-    uses (2025 season), fetched fresh here rather than reusing that script's
-    output since headshot URLs aren't persisted to its CSVs."""
-    out: dict[str, str] = {}
+def fetch_veteran_headshots() -> dict[tuple[str, str], str]:
+    """(name, team) -> headshot URL, from the same byathlete endpoint
+    fetch_actuals.py uses (2025 season), fetched fresh here rather than
+    reusing that script's output since headshot URLs aren't persisted to
+    its CSVs.
+
+    Keyed by (name, team), not bare name -- there are genuinely two NFL
+    players named "Justin Jefferson" (the Vikings WR, and an unrelated
+    Browns player), and bare-name "first seen wins" matching silently
+    locked in the wrong one's headshot whenever the other's query ran
+    first. Real player names are effectively unique within a single NFL
+    team, so (name, team) is a cheap, reliable disambiguator without
+    needing a full cross-site athlete-ID crosswalk."""
+    out: dict[tuple[str, str], str] = {}
     for sort_key, num_pages in QUERIES:
         for page in range(1, num_pages + 1):
             url = (
@@ -81,16 +104,19 @@ def fetch_veteran_headshots() -> dict[str, str]:
             for record in data.get("athletes", []):
                 athlete = record["athlete"]
                 name = athlete.get("displayName")
+                team = athlete.get("teamShortName", "")
                 headshot = (athlete.get("headshot") or {}).get("href")
-                if name and headshot and name not in out:
-                    out[name] = headshot
+                key = (name, team)
+                if name and headshot and key not in out:
+                    out[key] = headshot
     return out
 
 
-def fetch_rookie_headshots() -> dict[str, str]:
-    """name -> headshot URL for the 2026 draft class, from the same endpoint
-    fetch_draft_results.py uses -- covers true rookies with no 2025 stats."""
-    out: dict[str, str] = {}
+def fetch_rookie_headshots() -> dict[tuple[str, str], str]:
+    """(name, team) -> headshot URL for the 2026 draft class, from the same
+    endpoint fetch_draft_results.py uses -- covers true rookies with no 2025
+    stats."""
+    out: dict[tuple[str, str], str] = {}
     try:
         data = fetch_json(DRAFT_URL)
     except urllib.error.HTTPError as e:
@@ -99,9 +125,10 @@ def fetch_rookie_headshots() -> dict[str, str]:
     for pick in data.get("picks", []):
         athlete = pick.get("athlete") or {}
         name = athlete.get("displayName")
+        team = (pick.get("team") or {}).get("abbreviation", "")
         headshot = (athlete.get("headshot") or {}).get("href")
         if name and headshot:
-            out[name] = headshot
+            out[(name, team)] = headshot
     return out
 
 
@@ -149,13 +176,47 @@ def main() -> None:
         download(url, logos_dir / f"{abbr}.png")
     print(f"  Done -- cached in {logos_dir}")
 
+    # Suffix-stripped (name, team) fallback -- our board and ESPN don't
+    # always agree on whether "III"/"Jr." is part of the name (see
+    # strip_suffix's docstring). First-seen-wins per key, matching the
+    # existing "first query wins" convention.
+    by_stripped_name_team: dict[tuple[str, str], str] = {}
+    for (name, team), url in headshot_urls.items():
+        by_stripped_name_team.setdefault((strip_suffix(name), team), url)
+
+    # Bare-name fallback index, for a legitimate team-abbreviation mismatch
+    # (e.g. a mid-cycle trade) -- only used when exactly one entry shares
+    # that name, so a genuine two-different-people collision (Justin
+    # Jefferson) still can't silently pick the wrong one.
+    by_name: dict[str, list[str]] = {}
+    for (name, _team), url in headshot_urls.items():
+        by_name.setdefault(name, []).append(url)
+
+    # Last-resort fallback: suffix stripped AND team ignored -- covers a
+    # player who both changed teams and has a suffix mismatch (e.g. Travis
+    # Etienne: our board says "Travis Etienne"/JAX from last season's stats,
+    # ESPN's live data says "Travis Etienne Jr."/NO after a trade). Same
+    # uniqueness guard as the other fallbacks.
+    by_stripped_name: dict[str, list[str]] = {}
+    for (name, _team), url in headshot_urls.items():
+        by_stripped_name.setdefault(strip_suffix(name), []).append(url)
+
     print(f"Downloading player headshots ({len(players)} players in 2026 board)...")
     matched = 0
     for i, p in enumerate(players, 1):
         name = p["name"]
+        team = p.get("team", "")
         if p["position"] == "DEF":
             continue  # defenses use their team logo, not an individual headshot
-        url = headshot_urls.get(name)
+        url = headshot_urls.get((name, team))
+        if not url:
+            url = by_stripped_name_team.get((strip_suffix(name), team))
+        if not url:
+            candidates = by_name.get(name, [])
+            url = candidates[0] if len(candidates) == 1 else None
+        if not url:
+            candidates = by_stripped_name.get(strip_suffix(name), [])
+            url = candidates[0] if len(candidates) == 1 else None
         if not url:
             continue
         matched += 1

@@ -10,6 +10,7 @@ Run from the repo root:
     python scripts/build_rankings_artifact_data.py <output_path.json>
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -79,6 +80,43 @@ def load_adp(year: int | None = None) -> dict[str, float]:
     return dict(zip(df["name"], df["adp"]))
 
 
+_SUFFIX_RE = re.compile(r"\s+(Jr\.?|Sr\.?|II|III|IV|V)$", re.IGNORECASE)
+
+
+def _strip_suffix(name: str) -> str:
+    return _SUFFIX_RE.sub("", name).strip()
+
+
+def _build_name_resolver(lookup: dict[str, object]):
+    """Our board's canonical name (from nflreadpy) doesn't always agree with
+    an external source's own name on whether a generational suffix is
+    included -- confirmed real gaps against BOTH Fantasy Football Calculator
+    ADP and the Flock Fantasy reference data: "James Cook" (board) vs "James
+    Cook III" (FFC), "Travis Etienne" vs "Travis Etienne Jr.", "Aaron Jones"
+    vs "Aaron Jones Sr.", "Kenneth Walker III" (board) vs "Kenneth Walker"
+    (Flock) -- all clearly fantasy-relevant players silently missing a match
+    for a name-formatting reason, not a real data gap. Falls back to a
+    suffix-stripped match, but only when exactly one entry shares that
+    stripped name, so a genuine same-name-different-player collision still
+    can't silently borrow the wrong value. Shared by ADP and Flock joins."""
+    stripped_counts: dict[str, int] = {}
+    stripped_value: dict[str, object] = {}
+    for name, value in lookup.items():
+        key = _strip_suffix(name)
+        stripped_counts[key] = stripped_counts.get(key, 0) + 1
+        stripped_value[key] = value
+
+    def resolve(name: str):
+        if name in lookup:
+            return lookup[name]
+        key = _strip_suffix(name)
+        if stripped_counts.get(key) == 1:
+            return stripped_value[key]
+        return None
+
+    return resolve
+
+
 def attach_adp_value(board: pd.DataFrame, adp_lookup: dict[str, float]) -> pd.DataFrame:
     """Adds 'adp' and 'value_vs_adp' columns. value_vs_adp compares a player's
     VOR to the VOR of whoever OUR OWN model ranks at their ADP slot -- e.g. if
@@ -87,7 +125,7 @@ def attach_adp_value(board: pd.DataFrame, adp_lookup: dict[str, float]) -> pd.Da
     Requires `board` already sorted by vor descending with no gaps in index
     (i.e. called after the same sort/overall_rank step as everything else)."""
     board = board.copy()
-    board["adp"] = board["name"].map(adp_lookup)
+    board["adp"] = board["name"].map(_build_name_resolver(adp_lookup))
     n = len(board)
 
     def value_vs_adp(row):
@@ -101,10 +139,75 @@ def attach_adp_value(board: pd.DataFrame, adp_lookup: dict[str, float]) -> pd.Da
     return board
 
 
+# How far our own overall_rank can diverge from Flock's before it's flagged
+# as "worth reviewing" rather than a normal scoring-model disagreement. This
+# is exactly the mechanism that would have caught Kenneth Walker (our rank
+# ~118 vs Flock's 49, a 69-spot gap) and Phil Mafah (before the depth-chart
+# fix) automatically -- a judgment call, not a measured cutoff; raise it if
+# it flags too many legitimate scoring-driven differences, lower it if real
+# bugs are still slipping through unflagged.
+FLOCK_DIVERGENCE_THRESHOLD = 35
+
+
+def load_flock_rankings() -> dict[str, dict]:
+    """name -> {overall_rank, pos_rank, fpts} from Flock Fantasy's 2026 PPR
+    consensus rankings (data/historical/flock_fantasy_2026.csv, manually
+    compiled -- see scripts/ for no fetch script, this is pasted reference
+    data, not a live source). Standard PPR scoring, NOT this league's custom
+    rules -- used only as a display/sanity-check reference (see
+    attach_flock_reference), never blended into VOR or any actual ranking
+    math. Returns {} if the file doesn't exist rather than erroring, since
+    this reference is optional polish, not a build dependency."""
+    path = DATA_DIR / "flock_fantasy_2026.csv"
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    out = {}
+    for row in df.itertuples():
+        if pd.isna(row.overall_rank):
+            continue
+        out[row.name] = {
+            "overall_rank": int(row.overall_rank),
+            "pos_rank": None if pd.isna(row.pos_rank) else int(row.pos_rank),
+            "fpts": None if pd.isna(row.fpts) else float(row.fpts),
+        }
+    return out
+
+
+def attach_flock_reference(board: pd.DataFrame, flock_lookup: dict[str, dict]) -> pd.DataFrame:
+    """Adds 'flock_overall_rank'/'flock_pos_rank'/'flock_fpts'/'flock_diverges'
+    -- a visible cross-check column, plus a flag for when our own ranking
+    differs enough from Flock's real PPR consensus that it's more likely to
+    be a data bug than a legitimate scoring-driven difference (this is
+    exactly how Kenneth Walker's stale-team bug and Phil Mafah's
+    committee-blind projection would have surfaced automatically, instead
+    of needing the user to notice by hand). Reference only -- never read by
+    compute_vor/assign_tiers, and must stay that way."""
+    board = board.copy()
+    resolver = _build_name_resolver(flock_lookup)
+    flock_data = board["name"].map(resolver)
+    board["flock_overall_rank"] = flock_data.map(lambda d: d["overall_rank"] if d else None)
+    board["flock_pos_rank"] = flock_data.map(lambda d: d["pos_rank"] if d else None)
+    board["flock_fpts"] = flock_data.map(lambda d: d["fpts"] if d else None)
+
+    def diverges(row):
+        if pd.isna(row["flock_overall_rank"]):
+            return False
+        return abs(row["overall_rank"] - row["flock_overall_rank"]) >= FLOCK_DIVERGENCE_THRESHOLD
+
+    board["flock_diverges"] = board.apply(diverges, axis=1)
+    return board
+
+
 RAW_STAT_FIELDS = [f for f in ALL_CANONICAL_FIELDS if f not in ("name", "position", "team")]
 
 
-def score_file(path: Path, cfg: dict, adp_lookup: dict[str, float] | None = None) -> pd.DataFrame:
+def score_file(
+    path: Path,
+    cfg: dict,
+    adp_lookup: dict[str, float] | None = None,
+    flock_lookup: dict[str, dict] | None = None,
+) -> pd.DataFrame:
     raw = pd.read_csv(path)
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
     df = apply_mapping(raw, mapping)
@@ -135,6 +238,13 @@ def score_file(path: Path, cfg: dict, adp_lookup: dict[str, float] | None = None
     else:
         board["adp"] = None
         board["value_vs_adp"] = None
+    if flock_lookup:
+        board = attach_flock_reference(board, flock_lookup)
+    else:
+        board["flock_overall_rank"] = None
+        board["flock_pos_rank"] = None
+        board["flock_fpts"] = None
+        board["flock_diverges"] = False
     return board
 
 
@@ -151,6 +261,13 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
         value_vs_adp = board["value_vs_adp"].iloc[i]
         row["adp"] = None if pd.isna(adp) else round(float(adp), 1)
         row["value_vs_adp"] = None if pd.isna(value_vs_adp) else float(value_vs_adp)
+        flock_rank = board["flock_overall_rank"].iloc[i]
+        flock_pos_rank = board["flock_pos_rank"].iloc[i]
+        flock_fpts = board["flock_fpts"].iloc[i]
+        row["flock_overall_rank"] = None if pd.isna(flock_rank) else int(flock_rank)
+        row["flock_pos_rank"] = None if pd.isna(flock_pos_rank) else int(flock_pos_rank)
+        row["flock_fpts"] = None if pd.isna(flock_fpts) else round(float(flock_fpts), 1)
+        row["flock_diverges"] = bool(board["flock_diverges"].iloc[i])
         # Full raw stat line for the player detail page -- nested under its
         # own key rather than flattened, so it doesn't collide with any of
         # the derived column names above (e.g. Rankings' "TD%" column key).
@@ -164,7 +281,9 @@ def build_data_bundle(cfg: dict) -> dict:
         year: score_file(DATA_DIR / f"{year}_actual_stats.csv", cfg, adp_lookup=load_adp(year))
         for year in HISTORY_YEARS
     }
-    projection_board = score_file(DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_adp())
+    projection_board = score_file(
+        DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_adp(), flock_lookup=load_flock_rankings()
+    )
 
     # Index each year's VOR by (name, position) for fast per-player lookup.
     year_vor_lookup = {

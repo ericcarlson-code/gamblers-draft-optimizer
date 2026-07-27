@@ -40,11 +40,11 @@ QUERIES = [
 CSV_FIELDS = [
     "name", "position", "team",
     "games_played",
-    "pass_yds", "pass_td",
-    "rush_yds", "rush_td",
-    "rec", "rec_yds", "rec_td",
+    "pass_yds", "pass_td", "pass_att", "pass_cmp", "pass_int",
+    "rush_yds", "rush_td", "carries",
+    "rec", "rec_yds", "rec_td", "targets",
     "return_td", "off_fumble_return_td", "two_pt",
-    "fg_0_19", "fg_20_29", "fg_30_39", "fg_40_49", "fg_50_plus", "pat_made",
+    "fg_0_19", "fg_20_29", "fg_30_39", "fg_40_49", "fg_50_plus", "fg_60_plus", "pat_made",
     "def_td", "def_safety", "def_return_td", "def_xp_returned", "def_points_allowed",
 ]
 
@@ -133,11 +133,16 @@ def fetch_season(season: int) -> dict[str, dict]:
                     "games_played": stats.get("gamesPlayed", 0),
                     "pass_yds": stats.get("passingYards", 0),
                     "pass_td": stats.get("passingTouchdowns", 0),
+                    "pass_att": stats.get("passingAttempts", 0),
+                    "pass_cmp": stats.get("completions", 0),
+                    "pass_int": stats.get("interceptions", 0),
                     "rush_yds": stats.get("rushingYards", 0),
                     "rush_td": stats.get("rushingTouchdowns", 0),
+                    "carries": stats.get("rushingAttempts", 0),
                     "rec": stats.get("receptions", 0),
                     "rec_yds": stats.get("receivingYards", 0),
                     "rec_td": stats.get("receivingTouchdowns", 0),
+                    "targets": stats.get("receivingTargets", 0),
                     "return_td": stats.get("returnTouchdowns", 0),
                     "off_fumble_return_td": 0,  # not exposed by this endpoint
                     "two_pt": stats.get("totalTwoPointConvs", 0),
@@ -146,6 +151,7 @@ def fetch_season(season: int) -> dict[str, dict]:
                     "fg_30_39": stats.get("fieldGoalsMade30_39", 0),
                     "fg_40_49": stats.get("fieldGoalsMade40_49", 0),
                     "fg_50_plus": stats.get("fieldGoalsMade50", 0),
+                    "fg_60_plus": 0,  # ESPN doesn't expose a separate 60+ count; see fetch_actuals_nflreadpy.py, which does
                     "pat_made": stats.get("extraPointsMade", 0),
                 }
 

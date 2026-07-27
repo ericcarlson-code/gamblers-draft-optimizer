@@ -19,11 +19,18 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from optimizer.config import load_config  # noqa: E402
-from optimizer.projections import build_projection  # noqa: E402
+from optimizer.depth_chart import (  # noqa: E402
+    apply_depth_chart_damping,
+    current_team_map,
+    games_played_map,
+    load_depth_chart_ranks,
+)
+from optimizer.projections import STAT_FIELDS, build_projection  # noqa: E402
 from optimizer.rookie_projections import build_round_position_baseline, project_rookies  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 VETERAN_MODEL_YEARS = [2023, 2024, 2025]
+DEPTH_CHART_SEASON = 2025  # most recent completed season -- the best real signal for 2026's pecking order
 ROOKIE_BASELINE_TRAINING_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 ROOKIE_CLASS_YEAR = 2026
 
@@ -44,6 +51,36 @@ def main() -> None:
 
     games_per_season = load_config()["season"]["games_per_season"]
     veteran_projection = build_projection(history, games_per_season=games_per_season)
+
+    if DEPTH_CHART_SEASON in history:
+        try:
+            depth_ranks = load_depth_chart_ranks(DEPTH_CHART_SEASON)
+            recent_games = games_played_map(history[DEPTH_CHART_SEASON])
+            veteran_projection = apply_depth_chart_damping(
+                veteran_projection, depth_ranks, recent_games, STAT_FIELDS
+            )
+            print(f"Applied depth-chart damping using {len(depth_ranks)} real depth-chart entries")
+        except Exception as e:  # network/data hiccup shouldn't break the whole projection build
+            print(f"Depth-chart damping skipped ({e})")
+
+        try:
+            # A player's stats CSV team goes stale the moment they change
+            # teams (trade/free agency) after their most recent season's
+            # stats were recorded -- e.g. Kenneth Walker III's stats still
+            # show SEA (his 2025 team) even after signing with KC for 2026.
+            # The depth chart's own team field is real-time, not frozen to
+            # last season.
+            teams = current_team_map(DEPTH_CHART_SEASON)
+            corrected = 0
+            for idx, row in veteran_projection.iterrows():
+                real_team = teams.get((row["name"], row["position"]))
+                if real_team and real_team != row["team"]:
+                    veteran_projection.at[idx, "team"] = real_team
+                    corrected += 1
+            print(f"Corrected {corrected} stale team assignments using current depth-chart data")
+        except Exception as e:
+            print(f"Team correction skipped ({e})")
+
     veteran_projection["projection_source"] = "real_stats"
 
     draft_history = {}

@@ -77,13 +77,25 @@ def test_kicker_scoring():
 
 
 def test_kicker_50_plus_aggregate_maps_to_50_59_not_60_plus():
-    # Our data source only reports one aggregate "50+ yard" make count, with no way
-    # to split out genuinely rare 60+ yard makes (worth 15 vs 5 in the real config --
-    # a 3x premium). Regression test for a bug where a wide assumed distance range
-    # pushed this aggregate's midpoint into the 60+ bucket, overvaluing every
-    # kicker's 50+ makes.
+    # Older sources (e.g. fetch_actuals.py's ESPN leaderboard) only report one
+    # aggregate "50+ yard" make count, with no way to split out genuinely rare
+    # 60+ yard makes (worth 15 vs 5 in the real config -- a 3x premium).
+    # Regression test for a bug where a wide assumed distance range pushed
+    # this aggregate's midpoint into the 60+ bucket, overvaluing every
+    # kicker's 50+ makes. A bare fg_50_plus count (no fg_60_plus) must stay
+    # conservative -- 50-59 tier, not the 15pt 60+ tier.
     stats = {"position": "K", "fg_50_plus": 1}
-    assert score_player(stats, cfg) == 5.0  # 50-59 tier, not the 15pt 60+ tier
+    assert score_player(stats, cfg) == 5.0
+
+
+def test_kicker_60_plus_scores_the_real_premium_tier():
+    # nflreadpy (scripts/fetch_actuals_nflreadpy.py) reports fg_made_50_59 and
+    # fg_made_60_ as genuinely separate counts, so a real 60+ make should now
+    # score the league's real 15pt premium tier -- a 3x jump over 50-59's
+    # 5pts, re-confirmed important by the user (cost them real money in a
+    # real week last season) rather than something to simplify away.
+    stats = {"position": "K", "fg_50_plus": 1, "fg_60_plus": 1}
+    assert score_player(stats, cfg) == 5.0 + 15.0
 
 
 def test_defense_scoring():
