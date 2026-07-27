@@ -14,6 +14,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from optimizer.config import load_config  # noqa: E402
 from optimizer.projections import build_projection  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
@@ -29,7 +30,8 @@ def main() -> None:
             continue
         history[year] = pd.read_csv(path)
 
-    projection = build_projection(history)
+    games_per_season = load_config()["season"]["games_per_season"]
+    projection = build_projection(history, games_per_season=games_per_season)
     out_path = DATA_DIR / "2026_projections.csv"
     projection.to_csv(out_path, index=False)
     print(f"Wrote {len(projection)} projected players to {out_path}")

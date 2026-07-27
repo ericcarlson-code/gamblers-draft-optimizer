@@ -39,6 +39,7 @@ QUERIES = [
 
 CSV_FIELDS = [
     "name", "position", "team",
+    "games_played",
     "pass_yds", "pass_td",
     "rush_yds", "rush_td",
     "rec", "rec_yds", "rec_td",
@@ -129,6 +130,7 @@ def fetch_season(season: int) -> dict[str, dict]:
                     "name": athlete.get("displayName", ""),
                     "position": position,
                     "team": athlete.get("teamShortName", ""),
+                    "games_played": stats.get("gamesPlayed", 0),
                     "pass_yds": stats.get("passingYards", 0),
                     "pass_td": stats.get("passingTouchdowns", 0),
                     "rush_yds": stats.get("rushingYards", 0),
