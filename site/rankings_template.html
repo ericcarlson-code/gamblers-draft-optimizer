@@ -949,7 +949,7 @@
 
   <section id="section-mockdraft" class="app-section" hidden>
     <div id="mockDraftSetup">
-      <p class="section-intro">Bot opponents draft by need + VOR in snake order, using the same 2026 Projections as the Rankings tab. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
+      <p class="section-intro">Bot opponents draft by real market consensus (ADP, see League Details for the source) + roster need in snake order -- a more realistic stand-in for what your actual 9 opponents will do, since they aren't using this league's custom VOR model. You draft using our own VOR/ADP-value recommendations, same as always. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
       <label class="field-label" for="mockSlotInput">Your draft slot (1–<span id="mockNumTeams"></span>)</label>
       <div class="mock-setup-row">
         <input type="number" id="mockSlotInput" min="1" value="1" />
@@ -1708,6 +1708,21 @@
     return Object.values(rosterSlots).reduce((a, b) => a + b, 0);
   }
 
+  // Real-world opponents don't know (or use) our custom VOR model -- they
+  // draft off real market consensus, so bot picks are ranked by real ADP
+  // ascending (lower ADP = drafted sooner) instead of our own VOR, for a
+  // more realistic practice-draft flow. Falls back to our own VOR, sorted
+  // descending, for the part of the pool ADP doesn't cover -- mostly deep
+  // bench and rookie-model players (see scripts/fetch_adp.py's real-draft-
+  // sample coverage note) -- so the bot pool is never left unranked. Only
+  // reorders the array; each player's already-fresh .vor (from computeVOR,
+  // called by the caller first) and .adp are untouched.
+  function rankPlayersForBotDraft(players) {
+    const withAdp = players.filter(p => p.adp != null).sort((a, b) => a.adp - b.adp);
+    const withoutAdp = players.filter(p => p.adp == null).sort((a, b) => b.vor - a.vor);
+    return [...withAdp, ...withoutAdp];
+  }
+
   function pickForBot(availableRanked, teamRoster, rosterSlots) {
     // teamRoster: array of already-drafted player objects (not just position strings) --
     // storing full players (not just their positions) is what lets the UI also flag
@@ -2002,7 +2017,8 @@
       const available = getMockAvailable();
       if (available.length === 0) break;
       const ranked = computeVOR(available, numTeams, rosterSlots);
-      const pick = pickForBot(ranked, mockDraft.rosters[teamLabel], rosterSlots);
+      const botRanked = rankPlayersForBotDraft(ranked);
+      const pick = pickForBot(botRanked, mockDraft.rosters[teamLabel], rosterSlots);
       recordMockPick(pick, teamLabel);
     }
     renderMockDraft();
