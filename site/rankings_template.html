@@ -282,6 +282,22 @@
     position: relative;
   }
   .modal-box-wide { max-width: 760px; }
+  .player-hover-tip {
+    position: fixed;
+    z-index: 60;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    max-width: 260px;
+    pointer-events: none;
+  }
+  .player-hover-tip[hidden] { display: none; }
+  .hover-tip-title { font-weight: 700; margin-bottom: 4px; }
+  .hover-tip-line { color: var(--ink-muted); }
   .player-modal-header { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
   /* Higher specificity than the bare .player-avatar rule (defined later in
      this stylesheet) so the 72px size always wins regardless of source order. */
@@ -1140,6 +1156,8 @@
   </div>
 </div>
 
+<div class="player-hover-tip" id="playerHoverTip" hidden></div>
+
 <script>
   const DATA_BY_VIEW = __BOARD_DATA_BY_YEAR_JSON__;
   const LEAGUE_META = DATA_BY_VIEW.meta;
@@ -1590,6 +1608,85 @@
       const trigger = e.target.closest('[data-player-name]');
       if (trigger) openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW['2026']));
     });
+  }
+
+  // Quick at-a-glance hover popover (VOR/tier, ADP value, positional
+  // scarcity, live stack potential) -- distinct from the click-triggered
+  // player detail page, which is the full deep-dive. Delegated on the same
+  // two containers the modal listens on, keyed off the same
+  // .player-name-link/data-player-name markup.
+  function positionScarcityText(player, pool) {
+    const samePos = [...pool].filter(p => p.position === player.position).sort((a, b) => b.vor - a.vor);
+    const rank = samePos.findIndex(p => p.name === player.name) + 1;
+    const maxTier = samePos.reduce((m, p) => Math.max(m, p.tier), 1);
+    if (rank <= 0) return '';
+    return `#${rank} at ${player.position} · Tier ${player.tier} of ${maxTier}`;
+  }
+
+  function playerTooltipHtml(player, pool) {
+    const scarcity = positionScarcityText(player, pool);
+    const adpLine = player.adp != null
+      ? `<div class="hover-tip-line">ADP ${player.adp.toFixed(1)} · ${valueVsAdpHtml(player.value_vs_adp)} vs ADP</div>`
+      : '';
+    // Stack context only makes sense once a mock draft roster exists --
+    // Rankings has no "my roster" to check against.
+    let stackLine = '';
+    if (typeof mockDraft !== 'undefined' && mockDraft && mockDraft.rosters && mockDraft.rosters['Me']) {
+      const stackWith = stackWithFor(player, mockDraft.rosters['Me']);
+      if (stackWith.length) stackLine = `<div class="hover-tip-line"><span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span></div>`;
+    }
+    return `
+      <div class="hover-tip-title">${player.name} <span class="team">${player.team}</span></div>
+      <div class="hover-tip-line">VOR ${player.vor.toFixed(1)} · Pts ${player.points.toFixed(1)}</div>
+      <div class="hover-tip-line">${scarcity}</div>
+      ${adpLine}
+      ${stackLine}
+    `;
+  }
+
+  function positionPlayerTooltip(x, y) {
+    const tip = document.getElementById('playerHoverTip');
+    const rect = tip.getBoundingClientRect();
+    let left = x + 14, top = y + 14;
+    if (left + rect.width > window.innerWidth - 8) left = x - rect.width - 14;
+    if (top + rect.height > window.innerHeight - 8) top = y - rect.height - 14;
+    tip.style.left = `${Math.max(4, left)}px`;
+    tip.style.top = `${Math.max(4, top)}px`;
+  }
+
+  function showPlayerTooltip(x, y, player, pool) {
+    const tip = document.getElementById('playerHoverTip');
+    tip.innerHTML = playerTooltipHtml(player, pool);
+    tip.hidden = false;
+    positionPlayerTooltip(x, y);
+  }
+
+  function hidePlayerTooltip() {
+    document.getElementById('playerHoverTip').hidden = true;
+  }
+
+  function initPlayerTooltips() {
+    function attach(containerId, poolFn) {
+      const el = document.getElementById(containerId);
+      el.addEventListener('mouseover', (e) => {
+        const link = e.target.closest('.player-name-link');
+        if (!link) return;
+        const pool = poolFn();
+        const player = pool.find(p => p.name === link.dataset.playerName);
+        if (player) showPlayerTooltip(e.clientX, e.clientY, player, pool);
+      });
+      el.addEventListener('mousemove', (e) => {
+        if (!document.getElementById('playerHoverTip').hidden && e.target.closest('.player-name-link')) {
+          positionPlayerTooltip(e.clientX, e.clientY);
+        }
+      });
+      el.addEventListener('mouseout', (e) => {
+        const link = e.target.closest('.player-name-link');
+        if (link && !link.contains(e.relatedTarget)) hidePlayerTooltip();
+      });
+    }
+    attach('tbody', () => DATA);
+    attach('mockPickPanel', () => rescoreBoard(DATA_BY_VIEW['2026']));
   }
 
   function renderPills() {
@@ -3030,6 +3127,7 @@
   initTeamRosters();
   initLeagueEditForm();
   initPlayerModal();
+  initPlayerTooltips();
   renderLeagueDetails();
 
   renderViewPills();
