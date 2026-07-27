@@ -3,7 +3,7 @@ Fernando Mendoza,QB,LV,1,1,1
 Jeremiyah Love,RB,ARI,1,3,3
 Carnell Tate,WR,TEN,1,4,4
 Jordyn Tyson,WR,NO,1,8,8
-Ty Simpson,QB,LAR,1,13,13
+Ty Simpson,QB,LA,1,13,13
 Kenyon Sadiq,TE,NYJ,1,16,16
 Makai Lemon,WR,PHI,1,20,20
 KC Concepcion,WR,CLE,1,24,24
@@ -15,10 +15,10 @@ Germie Bernard,WR,PIT,2,15,47
 Eli Stowers,TE,PHI,2,22,54
 Nate Boerkircher,TE,JAX,2,24,56
 Marlin Klein,TE,HOU,2,27,59
-Max Klare,TE,LAR,2,29,61
+Max Klare,TE,LA,2,29,61
 Carson Beck,QB,ARI,3,1,65
 Sam Roush,TE,CHI,3,5,69
-Antonio Williams,WR,WSH,3,7,71
+Antonio Williams,WR,WAS,3,7,71
 Oscar Delp,TE,NO,3,9,73
 Malachi Fields,WR,NYG,3,10,74
 Caleb Douglas,WR,MIA,3,11,75
@@ -59,11 +59,11 @@ Cole Payton,QB,PHI,5,38,178
 Seydou Traore,TE,MIA,5,40,180
 Taylen Green,QB,CLE,6,1,182
 Bauer Sharp,TE,TB,6,4,185
-Kaytron Allen,RB,WSH,6,6,187
+Kaytron Allen,RB,WAS,6,6,187
 Barion Brown,WR,NO,6,9,190
 Josh Cameron,WR,JAX,6,10,191
 Malik Benson,WR,LV,6,14,195
-CJ Daniels,WR,LAR,6,16,197
+CJ Daniels,WR,LA,6,16,197
 Demond Claiborne,RB,MIN,6,17,198
 Emmanuel Henderson Jr.,WR,SEA,6,18,199
 CJ Williams,WR,JAX,6,22,203
@@ -71,7 +71,7 @@ Lewis Bond,WR,HOU,6,23,204
 Trey Smack,K,GB,6,35,216
 Anthony Smith,WR,DAL,7,2,218
 Jack Endries,TE,CIN,7,5,221
-Athan Kaliakmanis,QB,WSH,7,7,223
+Athan Kaliakmanis,QB,WAS,7,7,223
 Jaren Kanak,TE,TEN,7,9,225
 Eli Heidenreich,RB,PIT,7,14,230
 Behren Morton,QB,NE,7,18,234

@@ -72,6 +72,18 @@ def category_values(athlete_record: dict, category_names: dict[str, list[str]]) 
     return out
 
 
+# ESPN's own team abbreviations disagree with nflreadpy's (our primary
+# source since the Phase 3 pipeline swap) for exactly two teams: the Rams
+# ("LAR" vs nflreadpy's "LA") and Washington ("WSH" vs "WAS"). Left
+# unnormalized, a DEF row here would land under a different `team` key than
+# that same team's own offensive players -- confirmed as a real, visible bug
+# (Rams split into two separate entries on the Stacks tab, one with no
+# logo). Normalize to nflreadpy's convention everywhere ESPN team data
+# enters the pipeline (see the same fixup in fetch_draft_results.py and
+# fetch_player_images.py).
+ESPN_TEAM_ABBR_FIXUPS = {"LAR": "LA", "WSH": "WAS"}
+
+
 def fetch_team_defense(season: int) -> dict[str, dict]:
     """Team-level DEF rows keyed by team abbreviation, sourced from the standings
     endpoint's pointsAgainst (season total). Only points allowed is available here --
@@ -85,13 +97,14 @@ def fetch_team_defense(season: int) -> dict[str, dict]:
     for conference in data.get("children", []):
         for entry in conference.get("standings", {}).get("entries", []):
             team = entry["team"]
+            abbr = ESPN_TEAM_ABBR_FIXUPS.get(team["abbreviation"], team["abbreviation"])
             points_against = next(
                 (s["value"] for s in entry["stats"] if s["name"] == "pointsAgainst"), 0
             )
-            defenses[team["abbreviation"]] = {
-                "name": team.get("displayName", team["abbreviation"]),
+            defenses[abbr] = {
+                "name": team.get("displayName", abbr),
                 "position": "DEF",
-                "team": team["abbreviation"],
+                "team": abbr,
                 "def_td": 0,
                 "def_safety": 0,
                 "def_return_td": 0,

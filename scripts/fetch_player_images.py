@@ -42,14 +42,26 @@ QUERIES = [
     ("kicking.fieldGoalsMade", 2),
 ]
 
-# All 32 real team abbreviations (matches optimizer/schema.py's DEF `team`
-# field and scripts/fetch_adp.py's TEAM_ABBR_TO_FULL_NAME) -- used to fetch
-# every team's logo as the universal fallback image.
+# All 32 real team abbreviations, in nflreadpy's convention ("LA" not "LAR",
+# "WAS" not "WSH" -- our board's own `team` field comes from nflreadpy for
+# the vast majority of players since the Phase 3 pipeline swap, so this list
+# must match that, not ESPN's). A mismatch here meant TEAM_LOGOS['LA']/
+# ['WAS'] never got fetched at all, leaving every real Rams/Washington
+# player with no logo fallback -- confirmed via the Stacks tab showing the
+# Rams split into two entries, one with no logo.
 ALL_TEAM_ABBRS = [
     "ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", "DAL", "DEN", "DET", "GB",
-    "HOU", "IND", "JAX", "KC", "LV", "LAC", "LAR", "MIA", "MIN", "NE", "NO", "NYG",
-    "NYJ", "PHI", "PIT", "SF", "SEA", "TB", "TEN", "WSH",
+    "HOU", "IND", "JAX", "KC", "LV", "LAC", "LA", "MIA", "MIN", "NE", "NO", "NYG",
+    "NYJ", "PHI", "PIT", "SF", "SEA", "TB", "TEN", "WAS",
 ]
+
+
+# ESPN's team abbreviations disagree with nflreadpy's (our board's own
+# convention, since the Phase 3 pipeline swap) for the Rams ("LAR" vs "LA")
+# and Washington ("WSH" vs "WAS") -- see the same fixup in fetch_actuals.py
+# and fetch_draft_results.py. Applied to every ESPN-sourced team value in
+# this file so (name, team) matching against our board works correctly.
+ESPN_TEAM_ABBR_FIXUPS = {"LAR": "LA", "WSH": "WAS"}
 
 
 def slugify(name: str) -> str:
@@ -105,6 +117,7 @@ def fetch_veteran_headshots() -> dict[tuple[str, str], str]:
                 athlete = record["athlete"]
                 name = athlete.get("displayName")
                 team = athlete.get("teamShortName", "")
+                team = ESPN_TEAM_ABBR_FIXUPS.get(team, team)
                 headshot = (athlete.get("headshot") or {}).get("href")
                 key = (name, team)
                 if name and headshot and key not in out:
@@ -126,6 +139,7 @@ def fetch_rookie_headshots() -> dict[tuple[str, str], str]:
         athlete = pick.get("athlete") or {}
         name = athlete.get("displayName")
         team = (pick.get("team") or {}).get("abbreviation", "")
+        team = ESPN_TEAM_ABBR_FIXUPS.get(team, team)
         headshot = (athlete.get("headshot") or {}).get("href")
         if name and headshot:
             out[(name, team)] = headshot

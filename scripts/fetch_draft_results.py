@@ -24,6 +24,15 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 FANTASY_POSITIONS = {"QB", "RB", "WR", "TE", "K"}
 CSV_FIELDS = ["name", "position", "team", "round", "pick", "overall"]
 
+# ESPN's abbreviations disagree with nflreadpy's (our primary source since
+# the Phase 3 pipeline swap) for the Rams ("LAR" vs "LA") and Washington
+# ("WSH" vs "WAS") -- unnormalized, a rookie drafted by either team lands
+# under a different `team` key than that same team's established players,
+# splitting them apart everywhere team is used to group/match (confirmed:
+# the Rams showed as two separate entries on the Stacks tab). See the same
+# fixup in fetch_actuals.py and fetch_player_images.py.
+ESPN_TEAM_ABBR_FIXUPS = {"LAR": "LA", "WSH": "WAS"}
+
 
 def fetch_draft(season: int) -> dict:
     req = urllib.request.Request(DRAFT_URL.format(season=season), headers={"User-Agent": "Mozilla/5.0"})
@@ -45,7 +54,10 @@ def main() -> None:
         sys.exit(1)
 
     positions_by_id = {p["id"]: p["abbreviation"] for p in data.get("positions", [])}
-    nfl_team_by_id = {t["id"]: t["abbreviation"] for t in data.get("teams", [])}
+    nfl_team_by_id = {
+        t["id"]: ESPN_TEAM_ABBR_FIXUPS.get(t["abbreviation"], t["abbreviation"])
+        for t in data.get("teams", [])
+    }
 
     rows = []
     for pick in data.get("picks", []):
