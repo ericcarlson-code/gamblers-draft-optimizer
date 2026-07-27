@@ -136,6 +136,45 @@ def resized_url(original_url: str, size: str) -> str:
     return f"https://a.espncdn.com/combiner/i?img={original_url.split('espncdn.com')[-1]}&w={size}&h={size}"
 
 
+NFLREADPY_HEADSHOT_SEASON = 2025
+
+
+def fetch_nflreadpy_headshots(season: int = NFLREADPY_HEADSHOT_SEASON) -> dict[tuple[str, str], str]:
+    """(name, team) -> full-size headshot URL, sourced from nflreadpy's
+    load_player_stats() (already used for scripts/fetch_actuals_nflreadpy.py
+    -- same complete player pool, no top-N-leaderboard cap). Fills the exact
+    gap the ESPN-based fetch above has: George Kittle and Christian Watson
+    (11 and 10 games played in 2025 respectively) fell outside every ESPN
+    QUERIES page window, so they never got a headshot URL at all -- but
+    nflreadpy's per-player row always carries one when NFL.com has it,
+    regardless of season totals. Since our own board's name/team ALSO come
+    from nflreadpy now (fetch_actuals_nflreadpy.py), this should match by
+    exact (name, team) far more often than the ESPN-keyed dict does.
+    Lazily imported so nothing else that imports this module is forced to
+    depend on nflreadpy/polars."""
+    import nflreadpy as nfl
+
+    df = nfl.load_player_stats(seasons=[season], summary_level="reg").to_pandas()
+    out: dict[tuple[str, str], str] = {}
+    for row in df.itertuples():
+        name = row.player_display_name
+        url = row.headshot_url
+        if not name or not isinstance(url, str) or not url:
+            continue
+        out[(name, row.recent_team or "")] = url
+    return out
+
+
+def nflcdn_resized_url(original_url: str, size: str) -> str:
+    """nflreadpy's headshot_url points at NFL.com's Cloudinary-backed CDN
+    (static.www.nfl.com/image/upload/f_auto,q_auto/...) -- full-size images
+    there run 3-4MB each, which would balloon the site the same way an
+    un-resized ESPN headshot would. Cloudinary supports resize transforms
+    inserted into the URL path itself (w_/h_/c_fill), same idea as ESPN's
+    own combiner endpoint above, just a different CDN's syntax."""
+    return original_url.replace("/upload/f_auto,q_auto/", f"/upload/f_auto,q_auto,w_{size},h_{size},c_fill/")
+
+
 def download(url: str, dest: Path) -> bool:
     if dest.exists():
         return True
@@ -166,6 +205,19 @@ def main() -> None:
     print("Fetching 2026 rookie headshot URLs...")
     headshot_urls.update(fetch_rookie_headshots())
     print(f"  {len(headshot_urls)} total headshots available")
+
+    print("Fetching nflreadpy headshot URLs (complete player pool, fills gaps ESPN's leaderboard-only fetch leaves)...")
+    nflreadpy_headshots = fetch_nflreadpy_headshots()
+    print(f"  {len(nflreadpy_headshots)} nflreadpy headshots found")
+    # Bare-name fallback -- our board's team can differ from nflreadpy's OWN
+    # season-stats team for a player whose team we corrected via the
+    # depth-chart current_team_map() fix (e.g. Kenneth Walker III shows SEA
+    # in nflreadpy's 2025 stats row, but KC on our corrected board) -- an
+    # exact (name, team) match would miss exactly the players that fix
+    # applies to. Same uniqueness guard as the ESPN-side fallbacks.
+    nflreadpy_by_name: dict[str, set[str]] = {}
+    for (nname, _nteam), nurl in nflreadpy_headshots.items():
+        nflreadpy_by_name.setdefault(nname, set()).add(nurl)
 
     headshots_dir = CACHE_DIR / "headshots"
     logos_dir = CACHE_DIR / "logos"
@@ -209,6 +261,7 @@ def main() -> None:
         if p["position"] == "DEF":
             continue  # defenses use their team logo, not an individual headshot
         url = headshot_urls.get((name, team))
+        resizer = resized_url
         if not url:
             url = by_stripped_name_team.get((strip_suffix(name), team))
         if not url:
@@ -218,9 +271,23 @@ def main() -> None:
             candidates = by_stripped_name.get(strip_suffix(name), [])
             url = candidates[0] if len(candidates) == 1 else None
         if not url:
+            # ESPN's leaderboard-based fetch has nothing for this player
+            # (e.g. George Kittle/Christian Watson, whose 2025 games-missed
+            # kept them off every QUERIES page) -- nflreadpy's complete pool
+            # covers exactly this gap. Name/team come from the same source
+            # as our own board now, so an exact match is the common case;
+            # bare-name fallback covers our own team-correction step shifting
+            # a player off whatever team nflreadpy's stats row itself shows.
+            url = nflreadpy_headshots.get((name, team))
+            if not url:
+                candidates = nflreadpy_by_name.get(name, set())
+                url = next(iter(candidates)) if len(candidates) == 1 else None
+            if url:
+                resizer = nflcdn_resized_url
+        if not url:
             continue
         matched += 1
-        download(resized_url(url, HEADSHOT_SIZE), headshots_dir / f"{slugify(name)}.png")
+        download(resizer(url, HEADSHOT_SIZE), headshots_dir / f"{slugify(name)}.png")
         if i % 100 == 0:
             print(f"  ...{i}/{len(players)} processed")
 
