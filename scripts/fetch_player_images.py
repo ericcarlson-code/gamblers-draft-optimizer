@@ -32,7 +32,7 @@ BASE_URL = "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/sta
 DRAFT_URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/draft?season=2026"
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "image_cache"
-HEADSHOT_SIZE = "120"
+HEADSHOT_SIZE = "96"  # largest actual on-page use is the player modal's 72px avatar
 LOGO_SIZE = "80"
 
 QUERIES = [
@@ -167,12 +167,17 @@ def fetch_nflreadpy_headshots(season: int = NFLREADPY_HEADSHOT_SEASON) -> dict[t
 
 def nflcdn_resized_url(original_url: str, size: str) -> str:
     """nflreadpy's headshot_url points at NFL.com's Cloudinary-backed CDN
-    (static.www.nfl.com/image/upload/f_auto,q_auto/...) -- full-size images
-    there run 3-4MB each, which would balloon the site the same way an
-    un-resized ESPN headshot would. Cloudinary supports resize transforms
-    inserted into the URL path itself (w_/h_/c_fill), same idea as ESPN's
-    own combiner endpoint above, just a different CDN's syntax."""
-    return original_url.replace("/upload/f_auto,q_auto/", f"/upload/f_auto,q_auto,w_{size},h_{size},c_fill/")
+    (static.www.nfl.com/image/upload/f_auto,q_auto/... OR .../image/private/
+    f_auto,q_auto/... -- Cloudinary's two delivery types, both seen in
+    practice, e.g. Marcedes Lewis/Deven Thompkins use "private") -- full-size
+    images there run 3-4MB each, which would balloon the site the same way
+    an un-resized ESPN headshot would. Cloudinary supports resize transforms
+    inserted into the URL path itself (w_/h_/c_fill); matching on
+    "f_auto,q_auto/" alone (not anchored to "/upload/") catches both
+    delivery types with one replace. A real bug caught here: the original
+    "/upload/"-anchored version silently left "private" URLs unresized,
+    embedding two ~4MB images before this was caught."""
+    return original_url.replace("f_auto,q_auto/", f"f_auto,q_auto,w_{size},h_{size},c_fill/", 1)
 
 
 def download(url: str, dest: Path) -> bool:
