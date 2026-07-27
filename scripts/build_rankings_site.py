@@ -24,6 +24,7 @@ from scripts.build_rankings_artifact_data import build_data_bundle
 
 SITE_DIR = Path(__file__).resolve().parent.parent / "site"
 TEMPLATE_PATH = SITE_DIR / "rankings_template.html"
+INJURY_STATUS_PATH = Path(__file__).resolve().parent.parent / "data" / "injury_status.json"
 FONTS = {
     "__BEBAS_B64__": SITE_DIR / "fonts" / "bebas.woff2",
     "__PUBLIC_B64__": SITE_DIR / "fonts" / "public.woff2",
@@ -47,8 +48,12 @@ def main() -> None:
     html = html.replace("__BOARD_DATA_BY_YEAR_JSON__", json.dumps(bundle))
     html = html.replace("__GEN_DATE__", date.today().strftime("%B %d, %Y"))
 
+    injury_status = json.loads(INJURY_STATUS_PATH.read_text(encoding="utf-8")) if INJURY_STATUS_PATH.exists() else {}
+    html = html.replace("__INJURY_STATUS_JSON__", json.dumps(injury_status))
+
     remaining = [tok for tok in ("__BEBAS_B64__", "__PUBLIC_B64__", "__MONO_B64__",
-                                  "__BOARD_DATA_BY_YEAR_JSON__", "__GEN_DATE__") if tok in html]
+                                  "__BOARD_DATA_BY_YEAR_JSON__", "__GEN_DATE__",
+                                  "__INJURY_STATUS_JSON__") if tok in html]
     if remaining:
         print(f"WARNING: unreplaced placeholders remain: {remaining}")
 

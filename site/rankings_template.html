@@ -745,6 +745,18 @@
 
   .rank { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; }
   .player-name { font-weight: 600; }
+  .injury-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .injury-badge-out { background: color-mix(in srgb, var(--danger) 20%, var(--surface-2)); color: var(--danger); }
+  .injury-badge-warn { background: color-mix(in srgb, var(--accent-2) 20%, var(--surface-2)); color: var(--accent-2); }
   .team { color: var(--ink-muted); font-size: 12.5px; margin-left: 6px; }
 
   .pos-chip {
@@ -1053,6 +1065,10 @@
   // Untouched snapshot of the baked-in config, taken before any user edits --
   // "Reset to Defaults" in League Details re-applies this.
   const DEFAULT_LEAGUE_META = JSON.parse(JSON.stringify(DATA_BY_VIEW.meta));
+  // {player_name: {status, out_weeks: [1,2,...] | "season", note, checked_date}}
+  // -- populated by scripts/update_injury_status.py's scheduled runs, empty
+  // until that's built. Read-only on the client; the page never writes to it.
+  const INJURY_STATUS = __INJURY_STATUS_JSON__;
   const GEN_DATE = "__GEN_DATE__";
   const VIEWS = [
     { key: "2026", label: "2026 Projections", primary: true },
@@ -1101,18 +1117,69 @@
   // week or the remaining weeks of the season. VOR/tier get recomputed fresh
   // against whichever scale is active via the shared rescoreBoard(), so
   // scarcity math stays consistent instead of being reinvented per view.
+  // Injury status is only meaningful for the current/upcoming season (2026),
+  // never for a completed historical year -- attachInjuryStatus is a no-op
+  // outside that view. Kept separate from the point-scaling logic below so
+  // Mock Draft and Team Rosters can show the badge without also scaling
+  // season-total values down to a single week.
+  function injuryEntryFor(name) {
+    return INJURY_STATUS[name] || null;
+  }
+  function weeksOutSet(entry, gamesPerSeason) {
+    if (!entry || !entry.out_weeks) return new Set();
+    if (entry.out_weeks === 'season') return new Set(Array.from({ length: gamesPerSeason }, (_, i) => i + 1));
+    if (Array.isArray(entry.out_weeks)) return new Set(entry.out_weeks);
+    return new Set();
+  }
+  // Caller decides whether this data is even from the current season pool --
+  // injury status only makes sense there. Rankings can show any historical
+  // year, so it gates on activeView itself (see applyProjectionMode); Mock
+  // Draft and Team Rosters always operate on the 2026 pool, so they call
+  // this directly with no gating needed.
+  function attachInjuryStatus(rows) {
+    return rows.map(r => {
+      const entry = injuryEntryFor(r.name);
+      return entry ? { ...r, injuryStatus: entry.status, injuryNote: entry.note || null } : r;
+    });
+  }
+
   function applyProjectionMode(rows) {
-    if (activeView !== '2026' || projectionMode === 'season') return rows;
+    if (activeView !== '2026') return rows; // only this season's pool has injury data at all
+    const withStatus = attachInjuryStatus(rows);
+    if (projectionMode === 'season') return withStatus;
+
     const season = LEAGUE_META.season || {};
     const gamesPerSeason = season.games_per_season || 17;
-    const weeksRemaining = Math.max(1, gamesPerSeason - currentWeek + 1);
-    const factor = projectionMode === 'thisweek' ? (1 / gamesPerSeason) : (weeksRemaining / gamesPerSeason);
-    return rows.map(r => ({
-      ...r,
-      points: r.points * factor,
-      proj_pass_td: (r.proj_pass_td ?? 0) * factor,
-      proj_rush_rec_td: (r.proj_rush_rec_td ?? 0) * factor,
-    }));
+    const weeklyRate = 1 / gamesPerSeason;
+    return withStatus.map(r => {
+      const outWeeks = weeksOutSet(injuryEntryFor(r.name), gamesPerSeason);
+      let factor;
+      if (projectionMode === 'thisweek') {
+        factor = outWeeks.has(currentWeek) ? 0 : weeklyRate;
+      } else {
+        let activeWeeks = 0;
+        for (let w = currentWeek; w <= gamesPerSeason; w++) if (!outWeeks.has(w)) activeWeeks++;
+        factor = activeWeeks * weeklyRate;
+      }
+      return {
+        ...r,
+        points: r.points * factor,
+        proj_pass_td: (r.proj_pass_td ?? 0) * factor,
+        proj_rush_rec_td: (r.proj_rush_rec_td ?? 0) * factor,
+      };
+    });
+  }
+
+  const INJURY_BADGE_STYLE = {
+    Out: { label: 'O', className: 'injury-badge-out' },
+    IR: { label: 'IR', className: 'injury-badge-out' },
+    Doubtful: { label: 'D', className: 'injury-badge-warn' },
+    Questionable: { label: 'Q', className: 'injury-badge-warn' },
+  };
+  function injuryBadgeHtml(status) {
+    const style = INJURY_BADGE_STYLE[status];
+    if (!style) return '';
+    return `<span class="injury-badge ${style.className}" title="${status}">${style.label}</span>`;
   }
 
   let activeView = "2026";
@@ -1387,7 +1454,7 @@
       const barPct = Math.max(2, Math.round((d.vor / maxVor) * 100));
       tr.innerHTML = `
         <td class="rank">${d.overall_rank}</td>
-        <td><span class="player-name">${d.name}</span><span class="team">${d.team}</span></td>
+        <td><span class="player-name">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}</td>
         <td><span class="pos-chip">${d.position}</span></td>
         <td class="num">${d.points.toFixed(1)}</td>
         <td class="num">
@@ -1755,7 +1822,7 @@
       } else {
         slot = 'OVERFLOW';
       }
-      return { name: p.name, position: p.position, vor: p.vor, slot };
+      return { name: p.name, position: p.position, vor: p.vor, slot, injuryStatus: p.injuryStatus || null };
     });
     return { assignments, slotCounts };
   }
@@ -1788,12 +1855,12 @@
 
     const body = document.getElementById('myRosterBody');
     body.innerHTML = assignments.length
-      ? assignments.map(a => `<tr><td>${a.name}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
+      ? assignments.map(a => `<tr><td>${a.name}${injuryBadgeHtml(a.injuryStatus)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
       : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
   }
 
   function getMockAvailable() {
-    const base = DATA_BY_VIEW['2026'];
+    const base = attachInjuryStatus(DATA_BY_VIEW['2026']);
     return base.filter(p => !mockDraft.draftedNames.has(p.name));
   }
 
@@ -1902,11 +1969,20 @@
             const tdHtml = tdPartner
               ? `<span class="stack-reason reason-clear">High TD-correlation: ${p.name} (${(p.td_dependency_pct ?? 0).toFixed(0)}% TD) and ${tdPartner.name} (${(tdPartner.td_dependency_pct ?? 0).toFixed(0)}% TD) share the same scoring events, not just a team.</span>`
               : '';
-            stackCell = `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>${reasonHtml}${tdHtml}`;
+            // An injured stack partner means the correlated-upside bet isn't
+            // real right now -- call that out explicitly instead of quietly
+            // showing a VOR/tradeoff number that no longer reflects reality.
+            const injuredPartners = mockDraft.rosters['Me'].filter(mine =>
+              stackWith.includes(mine.name) && ['Out', 'IR', 'Doubtful'].includes(mine.injuryStatus)
+            );
+            const injuryWarningHtml = (injuredPartners.length || ['Out', 'IR', 'Doubtful'].includes(p.injuryStatus))
+              ? `<span class="stack-reason reason-reach">${[...injuredPartners.map(m => m.name), ...(['Out','IR','Doubtful'].includes(p.injuryStatus) ? [p.name] : [])].join(', ')} currently ${injuredPartners[0]?.injuryStatus || p.injuryStatus} -- this stack isn't live right now.</span>`
+              : '';
+            stackCell = `<span class="stack-badge">Stacks w/ ${stackWith.join(', ')}</span>${reasonHtml}${tdHtml}${injuryWarningHtml}`;
           }
           return `
             <tr>
-              <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span></td>
+              <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}</td>
               <td><span class="pos-chip">${p.position}</span></td>
               <td class="num">${p.vor.toFixed(1)}</td>
               <td class="num">${p.tier}</td>
@@ -2298,7 +2374,7 @@
   });
 
   function playerByName(name) {
-    return rescoreBoard(DATA_BY_VIEW['2026']).find(p => p.name === name);
+    return attachInjuryStatus(rescoreBoard(DATA_BY_VIEW['2026'])).find(p => p.name === name);
   }
 
   function allRosteredNames() {
@@ -2335,7 +2411,7 @@
 
     const rosterRows = assignments.map(a => `
       <tr>
-        <td>${a.name}</td>
+        <td>${a.name}${injuryBadgeHtml(a.injuryStatus)}</td>
         <td><span class="pos-chip">${a.position}</span></td>
         <td>${a.slot}</td>
         <td><button class="roster-row-remove" data-role="remove-player" data-team-id="${id}" data-name="${a.name}">×</button></td>
