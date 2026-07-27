@@ -125,6 +125,7 @@ def build_data_bundle(cfg: dict) -> dict:
             "gap_threshold_stdevs": cfg["tiering"]["gap_threshold_stdevs"],
             "league": cfg["league"],
             "scoring": cfg["scoring"],
+            "season": cfg["season"],
             "notes": cfg.get("notes", []),
         },
         "2026": projection_rows,

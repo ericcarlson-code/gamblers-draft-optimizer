@@ -842,6 +842,11 @@
       <div class="pills" id="viewPills"></div>
     </div>
 
+    <div class="view-switcher" id="projectionModeSwitcher" style="display:none;">
+      <span class="view-label">Projection</span>
+      <div class="pills" id="projectionModePills"></div>
+    </div>
+
     <div class="stat-strip" id="statStrip"></div>
 
     <div class="controls">
@@ -986,6 +991,19 @@
       <span id="leagueSaveNotice" class="league-notice"></span>
     </div>
 
+    <h3 class="subhead">Current Week</h3>
+    <p class="section-intro" style="margin-bottom:10px;">Powers Rankings' This Week / Rest of Season views (a flat-rate approximation: season projection ÷ games per season -- not real per-game data). Defaults from today's date vs. an estimated season start; override it directly once the real schedule is known.</p>
+    <div class="league-edit-row">
+      <div>
+        <label class="field-label" for="currentWeekInput">Current NFL Week (1-<span id="currentWeekMax"></span>)</label>
+        <input type="number" id="currentWeekInput" class="league-edit-input" min="1" step="1" />
+      </div>
+    </div>
+    <div class="league-edit-actions">
+      <button class="btn-secondary" id="currentWeekSaveBtn">Save Current Week</button>
+      <span id="currentWeekNotice" class="league-notice"></span>
+    </div>
+
     <div class="kv-grid" id="leagueInfoGrid"></div>
 
     <h3 class="subhead">Offense Scoring</h3>
@@ -1046,8 +1064,59 @@
     { key: "2020", label: "2020" },
   ];
   const POSITIONS = ["All", "QB", "RB", "WR", "TE", "K", "DEF"];
+
+  // ---------------------------------------------------------------------------
+  // Weekly / rest-of-season projection view -- the league pays out per week
+  // (uncapped $1/pt differential + $25 weekly pot), so a single season-total
+  // VOR number understates what actually matters some weeks. This is a flat-
+  // rate approximation (season points / games_per_season), not real per-game
+  // data -- that needs a per-game stats pipeline that doesn't exist yet.
+  // ---------------------------------------------------------------------------
+  const CURRENT_WEEK_KEY = 'gamblers-current-week-v1';
+  function loadCurrentWeek() {
+    try {
+      const raw = localStorage.getItem(CURRENT_WEEK_KEY);
+      const parsed = raw !== null ? parseInt(raw, 10) : NaN;
+      return Number.isFinite(parsed) ? parsed : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function saveCurrentWeek(week) {
+    try { localStorage.setItem(CURRENT_WEEK_KEY, String(week)); } catch (e) { /* won't persist */ }
+  }
+  function computeDefaultWeek() {
+    const season = LEAGUE_META.season || {};
+    const gamesPerSeason = season.games_per_season || 17;
+    if (!season.start_date) return 1;
+    const start = new Date(season.start_date + 'T00:00:00');
+    const diffDays = Math.floor((Date.now() - start.getTime()) / 86400000);
+    const week = Math.floor(diffDays / 7) + 1;
+    return Math.max(1, Math.min(week, gamesPerSeason));
+  }
+  let currentWeek = loadCurrentWeek() ?? computeDefaultWeek();
+  let projectionMode = 'season'; // 'season' | 'thisweek' | 'restofseason' -- only meaningful on the 2026 view
+
+  // Scales points (and the TD-count columns, proportionally) down to a single
+  // week or the remaining weeks of the season. VOR/tier get recomputed fresh
+  // against whichever scale is active via the shared rescoreBoard(), so
+  // scarcity math stays consistent instead of being reinvented per view.
+  function applyProjectionMode(rows) {
+    if (activeView !== '2026' || projectionMode === 'season') return rows;
+    const season = LEAGUE_META.season || {};
+    const gamesPerSeason = season.games_per_season || 17;
+    const weeksRemaining = Math.max(1, gamesPerSeason - currentWeek + 1);
+    const factor = projectionMode === 'thisweek' ? (1 / gamesPerSeason) : (weeksRemaining / gamesPerSeason);
+    return rows.map(r => ({
+      ...r,
+      points: r.points * factor,
+      proj_pass_td: (r.proj_pass_td ?? 0) * factor,
+      proj_rush_rec_td: (r.proj_rush_rec_td ?? 0) * factor,
+    }));
+  }
+
   let activeView = "2026";
-  let DATA = rescoreBoard(DATA_BY_VIEW[activeView]);
+  let DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
   let activePos = "All";
   let query = "";
   let sortKey = "overall_rank";
@@ -1085,9 +1154,37 @@
       btn.setAttribute('aria-pressed', v.key === activeView ? 'true' : 'false');
       btn.addEventListener('click', () => {
         activeView = v.key;
-        DATA = rescoreBoard(DATA_BY_VIEW[activeView]);
+        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
         renderViewPills();
+        renderProjectionModePills();
         updateSubtitle();
+        renderStats();
+        renderTable();
+      });
+      wrap.appendChild(btn);
+    }
+  }
+
+  const PROJECTION_MODES = [
+    { key: 'season', label: 'Season Total' },
+    { key: 'thisweek', label: 'This Week' },
+    { key: 'restofseason', label: 'Rest of Season' },
+  ];
+  function renderProjectionModePills() {
+    const switcher = document.getElementById('projectionModeSwitcher');
+    switcher.style.display = activeView === '2026' ? 'flex' : 'none';
+    if (activeView !== '2026') return;
+
+    const wrap = document.getElementById('projectionModePills');
+    wrap.innerHTML = '';
+    for (const m of PROJECTION_MODES) {
+      const btn = document.createElement('button');
+      btn.className = 'pill pill-sm' + (m.key === projectionMode ? ' active' : '');
+      btn.textContent = m.key === 'thisweek' ? `This Week (Wk ${currentWeek})` : m.label;
+      btn.addEventListener('click', () => {
+        projectionMode = m.key;
+        renderProjectionModePills();
+        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
         renderStats();
         renderTable();
       });
@@ -2416,7 +2513,7 @@
     // DATA is a cached scored snapshot for activeView (only otherwise
     // refreshed on a view-pill click) -- refresh it here too, or a save
     // while already sitting on a view would keep showing stale VOR/tiers.
-    DATA = rescoreBoard(DATA_BY_VIEW[activeView]);
+    DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
     renderStats();
     renderTable();
     renderStackTable();
@@ -2449,6 +2546,19 @@
       noticeEl.textContent = notes.join(' ');
       noticeEl.classList.toggle('warn', droppedInfo.length > 0);
     });
+
+    document.getElementById('currentWeekSaveBtn').addEventListener('click', () => {
+      const gamesPerSeason = (LEAGUE_META.season && LEAGUE_META.season.games_per_season) || 17;
+      const raw = parseInt(document.getElementById('currentWeekInput').value, 10);
+      currentWeek = Number.isFinite(raw) ? Math.max(1, Math.min(raw, gamesPerSeason)) : currentWeek;
+      saveCurrentWeek(currentWeek);
+      document.getElementById('currentWeekInput').value = currentWeek;
+      DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
+      renderProjectionModePills();
+      renderStats();
+      renderTable();
+      document.getElementById('currentWeekNotice').textContent = `Saved — Week ${currentWeek}.`;
+    });
   }
 
   function renderLeagueDetails() {
@@ -2457,6 +2567,11 @@
 
     document.getElementById('leagueNameInput').value = league.name;
     document.getElementById('leagueNumTeamsInput').value = LEAGUE_META.num_teams;
+
+    const gamesPerSeason = (LEAGUE_META.season && LEAGUE_META.season.games_per_season) || 17;
+    document.getElementById('currentWeekMax').textContent = gamesPerSeason;
+    document.getElementById('currentWeekInput').max = gamesPerSeason;
+    document.getElementById('currentWeekInput').value = currentWeek;
 
     document.getElementById('leagueInfoGrid').innerHTML = [
       kvCell('Yahoo League ID', league.yahoo_league_id),
@@ -2530,6 +2645,7 @@
   renderLeagueDetails();
 
   renderViewPills();
+  renderProjectionModePills();
   updateSubtitle();
   renderPills();
   renderStats();
