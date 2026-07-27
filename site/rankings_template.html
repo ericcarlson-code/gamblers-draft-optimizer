@@ -757,6 +757,18 @@
   }
   .injury-badge-out { background: color-mix(in srgb, var(--danger) 20%, var(--surface-2)); color: var(--danger); }
   .injury-badge-warn { background: color-mix(in srgb, var(--accent-2) 20%, var(--surface-2)); color: var(--accent-2); }
+  .rookie-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+    background: color-mix(in srgb, var(--accent) 18%, var(--surface-2));
+    color: var(--accent);
+  }
   .team { color: var(--ink-muted); font-size: 12.5px; margin-left: 6px; }
 
   .pos-chip {
@@ -1182,6 +1194,15 @@
     return `<span class="injury-badge ${style.className}" title="${status}">${style.label}</span>`;
   }
 
+  // True rookies have zero real NFL stats to average, so their projection comes
+  // from a draft-capital baseline (see optimizer/rookie_projections.py) instead
+  // of the recency-weighted real-stats model everyone else uses -- flagged so
+  // it reads as a different (coarser, lower-confidence) kind of projection.
+  function rookieBadgeHtml(projectionSource) {
+    if (projectionSource !== 'draft_capital_model') return '';
+    return `<span class="rookie-badge" title="Rookie with no NFL stat history -- projected from NFL draft round/position only, not real stats.">R</span>`;
+  }
+
   let activeView = "2026";
   let DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
   let activePos = "All";
@@ -1454,7 +1475,7 @@
       const barPct = Math.max(2, Math.round((d.vor / maxVor) * 100));
       tr.innerHTML = `
         <td class="rank">${d.overall_rank}</td>
-        <td><span class="player-name">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}</td>
+        <td><span class="player-name">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}</td>
         <td><span class="pos-chip">${d.position}</span></td>
         <td class="num">${d.points.toFixed(1)}</td>
         <td class="num">
@@ -1822,7 +1843,7 @@
       } else {
         slot = 'OVERFLOW';
       }
-      return { name: p.name, position: p.position, vor: p.vor, slot, injuryStatus: p.injuryStatus || null };
+      return { name: p.name, position: p.position, vor: p.vor, slot, injuryStatus: p.injuryStatus || null, projection_source: p.projection_source || null };
     });
     return { assignments, slotCounts };
   }
@@ -1855,7 +1876,7 @@
 
     const body = document.getElementById('myRosterBody');
     body.innerHTML = assignments.length
-      ? assignments.map(a => `<tr><td>${a.name}${injuryBadgeHtml(a.injuryStatus)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
+      ? assignments.map(a => `<tr><td>${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
       : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
   }
 
@@ -1982,7 +2003,7 @@
           }
           return `
             <tr>
-              <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}</td>
+              <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</td>
               <td><span class="pos-chip">${p.position}</span></td>
               <td class="num">${p.vor.toFixed(1)}</td>
               <td class="num">${p.tier}</td>
@@ -2411,7 +2432,7 @@
 
     const rosterRows = assignments.map(a => `
       <tr>
-        <td>${a.name}${injuryBadgeHtml(a.injuryStatus)}</td>
+        <td>${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td>
         <td><span class="pos-chip">${a.position}</span></td>
         <td>${a.slot}</td>
         <td><button class="roster-row-remove" data-role="remove-player" data-team-id="${id}" data-name="${a.name}">×</button></td>

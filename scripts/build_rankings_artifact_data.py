@@ -69,6 +69,9 @@ def score_file(path: Path, cfg: dict) -> pd.DataFrame:
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
     df = apply_mapping(raw, mapping)
     board = df[["name", "position", "team"]].copy()
+    # Only 2026_projections.csv has this column (real_stats vs draft_capital_model,
+    # see optimizer/rookie_projections.py) -- actual-year stat files are all real.
+    board["projection_source"] = raw["projection_source"] if "projection_source" in raw.columns else "real_stats"
     board["points"] = df.apply(lambda r: score_player(r.to_dict(), cfg), axis=1)
     td_pts = df.apply(lambda r: td_points(r.to_dict(), cfg), axis=1)
     board["td_dependency_pct"] = (td_pts / board["points"].where(board["points"] > 0)).fillna(0.0) * 100
@@ -88,7 +91,10 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
         "overall_rank", "name", "position", "team", "points", "vor", "tier",
         "td_dependency_pct", "proj_pass_td", "proj_rush_rec_td",
     ]
-    return board[cols].round(1).to_dict("records")
+    rows = board[cols].round(1).to_dict("records")
+    for row, source in zip(rows, board["projection_source"]):
+        row["projection_source"] = source
+    return rows
 
 
 def build_data_bundle(cfg: dict) -> dict:
