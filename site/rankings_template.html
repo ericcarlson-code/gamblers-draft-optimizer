@@ -2647,6 +2647,8 @@
 
     const slotInput = document.getElementById('mockSlotInput');
     if (slotInput) slotInput.max = LEAGUE_META.num_teams;
+    const numTeamsLabel = document.getElementById('mockNumTeams');
+    if (numTeamsLabel) numTeamsLabel.textContent = LEAGUE_META.num_teams;
     let mockWasReset = false;
     if (typeof mockDraft !== 'undefined' && mockDraft !== null) {
       resetMockDraft();
