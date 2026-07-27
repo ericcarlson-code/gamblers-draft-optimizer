@@ -564,7 +564,6 @@
   .trade-result-stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); }
   .trade-verdict { font-weight: 700; }
 
-  .stack-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 
   .hist-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
   .hist-controls select {
@@ -576,12 +575,40 @@
     background: var(--surface);
     color: var(--ink);
   }
-  .hist-controls input[type="file"] {
-    font-family: 'Public Sans', sans-serif;
-    font-size: 13px;
-    color: var(--ink-muted);
-  }
   .hist-note { font-size: 12.5px; color: var(--ink-muted); margin: 10px 0 20px; }
+  .hist-picks-entry {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .hist-pick-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 6px 10px;
+    position: relative;
+  }
+  .hist-pick-row.filled { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .hist-pick-round {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    min-width: 34px;
+  }
+  .hist-pick-row .trade-search { margin-bottom: 0; flex: 1; }
+  .hist-pick-row .trade-picklist {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    margin-top: 2px;
+  }
 
   .team-roster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 6px; }
   @media (max-width: 780px) { .team-roster-grid { grid-template-columns: 1fr; } }
@@ -963,17 +990,6 @@
     <div class="trade-result" id="tradeResult"></div>
   </section>
 
-  <section id="section-stacks" class="app-section" hidden>
-    <p class="section-intro">Which real NFL teams have the most combined value across their best players — a strong offense tends to make several of its own players valuable at once, so these are good targets for drafting more than one player from the same team.</p>
-    <nav class="stack-tabs" id="stackTabs"></nav>
-    <div id="stackOverallControls">
-      <label class="field-label" for="stackTopN">Players per team to count</label>
-      <input type="range" id="stackTopN" min="2" max="6" value="4" />
-      <span id="stackTopNValue"></span>
-    </div>
-    <div class="table-shell"><div class="table-scroll"><table id="stackTable"><thead id="stackTableHead"></thead><tbody id="stackTableBody"></tbody></table></div></div>
-  </section>
-
   <section id="section-teamrosters" class="app-section" hidden>
     <p class="section-intro">Manually track every team's real current roster -- a stand-in for Yahoo sync, which isn't wired up yet. Saved in this browser only (nothing is sent anywhere), so it'll still be here next time you open this page. Rename a team by editing its name field.</p>
     <h3 class="subhead">Team Power Rankings</h3>
@@ -982,17 +998,16 @@
   </section>
 
   <section id="section-historical" class="app-section" hidden>
-    <p class="section-intro">Upload one of your own past drafts (which round you took each player) and grade it against what actually happened that season, under this league's current scoring. Good for spotting a specific mistake pattern -- e.g. an early QB who busted, or a cheap late pick who massively outperformed.</p>
+    <p class="section-intro">Enter one of your own past drafts (which player you took each round) and grade it against what actually happened that season, under this league's current scoring. Good for spotting a specific mistake pattern -- e.g. an early QB who busted, or a cheap late pick who massively outperformed.</p>
     <div class="hist-controls">
       <label class="field-label" for="histYearSelect" style="margin:0;">Season</label>
       <select id="histYearSelect"></select>
-      <label class="field-label" for="histCsvInput" style="margin:0;">Upload draft CSV</label>
-      <input type="file" id="histCsvInput" accept=".csv,text/csv" />
     </div>
-    <p class="hist-note">CSV format: two columns, <code>round,player</code> (a header row is fine, it's detected automatically). Nothing is uploaded anywhere -- the file is parsed entirely in your browser.</p>
     <p class="hist-note">
-      <strong>Scope limit:</strong> this only has your own picks, not the full 10-team draft, so it can't tell you the exact best alternative pick at your slot the way Mock Draft's grade report can (that needs the full simulated draft). Instead it compares each pick's actual result to what a typical pick in that round should return, and separately surfaces the highest-value players you didn't draft at all that season.
+      <strong>Scope limit:</strong> this only has your own picks, not the full 10-team draft, so it can't tell you the exact best alternative pick at your slot the way Mock Draft's grade report can (that needs the full simulated draft). Instead it compares each pick's actual result to what a typical pick in that round should return (and, where historical ADP data is available, to that round's real market expectation too), and separately surfaces the highest-value players you didn't draft at all that season.
     </p>
+    <h3 class="subhead">Your Picks, Round by Round</h3>
+    <div id="histPicksEntry" class="hist-picks-entry"></div>
     <div id="histResults"></div>
   </section>
 
@@ -1636,7 +1651,6 @@
     { key: 'rankings', label: 'Rankings' },
     { key: 'mockdraft', label: 'Mock Draft' },
     { key: 'trade', label: 'Trade Calculator' },
-    { key: 'stacks', label: 'Stack Rankings' },
     { key: 'historical', label: 'Historical Review' },
     { key: 'teamrosters', label: 'Team Rosters' },
     { key: 'leaguedetails', label: 'League Details' },
@@ -2015,14 +2029,15 @@
         const eligible = withTiers.filter(p => wouldHaveRoom(p, mockDraft.rosters['Me'], rosterSlots));
         const top = eligible.slice(0, 30);
 
-        // True stacks only: a QB + his own pass-catcher, or the RB+WR/WR+WR
-        // offense-strength combos -- not just "shares an NFL team" (e.g. a
-        // same-team kicker isn't a meaningful correlation play). Surfaced
-        // live so stacking is visible while you're actually picking, not
-        // just in the separate Stack Rankings tab. Each stack candidate is
-        // also weighed against the best non-stack alternative available
-        // right now -- the point isn't "it stacks" alone, it's whether the
-        // correlated-upside bet is actually worth the value hit.
+        // True stacks only: a QB + his own pass-catcher, or the RB+WR/WR+WR/
+        // RB+RB offense-strength combos -- not just "shares an NFL team"
+        // (e.g. a same-team kicker isn't a meaningful correlation play).
+        // This is the only place stack evaluation lives now (no separate
+        // Stack Rankings tab) -- it's a core part of the pick recommendation,
+        // not an optional side view. Each stack candidate is also weighed
+        // against the best non-stack alternative available right now -- the
+        // point isn't "it stacks" alone, it's whether the correlated-upside
+        // bet is actually worth the value hit.
         const bestAlt = bestNonStackAlternative(withTiers, mockDraft.rosters['Me']);
         const rows = top.map(p => {
           const stackWith = stackWithFor(p, mockDraft.rosters['Me']);
@@ -2181,116 +2196,40 @@
   }
 
   // ===========================================================================
-  // Stack Rankings -- ported from optimizer/value_tools.team_stack_summary
-  // and stack_combo_summary
+  // Historical Draft Review -- manually enter your own past-season picks
+  // (round-by-round search/add, same pattern as Team Rosters) and grade them
+  // against that season's real results, already embedded in DATA_BY_VIEW.
+  // Since we don't have the full 10-team historical draft (who else took
+  // whom), this approximates "expected value" from round*numTeams (and, when
+  // that season's real ADP data is available -- see scripts/fetch_adp.py's
+  // historical fetch -- from real market expectation too) rather than
+  // pointing at one exact alternative pick the way Mock Draft's grade report
+  // can.
   // ===========================================================================
-  function teamStackSummary(players, topN) {
-    const byTeam = {};
-    for (const p of players) { if (p.team) (byTeam[p.team] = byTeam[p.team] || []).push(p); }
-    const rows = [];
-    for (const team in byTeam) {
-      const top = [...byTeam[team]].sort((a, b) => b.vor - a.vor).slice(0, topN);
-      rows.push({
-        team,
-        stack_vor: top.reduce((s, p) => s + p.vor, 0),
-        player_count: top.length,
-        players: top.map(p => `${p.name} (${p.position})`).join(', '),
-      });
-    }
-    rows.sort((a, b) => b.stack_vor - a.stack_vor);
-    return rows;
-  }
+  const HIST_STORAGE_KEY = 'gamblers-historical-entries-v1';
 
-  function stackComboSummary(players, posA, posB) {
-    const byTeam = {};
-    for (const p of players) { if (p.team) (byTeam[p.team] = byTeam[p.team] || []).push(p); }
-    const rows = [];
-    for (const team in byTeam) {
-      const group = byTeam[team];
-      let first, second;
-      if (posA === posB) {
-        const candidates = group.filter(p => p.position === posA).sort((a, b) => b.vor - a.vor);
-        if (candidates.length < 2) continue;
-        [first, second] = candidates;
-      } else {
-        const aCandidates = group.filter(p => p.position === posA).sort((a, b) => b.vor - a.vor);
-        const bCandidates = group.filter(p => p.position === posB).sort((a, b) => b.vor - a.vor);
-        if (aCandidates.length === 0 || bCandidates.length === 0) continue;
-        [first, second] = [aCandidates[0], bCandidates[0]];
-      }
-      rows.push({ team, combo_vor: first.vor + second.vor, player_1: `${first.name} (${first.position})`, player_2: `${second.name} (${second.position})` });
-    }
-    rows.sort((a, b) => b.combo_vor - a.combo_vor);
-    return rows;
-  }
-
-  const STACK_VIEWS = [
-    { key: 'overall', label: 'Overall' },
-    { key: 'QB_WR', label: 'QB + WR', a: 'QB', b: 'WR' },
-    { key: 'QB_TE', label: 'QB + TE', a: 'QB', b: 'TE' },
-    { key: 'RB_WR', label: 'RB + WR', a: 'RB', b: 'WR' },
-    { key: 'WR_WR', label: 'WR + WR', a: 'WR', b: 'WR' },
-  ];
-  let activeStackView = 'overall';
-
-  function renderStackTabs() {
-    const wrap = document.getElementById('stackTabs');
-    wrap.innerHTML = '';
-    for (const v of STACK_VIEWS) {
-      const btn = document.createElement('button');
-      btn.className = 'pill pill-sm' + (v.key === activeStackView ? ' active' : '');
-      btn.textContent = v.label;
-      btn.addEventListener('click', () => { activeStackView = v.key; renderStackTabs(); renderStackTable(); });
-      wrap.appendChild(btn);
+  function loadHistEntries() {
+    try {
+      const raw = localStorage.getItem(HIST_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
     }
   }
-
-  function renderStackTable() {
-    const pool = rescoreBoard(DATA_BY_VIEW['2026']);
-    const head = document.getElementById('stackTableHead');
-    const body = document.getElementById('stackTableBody');
-    const overallControls = document.getElementById('stackOverallControls');
-
-    if (activeStackView === 'overall') {
-      overallControls.style.display = 'flex';
-      const topN = parseInt(document.getElementById('stackTopN').value, 10);
-      document.getElementById('stackTopNValue').textContent = topN;
-      const rows = teamStackSummary(pool, topN);
-      head.innerHTML = '<tr><th>Team</th><th class="num">Combined VOR</th><th class="num">Players Counted</th><th>Top Players</th></tr>';
-      body.innerHTML = rows.map(r => `<tr><td>${r.team}</td><td class="num">${r.stack_vor.toFixed(1)}</td><td class="num">${r.player_count}</td><td>${r.players}</td></tr>`).join('');
-    } else {
-      overallControls.style.display = 'none';
-      const spec = STACK_VIEWS.find(v => v.key === activeStackView);
-      const rows = stackComboSummary(pool, spec.a, spec.b);
-      head.innerHTML = '<tr><th>Team</th><th class="num">Combined VOR</th><th>Player 1</th><th>Player 2</th></tr>';
-      body.innerHTML = rows.length
-        ? rows.map(r => `<tr><td>${r.team}</td><td class="num">${r.combo_vor.toFixed(1)}</td><td>${r.player_1}</td><td>${r.player_2}</td></tr>`).join('')
-        : '<tr><td colspan="4" class="trend-empty">No teams have players at both positions in the current pool.</td></tr>';
-    }
+  function saveHistEntries() {
+    try { localStorage.setItem(HIST_STORAGE_KEY, JSON.stringify(histEntriesByYear)); } catch (e) { /* won't persist */ }
   }
+  let histEntriesByYear = loadHistEntries();
 
-  // ===========================================================================
-  // Historical Draft Review -- upload your own past-season picks (round,player
-  // CSV, parsed entirely client-side) and grade them against that season's
-  // real results, already embedded in DATA_BY_VIEW. Since we don't have the
-  // full 10-team historical draft (who else took whom), this approximates
-  // "expected value" from round*numTeams rather than pointing at one exact
-  // alternative pick the way Mock Draft's grade report can.
-  // ===========================================================================
-  let histEntries = null;
-
-  function parseCsvText(text) {
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-    const entries = [];
-    for (const line of lines) {
-      const parts = line.split(',');
-      if (parts.length < 2) continue;
-      const round = parseInt(parts[0].trim(), 10);
-      const player = parts.slice(1).join(',').trim().replace(/^"|"$/g, '');
-      if (Number.isNaN(round) || !player) continue; // skips a header row too
-      entries.push({ round, player });
-    }
-    return entries;
+  function setHistEntry(year, round, player) {
+    const entries = (histEntriesByYear[year] || []).filter(e => e.round !== round);
+    entries.push({ round, player });
+    histEntriesByYear[year] = entries;
+    saveHistEntries();
+  }
+  function removeHistEntry(year, round) {
+    histEntriesByYear[year] = (histEntriesByYear[year] || []).filter(e => e.round !== round);
+    saveHistEntries();
   }
 
   function computeHistoricalReview(year, entries) {
@@ -2309,7 +2248,15 @@
       if (ratio >= 1.5) verdict = { tag: 'great_value', label: 'Steal' };
       else if (ratio >= 0.6) verdict = { tag: 'solid', label: 'Solid' };
       else verdict = { tag: 'reach', label: 'Bust' };
-      const reason = `Round ${e.round} pick (expected roughly top-${expectedRank}) finished ranked #${p.overall_rank} (${p.vor.toFixed(1)} VOR) that season.`;
+      let reason = `Round ${e.round} pick (expected roughly top-${expectedRank}) finished ranked #${p.overall_rank} (${p.vor.toFixed(1)} VOR) that season.`;
+      // Real historical ADP (where we have it -- see fetch_adp.py) adds a
+      // market-expectation comparison on top of the round*numTeams heuristic.
+      if (p.adp != null) {
+        const adpRound = Math.max(1, Math.round(p.adp / numTeams));
+        if (adpRound < e.round) reason += ` Real market ADP had them going ~round ${adpRound} -- you got them ${e.round - adpRound} round${e.round - adpRound === 1 ? '' : 's'} later than the market expected.`;
+        else if (adpRound > e.round) reason += ` Real market ADP had them going ~round ${adpRound} -- you reached ${adpRound - e.round} round${adpRound - e.round === 1 ? '' : 's'} ahead of the market.`;
+        else reason += ` Right in line with real market ADP (~round ${adpRound}).`;
+      }
       return { round: e.round, player: p.name, position: p.position, team: p.team, vor: p.vor, actualRank: p.overall_rank, verdict, reason, matched: true };
     });
 
@@ -2323,12 +2270,13 @@
 
   function renderHistoricalReview() {
     const container = document.getElementById('histResults');
-    if (!histEntries || histEntries.length === 0) {
-      container.innerHTML = '<p class="section-intro">Upload a CSV above to see your draft graded against real results.</p>';
+    const year = document.getElementById('histYearSelect').value;
+    const entries = histEntriesByYear[year] || [];
+    if (entries.length === 0) {
+      container.innerHTML = '<p class="section-intro">Add picks above (round by round) to see your draft graded against real results.</p>';
       return;
     }
-    const year = document.getElementById('histYearSelect').value;
-    const { rows, misses } = computeHistoricalReview(year, histEntries);
+    const { rows, misses } = computeHistoricalReview(year, entries);
     const matched = rows.filter(r => r.matched);
     const unmatched = rows.filter(r => !r.matched);
 
@@ -2372,24 +2320,72 @@
     `;
   }
 
+  function renderHistPicklist(year, round, query) {
+    const picklistEl = document.querySelector(`[data-role="hist-picklist"][data-round="${round}"]`);
+    if (!picklistEl) return;
+    const q = query.trim().toLowerCase();
+    if (!q) { picklistEl.innerHTML = ''; picklistEl.style.display = 'none'; return; }
+    const taken = new Set((histEntriesByYear[year] || []).map(e => e.player));
+    const matches = rescoreBoard(DATA_BY_VIEW[year])
+      .filter(p => p.name.toLowerCase().includes(q) && !taken.has(p.name))
+      .slice(0, 8);
+    picklistEl.style.display = matches.length ? 'block' : 'none';
+    picklistEl.innerHTML = matches.map(p =>
+      `<div class="trade-picklist-item" data-role="hist-add" data-round="${round}" data-name="${p.name}"><span>${p.name} (${p.position}, ${p.team})</span><span class="vor-val">${p.vor.toFixed(1)}</span></div>`
+    ).join('');
+  }
+
+  function renderHistPicksEntry() {
+    const year = document.getElementById('histYearSelect').value;
+    const totalRounds = totalRoundsFor(LEAGUE_META.roster_slots);
+    const byRound = new Map((histEntriesByYear[year] || []).map(e => [String(e.round), e.player]));
+    let rows = '';
+    for (let r = 1; r <= totalRounds; r++) {
+      const player = byRound.get(String(r));
+      if (player) {
+        rows += `<div class="hist-pick-row filled"><span class="hist-pick-round">Rd ${r}</span><span class="player-name">${player}</span><button class="roster-row-remove" data-role="hist-remove" data-round="${r}">×</button></div>`;
+      } else {
+        rows += `<div class="hist-pick-row"><span class="hist-pick-round">Rd ${r}</span><input type="text" class="trade-search" data-role="hist-search" data-round="${r}" placeholder="Search player…" /><div class="trade-picklist" data-role="hist-picklist" data-round="${r}" style="display:none;"></div></div>`;
+      }
+    }
+    document.getElementById('histPicksEntry').innerHTML = rows;
+  }
+
+  function renderHistorical() {
+    renderHistPicksEntry();
+    renderHistoricalReview();
+  }
+
   function initHistoricalReview() {
     const yearSelect = document.getElementById('histYearSelect');
     const years = [2025, 2024, 2023, 2022, 2021, 2020];
     yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
-    yearSelect.addEventListener('change', renderHistoricalReview);
+    yearSelect.addEventListener('change', renderHistorical);
 
-    document.getElementById('histCsvInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        histEntries = parseCsvText(String(reader.result));
-        renderHistoricalReview();
-      };
-      reader.readAsText(file);
+    const entryEl = document.getElementById('histPicksEntry');
+    entryEl.addEventListener('input', (e) => {
+      const target = e.target;
+      if (target.matches('[data-role="hist-search"]')) {
+        const year = document.getElementById('histYearSelect').value;
+        renderHistPicklist(year, target.dataset.round, target.value);
+      }
+    });
+    entryEl.addEventListener('click', (e) => {
+      const year = document.getElementById('histYearSelect').value;
+      const addEl = e.target.closest('[data-role="hist-add"]');
+      if (addEl) {
+        setHistEntry(year, parseInt(addEl.dataset.round, 10), addEl.dataset.name);
+        renderHistorical();
+        return;
+      }
+      const removeEl = e.target.closest('[data-role="hist-remove"]');
+      if (removeEl) {
+        removeHistEntry(year, parseInt(removeEl.dataset.round, 10));
+        renderHistorical();
+      }
     });
 
-    renderHistoricalReview();
+    renderHistorical();
   }
 
   // ===========================================================================
@@ -2408,11 +2404,51 @@
   }
   const TEAM_IDS = buildTeamIds(LEAGUE_META.num_teams);
 
+  // Real final 2025-season rosters, used only to seed a fresh browser with
+  // no saved localStorage state yet -- this is last year's actual roster
+  // snapshot, a starting point to edit from as trades/waivers happen this
+  // season, not a live sync. Cardinals is the user's own team ("me"); D/ST
+  // entries use nicknames here but must match the canonical full team name
+  // used in our data (see optimizer/schema.py's DEF rows), so they're
+  // translated via DST_NICKNAME_TO_FULL_NAME below.
+  const DST_NICKNAME_TO_FULL_NAME = {
+    'Vikings': 'Minnesota Vikings', 'Steelers': 'Pittsburgh Steelers', 'Texans': 'Houston Texans',
+    'Packers': 'Green Bay Packers', 'Broncos': 'Denver Broncos', 'Seahawks': 'Seattle Seahawks',
+    'Rams': 'Los Angeles Rams', 'Chiefs': 'Kansas City Chiefs', 'Jaguars': 'Jacksonville Jaguars',
+    'Bills': 'Buffalo Bills',
+  };
+  function dstName(nickname) { return DST_NICKNAME_TO_FULL_NAME[nickname] || nickname; }
+
+  // Cardinals listed first so it lands on the 'me' slot; order after that
+  // doesn't matter functionally.
+  const PRESET_ROSTERS_2025 = [
+    { name: 'Cardinals', players: ['Lamar Jackson', 'Jaxson Dart', 'CeeDee Lamb', 'Ladd McConkey', 'Tetairoa McMillan', 'Cooper Kupp', 'Bucky Irving', 'Jaylen Warren', 'Rico Dowdle', "De'Von Achane", 'Trey McBride', 'Will Reichard', 'Jake Bates', dstName('Steelers')] },
+    { name: 'Hoofers', players: ['Dak Prescott', 'Kirk Cousins', 'George Pickens', 'Jakobi Meyers', 'Kayshon Boutte', 'Jayden Higgins', 'Kenny Gainwell', 'Kyle Monangai', 'Jordan Mason', 'George Kittle', 'Dalton Schultz', 'Brandon Aubrey', 'Cam Little', dstName('Vikings')] },
+    { name: 'ChronicMasterdeflatr', players: ['Joe Burrow', 'Jacoby Brissett', 'Drake London', 'Tee Higgins', 'Jaylen Waddle', 'Troy Franklin', 'Rashid Shaheed', 'Josh Jacobs', 'Chase Brown', 'Ashton Jeanty', 'Juwan Johnson', 'Harrison Mevis', 'Eddy Pineiro', dstName('Texans')] },
+    { name: 'Elite', players: ['Baker Mayfield', 'C.J. Stroud', 'Michael Wilson', 'Brian Thomas Jr.', 'Stefon Diggs', 'Amon-Ra St. Brown', 'Tony Pollard', 'Tyrone Tracy Jr.', 'Chris Rodriguez Jr.', 'Kareem Hunt', 'Kyle Pitts Sr.', 'Wil Lutz', 'Zane Gonzalez', dstName('Packers')] },
+    { name: 'Greendawgs', players: ['Matthew Stafford', 'Jared Goff', "Ja'Marr Chase", 'Mike Evans', 'Terry McLaurin', 'Ricky Pearsall', 'Kyren Williams', 'Dylan Sampson', 'Bijan Robinson', 'Michael Carter', 'Tyler Warren', 'Chase McLaughlin', 'Harrison Butker', dstName('Broncos')] },
+    { name: 'Just Bout Dat Action', players: ['Brock Purdy', 'Jimmy Garoppolo', 'Jordan Love', 'Justin Jefferson', 'Jaxon Smith-Njigba', 'Jauan Jennings', 'Xavier Legette', "D'Andre Swift", 'Derrick Henry', 'Zach Charbonnet', 'Mark Andrews', 'Chris Boswell', 'Cairo Santos', dstName('Seahawks')] },
+    { name: "Let's Ride", players: ['Bo Nix', 'Trevor Lawrence', 'Puka Nacua', 'Khalil Shakir', 'Zay Flowers', 'Chris Godwin Jr.', 'Quentin Johnston', 'RJ Harvey', 'Breece Hall', 'Woody Marks', 'Dalton Kincaid', "Ka'imi Fairbairn", 'Riley Patterson', dstName('Rams')] },
+    { name: 'Redskins', players: ['Drake Maye', 'Bryce Young', 'Darius Slayton', 'Jordan Addison', 'Luther Burden III', 'DJ Moore', 'Davante Adams', 'Jahmyr Gibbs', 'Jonathan Taylor', 'Tank Bigsby', 'AJ Barner', 'Cameron Dicker', 'Brandon McManus', dstName('Chiefs')] },
+    { name: 'Sportos', players: ['Caleb Williams', 'Tyler Shough', 'Josh Allen', 'Nico Collins', 'Courtland Sutton', 'Jameson Williams', 'Parker Washington', 'James Cook III', 'Kenneth Walker III', 'TreVeyon Henderson', 'Hunter Henry', 'Tyler Loop', 'Evan McPherson', dstName('Jaguars')] },
+    { name: 'Wildcard', players: ['Aaron Rodgers', 'Sam Darnold', 'Romeo Doubs', 'Deebo Samuel', 'Michael Pittman Jr.', 'Tre Tucker', 'Travis Etienne Jr.', 'David Montgomery', 'Christian McCaffrey', 'Kimani Vidal', 'Travis Kelce', 'Jason Myers', 'Andy Borregales', dstName('Bills')] },
+  ];
+
   function defaultRosterState() {
     const teamNames = {};
     TEAM_IDS.forEach((id, i) => { teamNames[id] = id === 'me' ? 'Me' : `Team ${i + 1}`; });
     const rosters = {};
     TEAM_IDS.forEach(id => { rosters[id] = []; });
+    // The preset only matches this real league's actual 10-team shape --
+    // if num_teams has been edited away from 10, fall back to empty rosters
+    // rather than seeding a mismatched preset.
+    if (LEAGUE_META.num_teams === 10) {
+      PRESET_ROSTERS_2025.forEach((team, i) => {
+        const id = TEAM_IDS[i];
+        teamNames[id] = team.name;
+        rosters[id] = [...team.players];
+      });
+    }
     return { teamNames, rosters };
   }
 
@@ -2463,7 +2499,13 @@
 
   function renderTeamRosterCard(id) {
     const rosterSlots = LEAGUE_META.roster_slots;
-    const players = rosterState.rosters[id].map(n => playerByName(n)).filter(Boolean);
+    const rawNames = rosterState.rosters[id];
+    const players = rawNames.map(n => playerByName(n)).filter(Boolean);
+    // Names that don't resolve (e.g. a preset roster entry whose spelling
+    // doesn't exactly match our data) shouldn't just silently vanish --
+    // surface them so they can be fixed or removed via the same button
+    // used for matched players.
+    const unmatchedNames = rawNames.filter(n => !playerByName(n));
     const { assignments } = computeSlotAssignments(players, rosterSlots);
 
     const slotCounts = {};
@@ -2484,6 +2526,12 @@
         <td><button class="roster-row-remove" data-role="remove-player" data-team-id="${id}" data-name="${a.name}">×</button></td>
       </tr>`).join('');
 
+    const unmatchedNote = unmatchedNames.length
+      ? `<p class="hist-note">Couldn't match: ${unmatchedNames.map(n =>
+          `${n} <button class="roster-row-remove" data-role="remove-player" data-team-id="${id}" data-name="${n}">×</button>`
+        ).join(', ')} (check spelling, or remove and re-add via search)</p>`
+      : '';
+
     return `
       <div class="team-roster-card" data-team-id="${id}">
         <input class="team-name-input" data-role="team-name" data-team-id="${id}" value="${rosterState.teamNames[id]}" />
@@ -2494,6 +2542,7 @@
           <thead><tr><th>Player</th><th>Pos</th><th>Slot</th><th></th></tr></thead>
           <tbody>${rosterRows || '<tr><td colspan="4" class="trend-empty">No players yet.</td></tr>'}</tbody>
         </table></div></div>
+        ${unmatchedNote}
       </div>`;
   }
 
@@ -2661,7 +2710,6 @@
     DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
     renderStats();
     renderTable();
-    renderStackTable();
     renderTeamRosters();
     renderLeagueDetails();
 
@@ -2768,21 +2816,14 @@
       : '<li>No notes.</li>';
   }
 
-  function initStackRankings() {
-    renderStackTabs();
-    document.getElementById('stackTopN').addEventListener('input', renderStackTable);
-    renderStackTable();
-  }
-
   // Apply any saved league-config overrides before anything else renders, so
-  // Team Rosters/Mock Draft/Stack Rankings never show a flash of the default
-  // (baked-in) team count before snapping to the user's saved edits.
+  // Team Rosters/Mock Draft never show a flash of the default (baked-in)
+  // team count before snapping to the user's saved edits.
   applyLeagueOverrides(loadLeagueOverrides(), { persist: false });
 
   renderSectionTabs();
   initMockDraft();
   initTradeCalculator();
-  initStackRankings();
   initHistoricalReview();
   initTeamRosters();
   initLeagueEditForm();

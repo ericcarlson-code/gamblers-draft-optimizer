@@ -64,12 +64,15 @@ def td_counts(stats: dict) -> tuple[float, float]:
     return 0.0, 0.0
 
 
-def load_adp() -> dict[str, float]:
-    """name -> live ESPN consensus ADP (see scripts/fetch_adp.py). This is
-    real-time data, not a frozen historical snapshot, so it's only wired
-    into the current 2026 projection board -- not the 2020-2025 actual-
-    results boards, where a "today's ADP" number wouldn't mean anything."""
-    path = DATA_DIR / "adp.csv"
+def load_adp(year: int | None = None) -> dict[str, float]:
+    """name -> consensus ADP for that draft season (see scripts/fetch_adp.py).
+    year=None loads the current/live ADP (data/historical/adp.csv, used for
+    the 2026 board); a specific year loads that season's real historical ADP
+    (data/historical/{year}_adp.csv) where Fantasy Football Calculator has it
+    archived. Returns {} (not an error) for years with no archived data --
+    currently just 2025 -- so those boards simply have no adp/value_vs_adp
+    columns rather than failing the build."""
+    path = DATA_DIR / (f"{year}_adp.csv" if year else "adp.csv")
     if not path.exists():
         return {}
     df = pd.read_csv(path)
@@ -143,7 +146,7 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
 def build_data_bundle(cfg: dict) -> dict:
     """{'2026': [...rows with history...], '2025': [...], ..., '2020': [...]}"""
     year_boards = {
-        year: score_file(DATA_DIR / f"{year}_actual_stats.csv", cfg)
+        year: score_file(DATA_DIR / f"{year}_actual_stats.csv", cfg, adp_lookup=load_adp(year))
         for year in HISTORY_YEARS
     }
     projection_board = score_file(DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_adp())
