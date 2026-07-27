@@ -21,15 +21,46 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from optimizer.config import load_config
 from scripts.build_rankings_artifact_data import build_data_bundle
+from scripts.fetch_player_images import slugify
 
 SITE_DIR = Path(__file__).resolve().parent.parent / "site"
 TEMPLATE_PATH = SITE_DIR / "rankings_template.html"
 INJURY_STATUS_PATH = Path(__file__).resolve().parent.parent / "data" / "injury_status.json"
+IMAGE_CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "image_cache"
 FONTS = {
     "__BEBAS_B64__": SITE_DIR / "fonts" / "bebas.woff2",
     "__PUBLIC_B64__": SITE_DIR / "fonts" / "public.woff2",
     "__MONO_B64__": SITE_DIR / "fonts" / "mono.woff2",
 }
+
+
+def _data_uri(path: Path) -> str:
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+
+
+def build_image_lookups(players_2026: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
+    """Embeds cached images (see scripts/fetch_player_images.py) as base64
+    data URIs, keyed by player name / team abbreviation for direct JS lookup
+    at render time -- the on-disk slugified filenames are an internal detail
+    of the fetch/cache step, not exposed here. Silently skips anything not
+    in the cache (missing images just fall back client-side to the team
+    logo, or no image at all -- see rankings_template.html's playerImageHtml)."""
+    headshots_dir = IMAGE_CACHE_DIR / "headshots"
+    logos_dir = IMAGE_CACHE_DIR / "logos"
+
+    team_logos: dict[str, str] = {}
+    if logos_dir.exists():
+        for path in logos_dir.glob("*.png"):
+            team_logos[path.stem] = _data_uri(path)
+
+    player_images: dict[str, str] = {}
+    if headshots_dir.exists():
+        for p in players_2026:
+            path = headshots_dir / f"{slugify(p['name'])}.png"
+            if path.exists():
+                player_images[p["name"]] = _data_uri(path)
+
+    return player_images, team_logos
 
 
 def main() -> None:
@@ -51,9 +82,15 @@ def main() -> None:
     injury_status = json.loads(INJURY_STATUS_PATH.read_text(encoding="utf-8")) if INJURY_STATUS_PATH.exists() else {}
     html = html.replace("__INJURY_STATUS_JSON__", json.dumps(injury_status))
 
+    player_images, team_logos = build_image_lookups(bundle["2026"])
+    html = html.replace("__PLAYER_IMAGES_JSON__", json.dumps(player_images))
+    html = html.replace("__TEAM_LOGOS_JSON__", json.dumps(team_logos))
+    print(f"  Embedded {len(player_images)} player headshots + {len(team_logos)} team logos")
+
     remaining = [tok for tok in ("__BEBAS_B64__", "__PUBLIC_B64__", "__MONO_B64__",
                                   "__BOARD_DATA_BY_YEAR_JSON__", "__GEN_DATE__",
-                                  "__INJURY_STATUS_JSON__") if tok in html]
+                                  "__INJURY_STATUS_JSON__", "__PLAYER_IMAGES_JSON__",
+                                  "__TEAM_LOGOS_JSON__") if tok in html]
     if remaining:
         print(f"WARNING: unreplaced placeholders remain: {remaining}")
 

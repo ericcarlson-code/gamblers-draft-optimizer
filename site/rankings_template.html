@@ -782,6 +782,18 @@
 
   .rank { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; }
   .player-name { font-weight: 600; }
+  .player-avatar {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    vertical-align: middle;
+    margin-right: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .player-avatar-empty { background: var(--surface-2); }
   .injury-badge {
     display: inline-block;
     font-family: 'JetBrains Mono', monospace;
@@ -1111,6 +1123,13 @@
   // -- populated by scripts/update_injury_status.py's scheduled runs, empty
   // until that's built. Read-only on the client; the page never writes to it.
   const INJURY_STATUS = __INJURY_STATUS_JSON__;
+  // {player_name: "data:image/png;base64,..."} / {team_abbr: "data:..."} --
+  // embedded at build time (see scripts/fetch_player_images.py +
+  // build_rankings_site.py) since this page can't load images live. Not
+  // every player has a headshot; playerImageHtml() falls back to the
+  // player's team logo, then to no image at all.
+  const PLAYER_IMAGES = __PLAYER_IMAGES_JSON__;
+  const TEAM_LOGOS = __TEAM_LOGOS_JSON__;
   const GEN_DATE = "__GEN_DATE__";
   const VIEWS = [
     { key: "2026", label: "2026 Projections", primary: true },
@@ -1231,6 +1250,17 @@
   function rookieBadgeHtml(projectionSource) {
     if (projectionSource !== 'draft_capital_model') return '';
     return `<span class="rookie-badge" title="Rookie with no NFL stat history -- projected from NFL draft round/position only, not real stats.">R</span>`;
+  }
+
+  // Headshot first, then the player's team logo, then no image at all --
+  // decided here (not via an <img onerror> swap) since we already know at
+  // build time exactly which players have a real headshot cached.
+  function playerImageHtml(name, team) {
+    const src = PLAYER_IMAGES[name] || TEAM_LOGOS[team];
+    if (!src) return '<span class="player-avatar player-avatar-empty" aria-hidden="true"></span>';
+    // No loading="lazy" -- these are embedded data URIs, not network
+    // requests, so lazy-loading buys nothing and only risks a delayed paint.
+    return `<img class="player-avatar" src="${src}" alt="" />`;
   }
 
   function adpHtml(adp) {
@@ -1520,7 +1550,7 @@
       const barPct = Math.max(2, Math.round((d.vor / maxVor) * 100));
       tr.innerHTML = `
         <td class="rank">${d.overall_rank}</td>
-        <td><span class="player-name">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}</td>
+        <td>${playerImageHtml(d.name, d.team)}<span class="player-name">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}</td>
         <td><span class="pos-chip">${d.position}</span></td>
         <td class="num">${d.points.toFixed(1)}</td>
         <td class="num">
@@ -2125,7 +2155,7 @@
           }
           return `
             <tr>
-              <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</td>
+              <td>${playerImageHtml(p.name, p.team)}<span class="player-name">${p.name}</span><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</td>
               <td><span class="pos-chip">${p.position}</span></td>
               <td class="num">${p.vor.toFixed(1)}</td>
               <td class="num">${p.tier}</td>

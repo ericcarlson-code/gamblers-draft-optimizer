@@ -18,6 +18,10 @@ env/
 !data/sample/*.csv
 !data/historical/*.csv
 
+# Downloaded image cache (regenerable via scripts/fetch_player_images.py,
+# embedded as base64 into the site build -- not the raw source of truth)
+/data/image_cache/
+
 # Node (kept in case of future React frontend)
 node_modules/
 dist/
