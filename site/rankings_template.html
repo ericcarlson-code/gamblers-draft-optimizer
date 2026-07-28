@@ -2083,7 +2083,6 @@
       { label: 'Players Ranked', value: total },
       { label: 'Running Backs', value: counts.RB || 0 },
       { label: 'Wide Receivers', value: counts.WR || 0 },
-      { label: 'Top Tier (Overall)', value: 'T' + Math.min(...DATA.map(d => d.tier)) },
     ];
     const strip = document.getElementById('statStrip');
     strip.innerHTML = '';
@@ -2321,7 +2320,9 @@
   // ===========================================================================
   let mockDraft = null;
   let mockSortKey = 'value'; // 'value' | 'adp'
-  let mockPositionFilter = 'ALL'; // 'ALL' | 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF'
+  // Empty set means "All" (no filter); otherwise a multi-select set of
+  // positions, e.g. {'QB','RB'} shows both simultaneously.
+  let mockPositionFilters = new Set();
   let mockQuery = '';
   const MOCK_SORT_OPTIONS = [
     { key: 'value', label: 'Value' },
@@ -2867,9 +2868,9 @@
         // controls below. Position filtering happens before search/sort so
         // "stranded eligible" and the top-30 cap (below) both stay scoped
         // to whichever position tab is active, not the whole board.
-        const positionedPool = mockPositionFilter === 'ALL'
+        const positionedPool = mockPositionFilters.size === 0
           ? withTiers
-          : withTiers.filter(p => p.position === mockPositionFilter);
+          : withTiers.filter(p => mockPositionFilters.has(p.position));
         const searchedPool = mockQuery.trim()
           ? positionedPool.filter(p => p.name.toLowerCase().includes(mockQuery.trim().toLowerCase()))
           : positionedPool;
@@ -3039,7 +3040,10 @@
             ${stackCalloutHtml}
             <label class="field-label">Your pick — ranked by value (greyed cards have no roster room right now)</label>
             <div class="pills" id="mockPositionPills">
-              ${MOCK_POSITION_FILTERS.map(pos => `<button class="pill pill-sm${mockPositionFilter === pos ? ' active' : ''}" data-position="${pos}">${pos === 'ALL' ? 'All' : pos}</button>`).join('')}
+              ${MOCK_POSITION_FILTERS.map(pos => {
+                const isActive = pos === 'ALL' ? mockPositionFilters.size === 0 : mockPositionFilters.has(pos);
+                return `<button class="pill pill-sm${isActive ? ' active' : ''}" data-position="${pos}">${pos === 'ALL' ? 'All' : pos}</button>`;
+              }).join('')}
             </div>
             <div class="mock-pool-controls">
               <div class="pills" id="mockSortPills">
@@ -3051,7 +3055,14 @@
           </div>`;
         pickPanel.querySelectorAll('#mockPositionPills button').forEach(btn => {
           btn.addEventListener('click', () => {
-            mockPositionFilter = btn.dataset.position;
+            const pos = btn.dataset.position;
+            if (pos === 'ALL') {
+              mockPositionFilters.clear();
+            } else if (mockPositionFilters.has(pos)) {
+              mockPositionFilters.delete(pos);
+            } else {
+              mockPositionFilters.add(pos);
+            }
             renderMockDraft();
           });
         });
