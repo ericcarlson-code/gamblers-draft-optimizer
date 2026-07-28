@@ -179,7 +179,15 @@
     color: var(--ink-muted);
   }
 
+  .stat-strip-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin: 24px 0 8px;
+  }
   .stat-strip {
+    flex: 1;
+    min-width: 0;
     display: grid;
     grid-template-columns: repeat(4, minmax(0,1fr));
     gap: 1px;
@@ -187,9 +195,23 @@
     border: 1px solid var(--line);
     border-radius: var(--radius);
     overflow: hidden;
-    margin: 24px 0 8px;
     box-shadow: var(--shadow);
   }
+  .stat-arrow {
+    flex-shrink: 0;
+    width: 36px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: background 0.12s ease;
+  }
+  .stat-arrow:hover { background: var(--line); }
+  .stat-arrow:disabled { opacity: 0.35; cursor: default; }
+  .stat-arrow:disabled:hover { background: var(--surface); }
   .stat {
     background: var(--surface);
     padding: 14px 16px;
@@ -817,8 +839,39 @@
   .trade-verdict { font-weight: 700; }
 
 
+  .rankings-body { display: flex; align-items: flex-start; gap: 16px; }
+  .rankings-body .table-shell { flex: 1; min-width: 0; }
+  .schedule-sidebar {
+    flex-shrink: 0;
+    width: 220px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .schedule-sidebar-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    padding: 12px 14px 8px;
+  }
+  .schedule-sidebar-scroll { max-height: 520px; overflow-y: auto; }
+  .schedule-game {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--line);
+  }
+  .schedule-game img { width: 22px; height: 22px; object-fit: contain; }
+  .schedule-game .schedule-at { color: var(--ink-muted); font-size: 12px; }
+  .schedule-game .schedule-time { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-muted); }
   .hist-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
-  .hist-controls select {
+  .hist-controls select, .week-select {
     font-family: 'Public Sans', sans-serif;
     font-size: 14px;
     padding: 8px 10px;
@@ -1055,6 +1108,32 @@
   }
   .injury-badge-out { background: color-mix(in srgb, var(--danger) 20%, var(--surface-2)); color: var(--danger); }
   .injury-badge-warn { background: color-mix(in srgb, var(--accent-2) 20%, var(--surface-2)); color: var(--accent-2); }
+  .bye-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+  }
+  .injury-games-missed-badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+    background: color-mix(in srgb, var(--danger) 20%, var(--surface-2));
+    color: var(--danger);
+    cursor: help;
+  }
   .rookie-badge {
     display: inline-block;
     font-family: 'JetBrains Mono', monospace;
@@ -1174,9 +1253,14 @@
     <div class="view-switcher" id="projectionModeSwitcher" style="display:none;">
       <span class="view-label">Projection</span>
       <div class="pills" id="projectionModePills"></div>
+      <select class="week-select" id="weekSelect" aria-label="Jump to a specific week"></select>
     </div>
 
-    <div class="stat-strip" id="statStrip"></div>
+    <div class="stat-strip-row">
+      <button class="stat-arrow" id="statPrevBtn" aria-label="Show previous stats" title="Show previous stats">‹</button>
+      <div class="stat-strip" id="statStrip"></div>
+      <button class="stat-arrow" id="statNextBtn" aria-label="Show more stats" title="Show more stats">›</button>
+    </div>
 
     <div class="controls">
       <div class="pills" id="posPills"></div>
@@ -1186,32 +1270,37 @@
       </div>
     </div>
 
-    <div class="table-shell" id="rankingsTableShell">
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th data-key="overall_rank">Rank</th>
-              <th data-key="name">Player</th>
-              <th data-key="position">Pos</th>
-              <th class="num" data-key="points">Pts</th>
-              <th class="num" data-key="vor">VOR</th>
-              <th class="num" data-key="tier">Tier</th>
-              <th class="num" data-key="td_dependency_pct" title="Share of this player's points that come from touchdowns rather than yardage/volume -- a proxy for week-to-week boom/bust variance, and for why a QB and his own pass-catcher are unusually correlated (a passing TD and a receiving TD are the same play).">TD%</th>
-              <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
-              <th class="num" data-key="proj_rush_td" title="Projected rushing touchdowns (defense/special-teams return TDs bucketed in here too, closest fit for a non-scrimmage running play).">Rush TD</th>
-              <th class="num" data-key="proj_rec_td" title="Projected receiving touchdowns.">Rec TD</th>
-              <th class="num" data-key="adp" title="For 2026: standard/non-PPR consensus ADP averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC. For historical years: real 2-QB-format ADP from Fantasy Football Calculator, where archived (2020-2024). Not shown for 2025 (no historical data source for that season).">ADP</th>
-              <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
-              <th class="num" data-key="consensus_overall_rank" title="The standard/non-PPR consensus ADP's own overall rank (averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC) -- a reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to the consensus's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ enough to matter -- since this league's non-PPR/2-QB scoring differs from most opponents' generic cheat sheets, a big gap is often a real draft-day edge (see the Draft Value Edges panel above), not just a data error to double-check.">Consensus</th>
-              <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+    <div class="rankings-body">
+      <div class="table-shell" id="rankingsTableShell">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th data-key="overall_rank">Rank</th>
+                <th data-key="name">Player</th>
+                <th data-key="position">Pos</th>
+                <th class="num" data-key="points">Pts</th>
+                <th class="num" data-key="vor">VOR</th>
+                <th class="num" data-key="tier">Tier</th>
+                <th class="num" data-key="td_dependency_pct" title="Share of this player's points that come from touchdowns rather than yardage/volume -- a proxy for week-to-week boom/bust variance, and for why a QB and his own pass-catcher are unusually correlated (a passing TD and a receiving TD are the same play).">TD%</th>
+                <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
+                <th class="num" data-key="proj_rush_td" title="Projected rushing touchdowns (defense/special-teams return TDs bucketed in here too, closest fit for a non-scrimmage running play).">Rush TD</th>
+                <th class="num" data-key="proj_rec_td" title="Projected receiving touchdowns.">Rec TD</th>
+                <th class="num" data-key="adp" title="For 2026: standard/non-PPR consensus ADP averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC. For historical years: real 2-QB-format ADP from Fantasy Football Calculator, where archived (2020-2024). Not shown for 2025 (no historical data source for that season).">ADP</th>
+                <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
+                <th class="num" data-key="consensus_overall_rank" title="The standard/non-PPR consensus ADP's own overall rank (averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC) -- a reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to the consensus's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ enough to matter -- since this league's non-PPR/2-QB scoring differs from most opponents' generic cheat sheets, a big gap is often a real draft-day edge (see the Draft Value Edges panel above), not just a data error to double-check.">Consensus</th>
+                <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="emptyState" hidden>No players match that search.</div>
       </div>
-      <div class="empty-state" id="emptyState" hidden>No players match that search.</div>
-      <div class="empty-state" id="thisWeekComingSoon" hidden>Real per-week projections aren't available yet -- that needs actual week-by-week game/matchup data this build doesn't have wired up (see League Details' note on the current flat-rate approximation). Rather than show a ranking that's mathematically identical to Rest of Season underneath the surface, this view is a placeholder until real per-week data lands.</div>
+      <div class="schedule-sidebar" id="scheduleSidebar" hidden>
+        <div class="schedule-sidebar-title" id="scheduleSidebarTitle"></div>
+        <div class="schedule-sidebar-scroll" id="scheduleSidebarList"></div>
+      </div>
     </div>
   </section>
 
@@ -1341,7 +1430,7 @@
     </div>
 
     <h3 class="subhead">Current Week</h3>
-    <p class="section-intro" style="margin-bottom:10px;">Powers Rankings' This Week / Rest of Season views (a flat-rate approximation: season projection ÷ games per season -- not real per-game data). Defaults from today's date vs. an estimated season start; override it directly once the real schedule is known.</p>
+    <p class="section-intro" style="margin-bottom:10px;">Powers Rankings' Rest of Season view (a flat-rate approximation: season projection ÷ games per season, applied to each remaining week -- not real per-game data, though bye weeks and injury-out weeks are correctly zeroed using the real schedule). Defaults from today's date vs. an estimated season start; override it directly once the real schedule is known.</p>
     <div class="league-edit-row">
       <div>
         <label class="field-label" for="currentWeekInput">Current NFL Week (1-<span id="currentWeekMax"></span>)</label>
@@ -1382,6 +1471,7 @@
   // Review's full-league grade path (every team, true overall pick number)
   // instead of the single-team manual-entry fallback used for other years.
   const FANTASY_DRAFT_RESULTS = DATA_BY_VIEW.fantasy_draft_results || {};
+  const INJURY_GAMES_MISSED = DATA_BY_VIEW.injury_games_missed || {};
   // Untouched snapshot of the baked-in config, taken before any user edits --
   // "Reset to Defaults" in League Details re-applies this.
   const DEFAULT_LEAGUE_META = JSON.parse(JSON.stringify(DATA_BY_VIEW.meta));
@@ -1438,7 +1528,27 @@
     return Math.max(1, Math.min(week, gamesPerSeason));
   }
   let currentWeek = loadCurrentWeek() ?? computeDefaultWeek();
-  let projectionMode = 'restofseason'; // 'thisweek' | 'restofseason' -- only meaningful on the 2026 view
+  // 'restofseason' | 'week{N}' (N = 1-18) -- only meaningful on the 2026 view.
+  let projectionMode = 'restofseason';
+
+  // Real schedule (scripts/fetch_schedule.py), embedded per-week: which two
+  // teams play, and when. Used for real bye-week zeroing/flagging in a
+  // specific week's view -- previously "This Week" had no schedule concept
+  // at all (a flat scalar, which is why it was a placeholder). {} if the
+  // schedule hasn't been fetched yet for this season.
+  const SCHEDULE_BY_WEEK = DATA_BY_VIEW.schedule || {};
+  function teamsPlayingWeek(week) {
+    const games = SCHEDULE_BY_WEEK[String(week)] || [];
+    const teams = new Set();
+    for (const g of games) { teams.add(g.away_team); teams.add(g.home_team); }
+    return teams;
+  }
+  // If we have no schedule data at all for a week, don't falsely flag every
+  // team as on a bye -- fall back to "nobody's confirmed to have a bye".
+  function isByeWeek(team, week) {
+    const playing = teamsPlayingWeek(week);
+    return playing.size > 0 && !playing.has(team);
+  }
 
   // Scales points (and the TD-count columns, proportionally) down to a single
   // week or the remaining weeks of the season. VOR/tier get recomputed fresh
@@ -1477,14 +1587,18 @@
     const season = LEAGUE_META.season || {};
     const gamesPerSeason = season.games_per_season || 17;
     const weeklyRate = 1 / gamesPerSeason;
+    const selectedWeek = projectionMode.startsWith('week') ? parseInt(projectionMode.slice(4), 10) : null;
     return withStatus.map(r => {
       const outWeeks = weeksOutSet(injuryEntryFor(r.name), gamesPerSeason);
-      let factor;
-      if (projectionMode === 'thisweek') {
-        factor = outWeeks.has(currentWeek) ? 0 : weeklyRate;
+      let factor, isBye = false;
+      if (selectedWeek !== null) {
+        isBye = isByeWeek(r.team, selectedWeek);
+        factor = (outWeeks.has(selectedWeek) || isBye) ? 0 : weeklyRate;
       } else {
         let activeWeeks = 0;
-        for (let w = currentWeek; w <= gamesPerSeason; w++) if (!outWeeks.has(w)) activeWeeks++;
+        for (let w = currentWeek; w <= gamesPerSeason; w++) {
+          if (!outWeeks.has(w) && !isByeWeek(r.team, w)) activeWeeks++;
+        }
         factor = activeWeeks * weeklyRate;
       }
       return {
@@ -1493,6 +1607,7 @@
         proj_pass_td: (r.proj_pass_td ?? 0) * factor,
         proj_rush_td: (r.proj_rush_td ?? 0) * factor,
         proj_rec_td: (r.proj_rec_td ?? 0) * factor,
+        isBye,
       };
     });
   }
@@ -1548,10 +1663,12 @@
   // (stale team, missing depth-chart signal) reads exactly like this
   // divergence.
   //
-  // Position-filtered view (activePos !== 'All') shows the consensus's
-  // POSITION rank instead of overall (e.g. "QB3"), compared against our own
-  // model's position rank in the current pool, not our overall rank, since
-  // "our #118 vs consensus QB3" wouldn't mean anything.
+  // Position-filtered view (exactly one position selected in
+  // rankingsPositionFilters) shows the consensus's POSITION rank instead of
+  // overall (e.g. "QB3"), compared against our own model's position rank in
+  // the current pool, not our overall rank, since "our #118 vs consensus
+  // QB3" wouldn't mean anything. With zero or multiple positions selected,
+  // falls back to overall rank -- "position rank" isn't well-defined then.
   const CONSENSUS_POS_DIVERGENCE_THRESHOLD = 10;
 
   function computeOurPositionRanks(pool) {
@@ -1566,7 +1683,7 @@
   }
 
   function consensusCellHtml(player, ourPosRank) {
-    if (activePos === 'All') {
+    if (rankingsPositionFilters.size !== 1) {
       if (player.consensus_overall_rank == null) return '<span class="cell-muted">—</span>';
       const detail = `Consensus ADP rank: #${player.consensus_overall_rank} overall` +
         (player.consensus_pos_rank != null ? `, ${player.position}${player.consensus_pos_rank}` : '');
@@ -1640,7 +1757,10 @@
 
   let activeView = "2026";
   let DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
-  let activePos = "All";
+  // Empty set = "All" (no filter); otherwise holds selected position codes,
+  // e.g. {'QB','RB'} shows both -- same multi-select semantics as Mock
+  // Draft's mockPositionFilters.
+  let rankingsPositionFilters = new Set();
   let query = "";
   let sortKey = "overall_rank";
   let sortDir = 1;
@@ -1688,10 +1808,17 @@
     }
   }
 
-  const PROJECTION_MODES = [
-    { key: 'thisweek', label: 'This Week' },
-    { key: 'restofseason', label: 'Rest of Season' },
-  ];
+  // Rest of Season first (the default), then a single Week 1-18 selector
+  // for picking a specific week -- replaces the old "This Week" stub, which
+  // had no real schedule concept behind it and was a placeholder for
+  // exactly that reason.
+  function switchProjectionMode(mode) {
+    projectionMode = mode;
+    renderProjectionModePills();
+    DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
+    renderStats();
+    renderTable();
+  }
   function renderProjectionModePills() {
     const switcher = document.getElementById('projectionModeSwitcher');
     switcher.style.display = activeView === '2026' ? 'flex' : 'none';
@@ -1699,19 +1826,69 @@
 
     const wrap = document.getElementById('projectionModePills');
     wrap.innerHTML = '';
-    for (const m of PROJECTION_MODES) {
-      const btn = document.createElement('button');
-      btn.className = 'pill pill-sm' + (m.key === projectionMode ? ' active' : '');
-      btn.textContent = m.key === 'thisweek' ? `This Week (Wk ${currentWeek})` : m.label;
-      btn.addEventListener('click', () => {
-        projectionMode = m.key;
-        renderProjectionModePills();
-        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
-        renderStats();
-        renderTable();
+    const btn = document.createElement('button');
+    btn.className = 'pill pill-sm' + (projectionMode === 'restofseason' ? ' active' : '');
+    btn.textContent = 'Rest of Season';
+    btn.addEventListener('click', () => switchProjectionMode('restofseason'));
+    wrap.appendChild(btn);
+
+    // The real NFL calendar runs 18 weeks (each team gets one bye across a
+    // 17-game season) -- distinct from LEAGUE_META.season.games_per_season
+    // (17), which counts games played, not calendar weeks. Derive the real
+    // week count from the schedule itself when available.
+    const scheduleWeeks = Object.keys(SCHEDULE_BY_WEEK).map(Number);
+    const calendarWeeks = scheduleWeeks.length ? Math.max(...scheduleWeeks) : 18;
+    const select = document.getElementById('weekSelect');
+    if (!select.dataset.populated) {
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Week…';
+      select.appendChild(placeholder);
+      for (let w = 1; w <= calendarWeeks; w++) {
+        const opt = document.createElement('option');
+        opt.value = `week${w}`;
+        opt.textContent = `Week ${w}`;
+        select.appendChild(opt);
+      }
+      select.dataset.populated = 'true';
+      select.addEventListener('change', () => {
+        if (select.value) switchProjectionMode(select.value);
       });
-      wrap.appendChild(btn);
     }
+    select.value = projectionMode.startsWith('week') ? projectionMode : '';
+  }
+
+  // Yahoo-style scrollable schedule sidebar -- only shown when a specific
+  // week (not Rest of Season) is selected, since Rest of Season has no
+  // single week's matchups to show. Reuses TEAM_LOGOS, the same lookup
+  // playerImageHtml() falls back to.
+  function renderScheduleSidebar() {
+    const sidebar = document.getElementById('scheduleSidebar');
+    const selectedWeek = activeView === '2026' && projectionMode.startsWith('week')
+      ? parseInt(projectionMode.slice(4), 10)
+      : null;
+    if (selectedWeek === null) {
+      sidebar.hidden = true;
+      return;
+    }
+    const games = (SCHEDULE_BY_WEEK[String(selectedWeek)] || [])
+      .slice()
+      .sort((a, b) => (a.gameday + a.gametime).localeCompare(b.gameday + b.gametime));
+    sidebar.hidden = false;
+    document.getElementById('scheduleSidebarTitle').textContent = `Week ${selectedWeek} Schedule`;
+    const list = document.getElementById('scheduleSidebarList');
+    if (games.length === 0) {
+      list.innerHTML = '<div class="schedule-game">No schedule data for this week yet.</div>';
+      return;
+    }
+    list.innerHTML = games.map(g => `
+      <div class="schedule-game">
+        ${TEAM_LOGOS[g.away_team] ? `<img src="${TEAM_LOGOS[g.away_team]}" alt="${g.away_team}" />` : g.away_team}
+        <span class="schedule-at">@</span>
+        ${TEAM_LOGOS[g.home_team] ? `<img src="${TEAM_LOGOS[g.home_team]}" alt="${g.home_team}" />` : g.home_team}
+        <span class="schedule-time">${g.gametime || ''}</span>
+      </div>
+    `).join('');
   }
 
   function sparklineSvg(history, playerName) {
@@ -2011,37 +2188,69 @@
     const wrap = document.getElementById('posPills');
     wrap.innerHTML = '';
     for (const pos of POSITIONS) {
+      const isActive = pos === 'All' ? rankingsPositionFilters.size === 0 : rankingsPositionFilters.has(pos);
       const btn = document.createElement('button');
-      btn.className = 'pill' + (pos === activePos ? ' active' : '');
+      btn.className = 'pill' + (isActive ? ' active' : '');
       btn.textContent = pos;
-      btn.setAttribute('aria-pressed', pos === activePos ? 'true' : 'false');
-      btn.addEventListener('click', () => { activePos = pos; renderPills(); renderTable(); });
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      btn.addEventListener('click', () => {
+        if (pos === 'All') {
+          rankingsPositionFilters.clear();
+        } else if (rankingsPositionFilters.has(pos)) {
+          rankingsPositionFilters.delete(pos);
+        } else {
+          rankingsPositionFilters.add(pos);
+        }
+        renderPills();
+        renderStats();
+        renderTable();
+      });
       wrap.appendChild(btn);
     }
   }
 
+  // Default order Total/QB/WR/RB (matching the ask), TE/K/DEF reachable via
+  // the arrows -- 4 slots visible at a time, cycling one position per click.
+  const STAT_STRIP_ITEMS = [
+    { label: 'Players Ranked', position: null },
+    { label: 'Quarterbacks', position: 'QB' },
+    { label: 'Wide Receivers', position: 'WR' },
+    { label: 'Running Backs', position: 'RB' },
+    { label: 'Tight Ends', position: 'TE' },
+    { label: 'Kickers', position: 'K' },
+    { label: 'Defenses', position: 'DEF' },
+  ];
+  const STAT_STRIP_VISIBLE = 4;
+  let statStripOffset = 0;
+
   function renderStats() {
-    const total = DATA.length;
     const counts = {};
     for (const d of DATA) counts[d.position] = (counts[d.position] || 0) + 1;
-    const items = [
-      { label: 'Players Ranked', value: total },
-      { label: 'Running Backs', value: counts.RB || 0 },
-      { label: 'Wide Receivers', value: counts.WR || 0 },
-    ];
+    const maxOffset = STAT_STRIP_ITEMS.length - STAT_STRIP_VISIBLE;
+    statStripOffset = Math.max(0, Math.min(statStripOffset, maxOffset));
+
     const strip = document.getElementById('statStrip');
     strip.innerHTML = '';
-    for (const it of items) {
+    const visible = STAT_STRIP_ITEMS.slice(statStripOffset, statStripOffset + STAT_STRIP_VISIBLE);
+    for (const it of visible) {
+      const value = it.position === null ? DATA.length : (counts[it.position] || 0);
       const cell = document.createElement('div');
       cell.className = 'stat';
-      cell.innerHTML = `<span class="value">${it.value}</span><span class="label">${it.label}</span>`;
+      cell.innerHTML = `<span class="value">${value}</span><span class="label">${it.label}</span>`;
       strip.appendChild(cell);
     }
+
+    const prevBtn = document.getElementById('statPrevBtn');
+    const nextBtn = document.getElementById('statNextBtn');
+    prevBtn.disabled = statStripOffset === 0;
+    nextBtn.disabled = statStripOffset >= maxOffset;
+    prevBtn.onclick = () => { statStripOffset -= 1; renderStats(); };
+    nextBtn.onclick = () => { statStripOffset += 1; renderStats(); };
   }
 
   function sortedFiltered() {
     let rows = DATA;
-    if (activePos !== 'All') rows = rows.filter(d => d.position === activePos);
+    if (rankingsPositionFilters.size > 0) rows = rows.filter(d => rankingsPositionFilters.has(d.position));
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       rows = rows.filter(d => d.name.toLowerCase().includes(q) || d.team.toLowerCase().includes(q));
@@ -2061,34 +2270,23 @@
 
   function renderTable() {
     const tableShell = document.getElementById('rankingsTableShell');
-    const comingSoon = document.getElementById('thisWeekComingSoon');
     const empty = document.getElementById('emptyState');
-    // "This Week" currently has no real per-week/matchup data behind it --
-    // it's a uniform per-player scalar, which cancels out of every relative
-    // VOR/rank comparison, so it would otherwise render an ordering that's
-    // silently identical to Rest of Season. Show an honest placeholder
-    // instead of that confusing near-duplicate.
-    const isThisWeek = activeView === '2026' && projectionMode === 'thisweek';
-    tableShell.hidden = isThisWeek;
-    comingSoon.hidden = !isThisWeek;
-    if (isThisWeek) {
-      empty.hidden = true;
-      return;
-    }
+    tableShell.hidden = false;
+    renderScheduleSidebar();
 
     const rows = sortedFiltered();
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
     empty.hidden = rows.length !== 0;
     const maxVor = getMaxVor();
-    const ourPositionRanks = activePos !== 'All' ? computeOurPositionRanks(DATA) : null;
+    const ourPositionRanks = rankingsPositionFilters.size === 1 ? computeOurPositionRanks(DATA) : null;
 
     for (const d of rows) {
       const tr = document.createElement('tr');
       const barPct = Math.max(2, Math.round((d.vor / maxVor) * 100));
       tr.innerHTML = `
         <td class="rank">${d.overall_rank}</td>
-        <td>${playerImageHtml(d.name, d.team)}<span class="player-name player-name-link" data-player-name="${d.name}">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}</td>
+        <td>${playerImageHtml(d.name, d.team)}<span class="player-name player-name-link" data-player-name="${d.name}">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}${d.isBye ? '<span class="bye-badge" title="On a bye this week">BYE</span>' : ''}</td>
         <td><span class="pos-chip">${d.position}</span></td>
         <td class="num">${d.points.toFixed(1)}</td>
         <td class="num">
@@ -3211,7 +3409,7 @@
     const pickRows = matched.map(r => `
       <tr>
         <td>${r.round}</td>
-        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span></td>
+        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span>${injuryGamesMissedBadgeHtml(r.player, year)}</td>
         <td><span class="pos-chip">${r.position}</span></td>
         <td class="num">#${r.actualRank}</td>
         <td class="num">${r.vor.toFixed(1)}</td>
@@ -3277,6 +3475,16 @@
       }
     }
     document.getElementById('histPicksEntry').innerHTML = rows;
+  }
+
+  // Historical-only (a season that already happened has a real games-missed
+  // count; the live 2026 board is forward-looking, so this doesn't apply
+  // there). APPROXIMATE, not exact -- see scripts/fetch_injury_history.py's
+  // docstring for exactly what this does and doesn't detect.
+  function injuryGamesMissedBadgeHtml(name, year) {
+    const count = (INJURY_GAMES_MISSED[name] || {})[String(year)];
+    if (!count) return '';
+    return `<span class="injury-games-missed-badge" title="Approximate games missed to injury in ${year}: counts weeks reported 'Out', or weeks with very low offensive snap share while on that week's injury report -- not exact play-by-play detection (e.g. leaving before halftime specifically can't be confirmed from available data).">+${count}</span>`;
   }
 
   // ===========================================================================
@@ -3358,7 +3566,7 @@
       <tr>
         <td class="num">#${r.overallPick}</td>
         <td>${r.round}.${r.pickInRound}</td>
-        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span></td>
+        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span>${injuryGamesMissedBadgeHtml(r.player, year)}</td>
         <td><span class="pos-chip">${r.position}</span></td>
         <td class="num">#${r.actualRank}</td>
         <td class="num">${r.vor.toFixed(1)}</td>
