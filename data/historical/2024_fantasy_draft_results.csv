@@ -1,0 +1,127 @@
+overall_pick,round,pick_in_round,team,player_resolved,player_raw
+1,1,1,Redskins,Christian McCaffrey,Christian McCaffrey
+2,1,2,Elite,CeeDee Lamb,CeeDee Lamb
+3,1,3,Hoofers,Josh Allen,Josh Allen
+4,1,4,Cardinals,Breece Hall,Breece Hall
+5,1,5,Greendawgs,Patrick Mahomes,Patrick Mahomes
+6,1,6,Sportos,Tyreek Hill,Tyreek Hill
+7,1,7,ChronicMasterdeflatr,Bijan Robinson,Bijan Robinson
+8,1,8,Let's Ride,Lamar Jackson,Lamar Jackson
+9,1,9,Just Bout Dat Action,Amon-Ra St. Brown,Amon-Ra St. Brown
+10,2,1,Just Bout Dat Action,C.J. Stroud,C.J. Stroud
+11,2,2,Let's Ride,Ja'Marr Chase,Ja'Marr Chase
+12,2,3,ChronicMasterdeflatr,Jalen Hurts,Jalen Hurts
+13,2,4,Sportos,Justin Jefferson,Justin Jefferson
+14,2,5,Greendawgs,Travis Kelce,Travis Kelce
+15,2,6,Cardinals,Kyler Murray,Kyler Murray
+16,2,7,Hoofers,Jordan Love,Jordan Love
+17,2,8,Elite,Puka Nacua,Puka Nacua
+18,2,9,Redskins,Raheem Mostert,Raheem Mostert
+19,3,1,Redskins,Sam LaPorta,Sam LaPorta
+20,3,2,Elite,DK Metcalf,DK Metcalf
+21,3,3,Hoofers,Anthony Richardson,Anthony Richardson Sr.
+22,3,4,Cardinals,Garrett Wilson,Garrett Wilson
+23,3,5,Greendawgs,A.J. Brown,A.J. Brown
+24,3,6,Sportos,Dak Prescott,Dak Prescott
+25,3,7,ChronicMasterdeflatr,Jonathan Taylor,Jonathan Taylor
+26,3,8,Let's Ride,Jahmyr Gibbs,Jahmyr Gibbs
+27,3,9,Just Bout Dat Action,Saquon Barkley,Saquon Barkley
+28,4,1,Just Bout Dat Action,Joe Burrow,Joe Burrow
+29,4,2,Let's Ride,Mike Evans,Mike Evans
+30,4,3,ChronicMasterdeflatr,Derrick Henry,Derrick Henry
+31,4,4,Sportos,Isiah Pacheco,Isiah Pacheco
+32,4,5,Greendawgs,Cooper Kupp,Cooper Kupp
+33,4,6,Cardinals,Marvin Harrison Jr.,Marvin Harrison Jr.
+34,4,7,Hoofers,Kyren Williams,Kyren Williams
+35,4,8,Elite,Travis Etienne,Travis Etienne Jr.
+36,4,9,Redskins,Brandon Aubrey,Brandon Aubrey
+37,5,1,Redskins,Dallas Cowboys,Dallas Cowboys
+38,5,2,Elite,Davante Adams,Davante Adams
+39,5,3,Hoofers,Josh Jacobs,Josh Jacobs
+40,5,4,Cardinals,Jayden Daniels,Jayden Daniels
+41,5,5,Greendawgs,Jared Goff,Jared Goff
+42,5,6,Sportos,Dalton Kincaid,Dalton Kincaid
+43,5,7,ChronicMasterdeflatr,Nico Collins,Nico Collins
+44,5,8,Let's Ride,Brock Purdy,Brock Purdy
+45,5,9,Just Bout Dat Action,Mark Andrews,Mark Andrews
+46,6,1,Just Bout Dat Action,Kenneth Walker III,Kenneth Walker III
+47,6,2,Let's Ride,Brandon Aiyuk,Brandon Aiyuk
+48,6,3,ChronicMasterdeflatr,Deebo Samuel Sr.,Deebo Samuel
+49,6,4,Sportos,De'Von Achane,De'Von Achane
+50,6,5,Greendawgs,Joe Mixon,Joe Mixon
+51,6,6,Cardinals,Jaylen Waddle,Jaylen Waddle
+52,6,7,Hoofers,Drake London,Drake London
+53,6,8,Elite,DeVonta Smith,DeVonta Smith
+54,6,9,Redskins,Caleb Williams,Caleb Williams
+55,7,1,Redskins,Trevor Lawrence,Trevor Lawrence
+56,7,2,Elite,Stefon Diggs,Stefon Diggs
+57,7,3,Hoofers,Amari Cooper,Amari Cooper
+58,7,4,Cardinals,Trey McBride,Trey McBride
+59,7,5,Greendawgs,DJ Moore,DJ Moore
+60,7,6,Sportos,Tua Tagovailoa,Tua Tagovailoa
+61,7,7,ChronicMasterdeflatr,Chris Olave,Chris Olave
+62,7,8,Let's Ride,George Kittle,George Kittle
+63,7,9,Just Bout Dat Action,James Conner,James Conner
+64,8,1,Just Bout Dat Action,Michael Pittman,Michael Pittman Jr.
+65,8,2,Let's Ride,Rachaad White,Rachaad White
+66,8,3,ChronicMasterdeflatr,Malik Nabers,Malik Nabers
+67,8,4,Sportos,Zay Flowers,Zay Flowers
+68,8,5,Greendawgs,Justin Tucker,Justin Tucker
+69,8,6,Cardinals,James Cook,James Cook III
+70,8,7,Hoofers,Xavier Worthy,Xavier Worthy
+71,8,8,Elite,Baker Mayfield,Baker Mayfield
+72,8,9,Redskins,Rashee Rice,Rashee Rice
+73,9,1,Redskins,Terry McLaurin,Terry McLaurin
+74,9,2,Elite,Javonte Williams,Javonte Williams
+75,9,3,Hoofers,Evan Engram,Evan Engram
+76,9,4,Cardinals,Alvin Kamara,Alvin Kamara
+77,9,5,Greendawgs,Harrison Butker,Harrison Butker
+78,9,6,Sportos,Aaron Jones,Aaron Jones Sr.
+79,9,7,ChronicMasterdeflatr,Younghoe Koo,Younghoe Koo
+80,9,8,Let's Ride,Rome Odunze,Rome Odunze
+81,9,9,Just Bout Dat Action,Tee Higgins,Tee Higgins
+82,10,1,Just Bout Dat Action,Jayden Reed,Jayden Reed
+83,10,2,Let's Ride,D'Andre Swift,D'Andre Swift
+84,10,3,ChronicMasterdeflatr,David Montgomery,David Montgomery
+85,10,4,Sportos,Courtland Sutton,Courtland Sutton
+86,10,5,Greendawgs,Gus Edwards,Gus Edwards
+87,10,6,Cardinals,George Pickens,George Pickens
+88,10,7,Hoofers,Jameson Williams,Jameson Williams
+89,10,8,Elite,Rhamondre Stevenson,Rhamondre Stevenson
+90,10,9,Redskins,Tank Dell,Tank Dell
+91,11,1,Redskins,Diontae Johnson,Diontae Johnson
+92,11,2,Elite,Kyle Pitts,Kyle Pitts Sr.
+93,11,3,Hoofers,Greg Zuerlein,Greg Zuerlein
+94,11,4,Cardinals,Jake Elliott,Jake Elliott
+95,11,5,Greendawgs,Austin Ekeler,Austin Ekeler
+96,11,6,Sportos,Ka'imi Fairbairn,Ka'imi Fairbairn
+97,11,7,ChronicMasterdeflatr,Kansas City Chiefs,Kansas City Chiefs
+98,11,8,Let's Ride,Jason Sanders,Jason Sanders
+99,11,9,Just Bout Dat Action,Josh Palmer,Josh Palmer
+100,12,1,Just Bout Dat Action,Evan McPherson,Evan McPherson
+101,12,2,Let's Ride,Bo Nix,Bo Nix
+102,12,3,ChronicMasterdeflatr,Matt Gay,Matt Gay
+103,12,4,Sportos,Jake Moody,Jake Moody
+104,12,5,Greendawgs,New York Jets,New York Jets
+105,12,6,Cardinals,Baltimore Ravens,Baltimore Ravens
+106,12,7,Hoofers,Cameron Dicker,Cameron Dicker
+107,12,8,Elite,Kirk Cousins,Kirk Cousins
+108,12,9,Redskins,Najee Harris,Najee Harris
+109,13,1,Redskins,Tyler Bass,Tyler Bass
+110,13,2,Elite,San Francisco 49ers,San Francisco 49ers
+111,13,3,Hoofers,Zack Moss,Zack Moss
+112,13,4,Cardinals,Cairo Santos,Cairo Santos
+113,13,5,Greendawgs,DeAndre Hopkins,DeAndre Hopkins
+114,13,6,Sportos,Justin Herbert,Justin Herbert
+115,13,7,ChronicMasterdeflatr,Aaron Rodgers,Aaron Rodgers
+116,13,8,Let's Ride,Jason Myers,Jason Myers
+117,13,9,Just Bout Dat Action,Matt Prater,Matt Prater
+118,14,1,Just Bout Dat Action,Seattle Seahawks,Seattle Seahawks
+119,14,2,Let's Ride,Denver Broncos,Denver Broncos
+120,14,3,ChronicMasterdeflatr,Brock Bowers,Brock Bowers
+121,14,4,Sportos,Cincinnati Bengals,Cincinnati Bengals
+122,14,5,Greendawgs,Blake Corum,Blake Corum
+123,14,6,Cardinals,Jaxon Smith-Njigba,Jaxon Smith-Njigba
+124,14,7,Hoofers,Los Angeles Chargers,Los Angeles Chargers
+125,14,8,Elite,Dustin Hopkins,Dustin Hopkins
+126,14,9,Redskins,Matthew Stafford,Matthew Stafford

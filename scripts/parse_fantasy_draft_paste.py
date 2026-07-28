@@ -58,6 +58,8 @@ DST_NICKNAME_TO_FULL_NAME = {
     "Rams": "Los Angeles Rams", "Chiefs": "Kansas City Chiefs", "Jaguars": "Jacksonville Jaguars",
     "Bills": "Buffalo Bills", "Eagles": "Philadelphia Eagles", "Ravens": "Baltimore Ravens",
     "Chargers": "Los Angeles Chargers", "Lions": "Detroit Lions",
+    "Cowboys": "Dallas Cowboys", "Jets": "New York Jets", "49ers": "San Francisco 49ers",
+    "Bengals": "Cincinnati Bengals",
 }
 
 

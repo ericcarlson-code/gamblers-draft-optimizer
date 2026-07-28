@@ -3368,12 +3368,15 @@
   }
 
   // ===========================================================================
-  // Full real-draft grading (all 10 teams, true overall pick number) -- used
-  // instead of the manual single-team entry flow above for any year that has
-  // FANTASY_DRAFT_RESULTS[year] (currently just 2025). Reuses the same
-  // verdict thresholds as computeHistoricalReview, but compares against
-  // e.overall_pick directly rather than the round*numTeams approximation,
-  // since the real pick order removes the need to approximate.
+  // Full real-draft grading (true overall pick number, team count varies by
+  // season -- derived from fullDraftTeams(year), not LEAGUE_META.num_teams
+  // which reflects only the CURRENT live league) -- used instead of the
+  // manual single-team entry flow above for any year that has
+  // FANTASY_DRAFT_RESULTS[year] (2025: 10 teams, 2024: 9 teams, no Wildcard).
+  // Reuses the same verdict thresholds as computeHistoricalReview, but
+  // compares against e.overall_pick directly rather than the
+  // round*numTeams approximation, since the real pick order removes the
+  // need to approximate.
   // ===========================================================================
   function fullDraftTeams(year) {
     const seen = [];
@@ -3401,7 +3404,7 @@
       // "Bust", but ratio 1/3=0.33 against the exact pick would call it one).
       // The exact overall_pick is still shown and used for the ADP-comparison
       // text below, where a precise number is correct, not miscalibrated.
-      const numTeams = LEAGUE_META.num_teams;
+      const numTeams = fullDraftTeams(year).length;
       const ratio = (e.round * numTeams) / p.overall_rank;
       let verdict;
       if (ratio >= 1.5) verdict = { tag: 'great_value', label: 'Steal' };
@@ -3476,7 +3479,7 @@
       </table></div></div>
 
       <h3 class="subhead">Notable Players Nobody Drafted</h3>
-      <p class="section-intro">Highest-value players that season who went completely undrafted across all 10 teams.</p>
+      <p class="section-intro">Highest-value players that season who went completely undrafted across all ${fullDraftTeams(year).length} teams.</p>
       <div class="table-shell"><div class="table-scroll"><table>
         <thead><tr><th>Player</th><th>Pos</th><th class="num">Actual Rank</th><th class="num">VOR</th></tr></thead>
         <tbody>${missRows || '<tr><td colspan="4" class="trend-empty">No misses to show.</td></tr>'}</tbody>
@@ -3567,6 +3570,8 @@
     'Rams': 'Los Angeles Rams', 'Chiefs': 'Kansas City Chiefs', 'Jaguars': 'Jacksonville Jaguars',
     'Bills': 'Buffalo Bills', 'Eagles': 'Philadelphia Eagles', 'Ravens': 'Baltimore Ravens',
     'Chargers': 'Los Angeles Chargers', 'Lions': 'Detroit Lions',
+    'Cowboys': 'Dallas Cowboys', 'Jets': 'New York Jets', '49ers': 'San Francisco 49ers',
+    'Bengals': 'Cincinnati Bengals',
   };
   function dstName(nickname) { return DST_NICKNAME_TO_FULL_NAME[nickname] || nickname; }
 
