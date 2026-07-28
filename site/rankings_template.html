@@ -604,8 +604,27 @@
     text-align: center;
     border-top: 2px solid transparent;
   }
-  .draft-board-cell.filled { border-top-color: var(--pos-accent); }
+  .draft-board-cell.filled { border-top-color: var(--pos-accent); position: relative; }
   .draft-board-cell.filled:hover { background: var(--surface-2); }
+  .draft-board-edit-btn {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+  .draft-board-cell.filled:hover .draft-board-edit-btn,
+  .draft-board-edit-btn:focus { opacity: 1; }
+  .draft-board-edit-btn:hover { color: var(--ink); }
   .draft-board-cell.empty { color: var(--ink-muted); }
   .draft-board-cell.on-clock { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
   .draft-board-onclock-dot { color: var(--accent); font-size: 16px; line-height: 1; animation: onClockPulse 1.4s ease-in-out infinite; }
@@ -1316,6 +1335,9 @@
     <div id="mockDraftBoard" hidden>
       <div class="mock-status-row">
         <div id="mockOnClock" class="mock-on-clock"></div>
+        <button class="btn-secondary btn-sm" id="mockSimPickBtn" title="Auto-pick your turn using the current top recommendation">Sim Pick</button>
+        <button class="btn-secondary btn-sm" id="mockSimDraftBtn" title="Auto-complete the rest of the draft (your picks via the top recommendation, bots via their normal logic)">Sim Draft</button>
+        <button class="btn-secondary btn-sm" id="mockUndoBtn" title="Undo the most recent pick">Undo Last Pick</button>
         <button class="btn-secondary" id="mockResetBtn">Reset Mock Draft</button>
       </div>
       <details class="mock-team-panel" id="mockTeamPanel">
@@ -1393,6 +1415,13 @@
   <div class="modal-box modal-box-wide">
     <button class="modal-close" id="playerModalClose" aria-label="Close">×</button>
     <div id="playerModalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editPickModalOverlay" hidden>
+  <div class="modal-box">
+    <button class="modal-close" id="editPickModalClose" aria-label="Close">×</button>
+    <div id="editPickModalContent"></div>
   </div>
 </div>
 
@@ -2482,6 +2511,12 @@
   // Empty set means "All" (no filter); otherwise a multi-select set of
   // positions, e.g. {'QB','RB'} shows both simultaneously.
   let mockPositionFilters = new Set();
+  // Auto-navigates mockPositionFilters to the human's current starter needs
+  // after each of their own picks (see the Draft-button handler below) --
+  // but stops nudging for the rest of THIS draft the moment the user
+  // manually touches a position pill themselves, so it never fights a
+  // deliberate manual choice. Reset on every new draft.
+  let mockPositionFiltersUserModified = false;
   let mockQuery = '';
   const MOCK_SORT_OPTIONS = [
     { key: 'value', label: 'Value' },
@@ -2520,15 +2555,22 @@
     return [...withAdp, ...withoutAdp];
   }
 
+  // Positions where this roster still has an open STARTING slot (excludes
+  // BN, which can hold any position) -- shared by pickForBot (bots) and the
+  // human-facing recommendation ordering/auto-navigation in renderMockDraft.
+  function computeStarterNeeds(rosterPlayers, rosterSlots) {
+    const counts = {};
+    for (const p of rosterPlayers) counts[p.position] = (counts[p.position] || 0) + 1;
+    return Object.keys(rosterSlots).filter(
+      pos => pos !== 'BN' && (counts[pos] || 0) < rosterSlots[pos]
+    );
+  }
+
   function pickForBot(availableRanked, teamRoster, rosterSlots) {
     // teamRoster: array of already-drafted player objects (not just position strings) --
     // storing full players (not just their positions) is what lets the UI also flag
     // stacks against your own roster while drafting, not just count position needs.
-    const counts = {};
-    for (const p of teamRoster) counts[p.position] = (counts[p.position] || 0) + 1;
-    const starterPositions = Object.keys(rosterSlots).filter(
-      pos => pos !== 'BN' && (counts[pos] || 0) < rosterSlots[pos]
-    );
+    const starterPositions = computeStarterNeeds(teamRoster, rosterSlots);
     if (starterPositions.length > 0) {
       const eligible = availableRanked.filter(p => starterPositions.includes(p.position));
       if (eligible.length > 0) return eligible[0];
@@ -2827,6 +2869,145 @@
     mockDraft.pickIdx += 1;
   }
 
+  // Rebuilds rosters/draftedNames/pickIdx from scratch by replaying a
+  // picksLog -- the shared primitive behind both "undo last pick" (replay
+  // the log minus its last entry) and "edit an arbitrary past pick"
+  // (replay the log truncated at the edited slot, then a new entry, then
+  // let runMockDraftStep() regenerate everything after it fresh). Looks
+  // each entry's full player object up by name from the live 2026 pool --
+  // picksLog entries only carry a few flat fields (name/position/vor/
+  // nflTeam), not the richer object (td_dependency_pct, adp, etc.) that
+  // mockDraft.rosters needs for stack detection/grade-report math.
+  function rebuildMockDraftFromLog(newPicksLog) {
+    const fullPool = attachInjuryStatus(DATA_BY_VIEW['2026']);
+    const byName = new Map(fullPool.map(p => [p.name, p]));
+    mockDraft.rosters = Object.fromEntries(mockDraft.teamLabels.map(l => [l, []]));
+    mockDraft.draftedNames = new Set();
+    mockDraft.picksLog = [];
+    mockDraft.pickIdx = 0;
+    for (const entry of newPicksLog) {
+      const player = byName.get(entry.name);
+      if (!player) continue;
+      mockDraft.picksLog.push({ ...entry, pick: mockDraft.picksLog.length + 1 });
+      mockDraft.rosters[entry.team].push(player);
+      mockDraft.draftedNames.add(entry.name);
+      mockDraft.pickIdx += 1;
+    }
+  }
+
+  function undoLastPick() {
+    if (!mockDraft || !mockDraft.picksLog.length) return;
+    rebuildMockDraftFromLog(mockDraft.picksLog.slice(0, -1));
+    runMockDraftStep();
+  }
+
+  // ===========================================================================
+  // Edit-any-pick modal -- opened via the pencil icon on a filled draft-board
+  // cell. Editing pick N truncates the log at N and lets runMockDraftStep()
+  // regenerate everything after it fresh (bots recompute against the new
+  // pool state) rather than a same-slot-only swap, which could otherwise
+  // leave a player drafted twice or strand a bot's original pick as
+  // inconsistent with the now-different roster state. Any of the human's
+  // OWN later picks are lost this way -- the modal warns about this
+  // explicitly before the user confirms, since it's the one genuinely
+  // surprising consequence.
+  // ===========================================================================
+  let editPickIdx = null;
+  let editPickQuery = '';
+
+  function openEditPickModal(pick) {
+    editPickIdx = pick - 1;
+    editPickQuery = '';
+    renderEditPickModal();
+    document.getElementById('editPickModalOverlay').hidden = false;
+  }
+
+  function closeEditPickModal() {
+    document.getElementById('editPickModalOverlay').hidden = true;
+    editPickIdx = null;
+  }
+
+  function renderEditPickModal() {
+    const entry = mockDraft.picksLog[editPickIdx];
+    if (!entry) { closeEditPickModal(); return; }
+
+    const laterMePicks = mockDraft.picksLog.slice(editPickIdx + 1).filter(e => e.team === 'Me');
+    const willReplay = editPickIdx < mockDraft.picksLog.length - 1;
+    const warning = laterMePicks.length
+      ? `<p class="hist-note">Editing this pick will re-simulate every pick after it -- your own later pick${laterMePicks.length === 1 ? '' : 's'} (${laterMePicks.map(e => e.name).join(', ')}) will be undone and need to be redrafted.</p>`
+      : (willReplay ? `<p class="hist-note">Editing this pick will re-simulate every bot pick after it against the new board state.</p>` : '');
+
+    const fullPool = attachInjuryStatus(DATA_BY_VIEW['2026']);
+    const draftedElsewhere = new Set(mockDraft.draftedNames);
+    draftedElsewhere.delete(entry.name); // the current occupant becomes available again for this edit
+    const q = editPickQuery.trim().toLowerCase();
+    const results = fullPool
+      .filter(p => !draftedElsewhere.has(p.name))
+      .filter(p => !q || p.name.toLowerCase().includes(q))
+      .sort((a, b) => b.vor - a.vor)
+      .slice(0, 25);
+    const resultsHtml = results.length
+      ? results.map(p => `<div class="trade-picklist-item" data-edit-select="${p.name}"><span>${p.name} (${p.position}, ${p.team})</span><span class="vor-val">${p.vor.toFixed(1)}</span></div>`).join('')
+      : '<div class="trade-picklist-item">No matches.</div>';
+
+    document.getElementById('editPickModalContent').innerHTML = `
+      <h3 class="subhead">Edit Round ${entry.round} — ${entry.team}</h3>
+      <p class="section-intro">Currently drafted: ${entry.name} (${entry.position})</p>
+      ${warning}
+      <input type="text" class="trade-search" id="editPickSearch" placeholder="Search a replacement player…" value="${editPickQuery.replace(/"/g, '&quot;')}" />
+      <div class="trade-picklist" style="display:block; position:static; max-height:280px; overflow-y:auto;">${resultsHtml}</div>
+    `;
+
+    const searchInput = document.getElementById('editPickSearch');
+    searchInput.addEventListener('input', () => {
+      editPickQuery = searchInput.value;
+      const cursorPos = searchInput.selectionStart;
+      renderEditPickModal();
+      const freshInput = document.getElementById('editPickSearch');
+      freshInput.focus();
+      freshInput.setSelectionRange(cursorPos, cursorPos);
+    });
+    document.getElementById('editPickModalContent').querySelectorAll('[data-edit-select]').forEach(el => {
+      el.addEventListener('click', () => applyPickEdit(el.dataset.editSelect));
+    });
+  }
+
+  function applyPickEdit(replacementName) {
+    const entry = mockDraft.picksLog[editPickIdx];
+    const fullPool = attachInjuryStatus(DATA_BY_VIEW['2026']);
+    const replacement = fullPool.find(p => p.name === replacementName);
+    if (!entry || !replacement) return;
+    const keptLog = mockDraft.picksLog.slice(0, editPickIdx);
+    const newEntry = {
+      round: entry.round,
+      team: entry.team,
+      name: replacement.name,
+      position: replacement.position,
+      vor: replacement.vor,
+      nflTeam: replacement.team,
+    };
+    rebuildMockDraftFromLog([...keptLog, newEntry]);
+    closeEditPickModal();
+    runMockDraftStep();
+  }
+
+  function initEditPickModal() {
+    document.getElementById('editPickModalClose').addEventListener('click', closeEditPickModal);
+    document.getElementById('editPickModalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'editPickModalOverlay') closeEditPickModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeEditPickModal();
+    });
+    // Delegated once on the grid's stable container, same rationale as the
+    // team-roster-modal listener below -- renderDraftBoardGrid() replaces
+    // the grid's innerHTML on every pick.
+    document.getElementById('mockDraftBoardGrid').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-edit-pick]');
+      if (btn) openEditPickModal(parseInt(btn.dataset.editPick, 10));
+    });
+  }
+
   function startMockDraft() {
     const yourSlot = parseInt(document.getElementById('mockSlotInput').value, 10) || 1;
     const numTeams = LEAGUE_META.num_teams;
@@ -2843,6 +3024,8 @@
       picksLog: [],
       draftedNames: new Set(),
     };
+    mockPositionFilters = new Set();
+    mockPositionFiltersUserModified = false;
 
     document.getElementById('mockDraftSetup').hidden = true;
     document.getElementById('mockDraftBoard').hidden = false;
@@ -2855,7 +3038,10 @@
     document.getElementById('mockDraftBoard').hidden = true;
   }
 
-  function runMockDraftStep() {
+  // Advances through bot turns only, stopping the instant it's "Me"'s turn
+  // or the draft ends -- no rendering, so Sim Draft can call this in its own
+  // loop without a wasted re-render after every single pick.
+  function runBotPicksUntilMe() {
     const numTeams = LEAGUE_META.num_teams;
     const rosterSlots = LEAGUE_META.roster_slots;
     while (mockDraft.pickIdx < mockDraft.order.length) {
@@ -2867,6 +3053,71 @@
       const botRanked = rankPlayersForBotDraft(ranked);
       const pick = pickForBot(botRanked, mockDraft.rosters[teamLabel], rosterSlots);
       recordMockPick(pick, teamLabel);
+    }
+  }
+
+  function runMockDraftStep() {
+    runBotPicksUntilMe();
+    renderMockDraft();
+  }
+
+  // Same "ranked -> starter-need-boosted -> eligible-for-room" pipeline
+  // renderMockDraft's human pool uses, but independent of whatever the
+  // human currently has typed in search or filtered to a position tab --
+  // this is THE model's own top recommendation, used by both Sim Pick and
+  // Sim Draft (and mirrors what the pool grid's own top card shows when no
+  // search/position filter narrows it).
+  function topRecommendation() {
+    const numTeams = LEAGUE_META.num_teams;
+    const rosterSlots = LEAGUE_META.roster_slots;
+    const available = getMockAvailable();
+    if (available.length === 0) return null;
+    const ranked = computeVOR(available, numTeams, rosterSlots);
+    const withTiers = assignTiers(ranked, LEAGUE_META.gap_threshold_stdevs);
+    const eligible = withTiers.filter(p => wouldHaveRoom(p, mockDraft.rosters['Me'], rosterSlots));
+    if (eligible.length === 0) return null;
+    const starterNeeds = new Set(computeStarterNeeds(mockDraft.rosters['Me'], rosterSlots));
+    const sorted = [...eligible].sort((a, b) => {
+      const aNeed = starterNeeds.has(a.position), bNeed = starterNeeds.has(b.position);
+      if (aNeed !== bNeed) return aNeed ? -1 : 1;
+      return b.vor - a.vor;
+    });
+    return sorted[0] || null;
+  }
+
+  function recordTopRecommendationPick(rec) {
+    recordMockPick(rec, 'Me');
+    const logEntry = mockDraft.picksLog[mockDraft.picksLog.length - 1];
+    logEntry.bestAvailableVor = rec.vor;
+    logEntry.bestAvailableName = rec.name;
+  }
+
+  // Auto-picks the human's own turn using the current top recommendation --
+  // a no-op unless it's actually "Me" on the clock.
+  function simPick() {
+    if (!mockDraft || mockDraft.pickIdx >= mockDraft.order.length) return;
+    if (mockDraft.teamLabels[mockDraft.order[mockDraft.pickIdx]] !== 'Me') return;
+    const rec = topRecommendation();
+    if (!rec) return;
+    recordTopRecommendationPick(rec);
+    runMockDraftStep();
+  }
+
+  // Auto-completes every remaining pick -- the human's own turns via the
+  // top recommendation (same logic Sim Pick uses), bots via their existing
+  // normal logic -- rendering once at the end, not after every pick.
+  // NOTE: bot picking (pickForBot/rankPlayersForBotDraft) is fully
+  // deterministic today, so re-running this from a fresh draft currently
+  // produces identical results every time -- flagged, not silently changed,
+  // since adding intentional bot-pick variance is a separate, undecided ask.
+  function simDraft() {
+    if (!mockDraft) return;
+    while (mockDraft.pickIdx < mockDraft.order.length) {
+      runBotPicksUntilMe();
+      if (mockDraft.pickIdx >= mockDraft.order.length) break;
+      const rec = topRecommendation();
+      if (!rec) break;
+      recordTopRecommendationPick(rec);
     }
     renderMockDraft();
   }
@@ -2908,6 +3159,7 @@
         if (entry) {
           const isJustPicked = lastEntry && entry === lastEntry;
           html += `<div class="draft-board-cell filled pos-${entry.position}${isJustPicked ? ' just-picked' : ''}" title="${entry.name} (${entry.position}) -- Rd ${entry.round}, ${entry.team}">
+            <button class="draft-board-edit-btn" data-edit-pick="${entry.pick}" title="Edit this pick" aria-label="Edit ${entry.team}'s Round ${entry.round} pick">✎</button>
             ${playerImageHtml(entry.name, entry.nflTeam, 'draft-board-avatar')}
             <span class="draft-board-name">${entry.name}</span>
           </div>`;
@@ -2972,7 +3224,15 @@
         const searchedPool = mockQuery.trim()
           ? positionedPool.filter(p => p.name.toLowerCase().includes(mockQuery.trim().toLowerCase()))
           : positionedPool;
+        // Positions still needing a STARTER always rank ahead of positions
+        // where starters are already full, VOR/ADP only breaking ties
+        // within the same need-tier -- once every starter slot is filled,
+        // starterNeeds is empty and this is a no-op (pure VOR/ADP, same as
+        // before). Reuses the same helper pickForBot uses for bots.
+        const starterNeeds = new Set(computeStarterNeeds(mockDraft.rosters['Me'], rosterSlots));
         const sortedPool = [...searchedPool].sort((a, b) => {
+          const aNeed = starterNeeds.has(a.position), bNeed = starterNeeds.has(b.position);
+          if (aNeed !== bNeed) return aNeed ? -1 : 1;
           if (mockSortKey === 'adp') {
             if (a.adp == null && b.adp == null) return 0;
             if (a.adp == null) return 1;
@@ -3162,6 +3422,7 @@
             } else {
               mockPositionFilters.add(pos);
             }
+            mockPositionFiltersUserModified = true;
             renderMockDraft();
           });
         });
@@ -3198,6 +3459,14 @@
             const logEntry = mockDraft.picksLog[mockDraft.picksLog.length - 1];
             logEntry.bestAvailableVor = eligible[0].vor;
             logEntry.bestAvailableName = eligible[0].name;
+            // Nudge the pool view toward whatever starter needs remain --
+            // but only while the user hasn't manually picked a position
+            // filter themselves this draft (set above), so this never
+            // overrides a deliberate manual choice.
+            if (!mockPositionFiltersUserModified) {
+              const newNeeds = computeStarterNeeds(mockDraft.rosters['Me'], rosterSlots);
+              mockPositionFilters = new Set(newNeeds);
+            }
             runMockDraftStep();
           });
         });
@@ -3235,6 +3504,9 @@
     document.getElementById('mockSlotInput').max = LEAGUE_META.num_teams;
     document.getElementById('mockStartBtn').addEventListener('click', startMockDraft);
     document.getElementById('mockResetBtn').addEventListener('click', resetMockDraft);
+    document.getElementById('mockUndoBtn').addEventListener('click', undoLastPick);
+    document.getElementById('mockSimPickBtn').addEventListener('click', simPick);
+    document.getElementById('mockSimDraftBtn').addEventListener('click', simDraft);
 
     const boardWrap = document.getElementById('mockDraftBoardWrap');
     const expandBtn = document.getElementById('mockBoardExpandBtn');
@@ -4015,6 +4287,7 @@
   initMockDraft();
   initTradeCalculator();
   initHistoricalReview();
+  initEditPickModal();
   initLeagueEditForm();
   initPlayerModal();
   initTeamRosterModal();
