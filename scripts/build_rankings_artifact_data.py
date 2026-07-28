@@ -356,6 +356,40 @@ def load_fantasy_draft_results() -> dict[str, list[dict]]:
     return results
 
 
+def load_schedule() -> dict[str, list[dict]]:
+    """{week: [{gameday, gametime, away_team, home_team}]} for the live 2026
+    board, from data/historical/2026_schedule.csv (scripts/fetch_schedule.py).
+    {} if the file doesn't exist yet -- e.g. before the real schedule has
+    been fetched for the season -- rather than erroring the whole build."""
+    path = DATA_DIR / "2026_schedule.csv"
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    by_week: dict[str, list[dict]] = {}
+    for row in df.itertuples():
+        by_week.setdefault(str(row.week), []).append({
+            "gameday": row.gameday,
+            "gametime": row.gametime,
+            "away_team": row.away_team,
+            "home_team": row.home_team,
+        })
+    return by_week
+
+
+def load_injury_games_missed() -> dict[str, dict[str, int]]:
+    """{player: {season: games_missed_injury}} for every
+    data/historical/{year}_injury_games_missed.csv on disk
+    (scripts/fetch_injury_history.py) -- an explicit APPROXIMATION, not a
+    precise play-by-play detector (see that script's docstring). {} if no
+    such files exist yet."""
+    result: dict[str, dict[str, int]] = {}
+    for path in sorted(DATA_DIR.glob("*_injury_games_missed.csv")):
+        df = pd.read_csv(path)
+        for row in df.itertuples():
+            result.setdefault(row.player, {})[str(row.season)] = int(row.games_missed_injury)
+    return result
+
+
 def build_data_bundle(cfg: dict) -> dict:
     """{'2026': [...rows with history...], '2025': [...], ..., '2020': [...]}"""
     year_boards = {
@@ -401,6 +435,8 @@ def build_data_bundle(cfg: dict) -> dict:
         },
         "2026": projection_rows,
         "fantasy_draft_results": load_fantasy_draft_results(),
+        "schedule": load_schedule(),
+        "injury_games_missed": load_injury_games_missed(),
     }
     for year, board in year_boards.items():
         bundle[str(year)] = to_rows(board)
