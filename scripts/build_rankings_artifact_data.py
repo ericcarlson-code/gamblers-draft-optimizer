@@ -85,6 +85,22 @@ def load_adp(year: int | None = None) -> dict[str, float]:
     return dict(zip(df["name"], df["adp"]))
 
 
+# The consensus source's own spelling occasionally diverges from our board's
+# nflreadpy-derived name in ways _build_name_resolver's suffix/accent
+# stripping can't catch (nicknames, dropped apostrophes) -- confirmed real
+# players, not data gaps. Canonical home for this map: also imported by
+# scripts/build_2026_projections.py for the universe trim, so a player kept
+# in the board via this alias also gets a real adp/consensus_overall_rank
+# instead of silently showing a dash. Mirrors the DST_NICKNAME_TO_FULL_NAME
+# pattern used elsewhere in this codebase for the same class of problem.
+CONSENSUS_NAME_ALIASES = {
+    "Devon Achane": "De'Von Achane",
+    "Joshua Palmer": "Josh Palmer",
+    "Hollywood Brown": "Marquise Brown",
+    "Zonovan Knight": "Bam Knight",
+}
+
+
 def load_consensus_adp() -> dict[str, float]:
     """name -> standard/non-PPR consensus ADP for the live 2026 board, from
     data/historical/consensus_adp_2026.csv (user-provided, averaged across
@@ -97,7 +113,8 @@ def load_consensus_adp() -> dict[str, float]:
     if not path.exists():
         return {}
     df = pd.read_csv(path)
-    return dict(zip(df["name"], df["adp"]))
+    names = df["name"].map(lambda n: CONSENSUS_NAME_ALIASES.get(n, n))
+    return dict(zip(names, df["adp"]))
 
 
 _SUFFIX_RE = re.compile(r"\s+(Jr\.?|Sr\.?|II|III|IV|V)$", re.IGNORECASE)
@@ -207,7 +224,8 @@ def load_consensus_rankings() -> dict[str, dict]:
     df = pd.read_csv(path)
     out = {}
     for row in df.itertuples():
-        out[row.name] = {"overall_rank": int(row.rank), "pos_rank": int(row.pos_rank)}
+        name = CONSENSUS_NAME_ALIASES.get(row.name, row.name)
+        out[name] = {"overall_rank": int(row.rank), "pos_rank": int(row.pos_rank)}
     return out
 
 

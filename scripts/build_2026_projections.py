@@ -27,7 +27,7 @@ from optimizer.depth_chart import (  # noqa: E402
 )
 from optimizer.projections import STAT_FIELDS, build_projection  # noqa: E402
 from optimizer.rookie_projections import build_round_position_baseline, project_rookies  # noqa: E402
-from scripts.build_rankings_artifact_data import _build_name_resolver  # noqa: E402
+from scripts.build_rankings_artifact_data import CONSENSUS_NAME_ALIASES, _build_name_resolver  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 VETERAN_MODEL_YEARS = [2023, 2024, 2025]
@@ -116,19 +116,14 @@ def main() -> None:
     # as the ADP/Flock joins (_build_name_resolver) rather than a bare-name
     # dict, since that mismatch class (e.g. "James Cook" vs "James Cook III")
     # has hit this codebase repeatedly.
-    # The consensus source's own spelling occasionally diverges from our
-    # board's nflreadpy-derived name in ways _build_name_resolver's suffix/
-    # accent stripping can't catch (nicknames, dropped apostrophes) -- these
-    # 4 were confirmed as real players missing this trim purely due to
-    # spelling, not genuine data gaps. Mirrors the DST_NICKNAME_TO_FULL_NAME
-    # pattern used elsewhere in this codebase for the same class of problem.
-    CONSENSUS_NAME_ALIASES = {
-        "Devon Achane": "De'Von Achane",
-        "Joshua Palmer": "Josh Palmer",
-        "Hollywood Brown": "Marquise Brown",
-        "Zonovan Knight": "Bam Knight",
-    }
-
+    # CONSENSUS_NAME_ALIASES (imported above) handles cases where the
+    # consensus source's own spelling diverges from our board's
+    # nflreadpy-derived name in ways _build_name_resolver's suffix/accent
+    # stripping can't catch (nicknames, dropped apostrophes) -- confirmed
+    # real players missing this trim purely due to spelling, not genuine
+    # data gaps. Shared with build_rankings_artifact_data.py's
+    # load_consensus_adp()/load_consensus_rankings() so a player kept here
+    # also gets real adp/consensus_overall_rank values, not a dash.
     before = len(projection)
     consensus_path = DATA_DIR / "consensus_adp_2026.csv"
     if consensus_path.exists():
