@@ -309,6 +309,36 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
     return rows
 
 
+def load_fantasy_draft_results() -> dict[str, list[dict]]:
+    """{year: [{overall_pick, round, pick_in_round, team, player, resolved}]}
+    for every data/historical/{year}_fantasy_draft_results.csv on disk (this
+    LEAGUE's real draft results, produced by scripts/parse_fantasy_draft_paste.py
+    -- NOT {year}_draft_results.csv, which is the unrelated NFL rookie draft).
+    Powers Historical Review's full-league draft grade (all 10 teams, not
+    just a manually-entered single team) for any year this data exists for.
+    `resolved` is False when the parser couldn't match the pasted name to
+    that year's stats board (e.g. a real data gap like a missing kicker) --
+    the frontend should show these as ungraded rather than silently omit
+    them, since the pick itself is still real."""
+    results: dict[str, list[dict]] = {}
+    for path in sorted(DATA_DIR.glob("*_fantasy_draft_results.csv")):
+        year = path.stem.split("_")[0]
+        df = pd.read_csv(path, keep_default_na=False)
+        picks = []
+        for row in df.itertuples():
+            player = row.player_resolved or row.player_raw
+            picks.append({
+                "overall_pick": int(row.overall_pick),
+                "round": int(row.round),
+                "pick_in_round": int(row.pick_in_round),
+                "team": row.team,
+                "player": player,
+                "resolved": bool(row.player_resolved),
+            })
+        results[year] = picks
+    return results
+
+
 def build_data_bundle(cfg: dict) -> dict:
     """{'2026': [...rows with history...], '2025': [...], ..., '2020': [...]}"""
     year_boards = {
@@ -349,6 +379,7 @@ def build_data_bundle(cfg: dict) -> dict:
             "notes": cfg.get("notes", []),
         },
         "2026": projection_rows,
+        "fantasy_draft_results": load_fantasy_draft_results(),
     }
     for year, board in year_boards.items():
         bundle[str(year)] = to_rows(board)

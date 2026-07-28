@@ -1269,16 +1269,23 @@
   </section>
 
   <section id="section-historical" class="app-section" hidden>
-    <p class="section-intro">Enter one of your own past drafts (which player you took each round) and grade it against what actually happened that season, under this league's current scoring. Good for spotting a specific mistake pattern -- e.g. an early QB who busted, or a cheap late pick who massively outperformed.</p>
+    <p class="section-intro">Enter one of your own past drafts (which player you took each round) and grade it against what actually happened that season, under this league's current scoring. Good for spotting a specific mistake pattern -- e.g. an early QB who busted, or a cheap late pick who massively outperformed. For seasons where the full real 10-team draft has been loaded, every team is gradeable, not just yours.</p>
     <div class="hist-controls">
       <label class="field-label" for="histYearSelect" style="margin:0;">Season</label>
       <select id="histYearSelect"></select>
+      <label class="field-label" for="histTeamSelect" style="margin:0;" id="histTeamSelectLabel" hidden>Team</label>
+      <select id="histTeamSelect" hidden></select>
     </div>
-    <p class="hist-note">
+    <p class="hist-note" id="histFullDraftNote" hidden>
+      <strong>Full real draft loaded for this season:</strong> every team's actual picks, graded against the true overall pick number (not a round-based approximation) -- pick any team above to see their grade.
+    </p>
+    <p class="hist-note" id="histManualNote">
       <strong>Scope limit:</strong> this only has your own picks, not the full 10-team draft, so it can't tell you the exact best alternative pick at your slot the way Mock Draft's grade report can (that needs the full simulated draft). Instead it compares each pick's actual result to what a typical pick in that round should return (and, where historical ADP data is available, to that round's real market expectation too), and separately surfaces the highest-value players you didn't draft at all that season.
     </p>
-    <h3 class="subhead">Your Picks, Round by Round</h3>
-    <div id="histPicksEntry" class="hist-picks-entry"></div>
+    <div id="histManualEntryWrap">
+      <h3 class="subhead">Your Picks, Round by Round</h3>
+      <div id="histPicksEntry" class="hist-picks-entry"></div>
+    </div>
     <div id="histResults"></div>
   </section>
 
@@ -1374,6 +1381,12 @@
 <script>
   const DATA_BY_VIEW = __BOARD_DATA_BY_YEAR_JSON__;
   const LEAGUE_META = DATA_BY_VIEW.meta;
+  // {year: [{overall_pick, round, pick_in_round, team, player, resolved}]} --
+  // this league's REAL full draft results, where available (currently just
+  // 2025). See scripts/parse_fantasy_draft_paste.py. Powers Historical
+  // Review's full-league grade path (every team, true overall pick number)
+  // instead of the single-team manual-entry fallback used for other years.
+  const FANTASY_DRAFT_RESULTS = DATA_BY_VIEW.fantasy_draft_results || {};
   // Untouched snapshot of the baked-in config, taken before any user edits --
   // "Reset to Defaults" in League Details re-applies this.
   const DEFAULT_LEAGUE_META = JSON.parse(JSON.stringify(DATA_BY_VIEW.meta));
@@ -3198,9 +3211,139 @@
     document.getElementById('histPicksEntry').innerHTML = rows;
   }
 
+  // ===========================================================================
+  // Full real-draft grading (all 10 teams, true overall pick number) -- used
+  // instead of the manual single-team entry flow above for any year that has
+  // FANTASY_DRAFT_RESULTS[year] (currently just 2025). Reuses the same
+  // verdict thresholds as computeHistoricalReview, but compares against
+  // e.overall_pick directly rather than the round*numTeams approximation,
+  // since the real pick order removes the need to approximate.
+  // ===========================================================================
+  function fullDraftTeams(year) {
+    const seen = [];
+    (FANTASY_DRAFT_RESULTS[year] || []).forEach(e => { if (!seen.includes(e.team)) seen.push(e.team); });
+    return seen;
+  }
+
+  function computeFullDraftReview(year, team) {
+    const allPicks = FANTASY_DRAFT_RESULTS[year] || [];
+    const pool = rescoreBoard(DATA_BY_VIEW[year]);
+    const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
+    const draftedNames = new Set(allPicks.filter(e => e.resolved).map(e => e.player.toLowerCase()));
+
+    const rows = allPicks.filter(e => e.team === team).map(e => {
+      if (!e.resolved) {
+        return { round: e.round, pickInRound: e.pick_in_round, overallPick: e.overall_pick, player: e.player, matched: false };
+      }
+      const p = byName.get(e.player.toLowerCase());
+      if (!p) return { round: e.round, pickInRound: e.pick_in_round, overallPick: e.overall_pick, player: e.player, matched: false };
+      // Verdict tag uses the SAME round*numTeams expected-rank heuristic as
+      // computeHistoricalReview (not the exact overall pick) -- comparing
+      // against the exact pick is a much stricter standard than these
+      // Steal/Solid/Bust thresholds were calibrated for (e.g. the #1 overall
+      // pick finishing #3 that season is a perfectly fine outcome, not a
+      // "Bust", but ratio 1/3=0.33 against the exact pick would call it one).
+      // The exact overall_pick is still shown and used for the ADP-comparison
+      // text below, where a precise number is correct, not miscalibrated.
+      const numTeams = LEAGUE_META.num_teams;
+      const ratio = (e.round * numTeams) / p.overall_rank;
+      let verdict;
+      if (ratio >= 1.5) verdict = { tag: 'great_value', label: 'Steal' };
+      else if (ratio >= 0.6) verdict = { tag: 'solid', label: 'Solid' };
+      else verdict = { tag: 'reach', label: 'Bust' };
+      let reason = `Pick #${e.overall_pick} overall (Round ${e.round}) finished ranked #${p.overall_rank} (${p.vor.toFixed(1)} VOR) that season.`;
+      if (p.adp != null) {
+        const adpPick = Math.round(p.adp);
+        if (adpPick < e.overall_pick) reason += ` Real market ADP had them going #${adpPick} overall -- you got them ${e.overall_pick - adpPick} pick${e.overall_pick - adpPick === 1 ? '' : 's'} later than the market expected.`;
+        else if (adpPick > e.overall_pick) reason += ` Real market ADP had them going #${adpPick} overall -- you reached ${adpPick - e.overall_pick} pick${adpPick - e.overall_pick === 1 ? '' : 's'} ahead of the market.`;
+        else reason += ` Right in line with real market ADP (#${adpPick} overall).`;
+      }
+      return { round: e.round, pickInRound: e.pick_in_round, overallPick: e.overall_pick, player: p.name, position: p.position, team: p.team, vor: p.vor, actualRank: p.overall_rank, verdict, reason, matched: true };
+    });
+
+    const misses = pool
+      .filter(p => !draftedNames.has(p.name.toLowerCase()))
+      .sort((a, b) => b.vor - a.vor)
+      .slice(0, 10);
+
+    return { rows, misses };
+  }
+
+  function renderFullDraftTeamSelect(year) {
+    const teams = fullDraftTeams(year);
+    const select = document.getElementById('histTeamSelect');
+    const prevValue = select.value;
+    select.innerHTML = teams.map(t => `<option value="${t}">${t}</option>`).join('');
+    select.value = teams.includes(prevValue) ? prevValue : (teams.includes('Cardinals') ? 'Cardinals' : teams[0]);
+  }
+
+  function renderFullDraftReview(year, team) {
+    const container = document.getElementById('histResults');
+    const { rows, misses } = computeFullDraftReview(year, team);
+    const matched = rows.filter(r => r.matched);
+    const unmatched = rows.filter(r => !r.matched);
+
+    const pickRows = matched.map(r => `
+      <tr>
+        <td class="num">#${r.overallPick}</td>
+        <td>${r.round}.${r.pickInRound}</td>
+        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span></td>
+        <td><span class="pos-chip">${r.position}</span></td>
+        <td class="num">#${r.actualRank}</td>
+        <td class="num">${r.vor.toFixed(1)}</td>
+        <td><span class="verdict-tag verdict-${r.verdict.tag}">${r.verdict.label}</span></td>
+        <td style="font-size:13px; color:var(--ink-muted);">${r.reason}</td>
+      </tr>`).join('');
+
+    const ungradedRows = unmatched.map(r => `
+      <tr>
+        <td class="num">#${r.overallPick}</td>
+        <td>${r.round}.${r.pickInRound}</td>
+        <td><span class="player-name">${r.player}</span></td>
+        <td colspan="4" style="font-size:13px; color:var(--ink-muted);">No ${year} stats on record for this player (real data gap, not a typo) -- can't be graded.</td>
+        <td></td>
+      </tr>`).join('');
+
+    const missRows = misses.map(p => `
+      <tr>
+        <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span></td>
+        <td><span class="pos-chip">${p.position}</span></td>
+        <td class="num">#${p.overall_rank}</td>
+        <td class="num">${p.vor.toFixed(1)}</td>
+      </tr>`).join('');
+
+    container.innerHTML = `
+      <h3 class="subhead">${team}'s ${year} Draft, Graded</h3>
+      <div class="table-shell" style="margin-bottom:26px;"><div class="table-scroll"><table>
+        <thead><tr><th class="num">Overall</th><th>Rd.Pick</th><th>Player</th><th>Pos</th><th class="num">Actual Rank</th><th class="num">VOR</th><th>Verdict</th><th>Notes</th></tr></thead>
+        <tbody>${pickRows + ungradedRows || '<tr><td colspan="8" class="trend-empty">No picks found.</td></tr>'}</tbody>
+      </table></div></div>
+
+      <h3 class="subhead">Notable Players Nobody Drafted</h3>
+      <p class="section-intro">Highest-value players that season who went completely undrafted across all 10 teams.</p>
+      <div class="table-shell"><div class="table-scroll"><table>
+        <thead><tr><th>Player</th><th>Pos</th><th class="num">Actual Rank</th><th class="num">VOR</th></tr></thead>
+        <tbody>${missRows || '<tr><td colspan="4" class="trend-empty">No misses to show.</td></tr>'}</tbody>
+      </table></div></div>
+    `;
+  }
+
   function renderHistorical() {
-    renderHistPicksEntry();
-    renderHistoricalReview();
+    const year = document.getElementById('histYearSelect').value;
+    const hasFullDraft = !!(FANTASY_DRAFT_RESULTS[year] && FANTASY_DRAFT_RESULTS[year].length);
+    document.getElementById('histTeamSelectLabel').hidden = !hasFullDraft;
+    document.getElementById('histTeamSelect').hidden = !hasFullDraft;
+    document.getElementById('histFullDraftNote').hidden = !hasFullDraft;
+    document.getElementById('histManualNote').hidden = hasFullDraft;
+    document.getElementById('histManualEntryWrap').hidden = hasFullDraft;
+
+    if (hasFullDraft) {
+      renderFullDraftTeamSelect(year);
+      renderFullDraftReview(year, document.getElementById('histTeamSelect').value);
+    } else {
+      renderHistPicksEntry();
+      renderHistoricalReview();
+    }
   }
 
   function initHistoricalReview() {
@@ -3208,6 +3351,10 @@
     const years = [2025, 2024, 2023, 2022, 2021, 2020];
     yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
     yearSelect.addEventListener('change', renderHistorical);
+
+    document.getElementById('histTeamSelect').addEventListener('change', () => {
+      renderFullDraftReview(document.getElementById('histYearSelect').value, document.getElementById('histTeamSelect').value);
+    });
 
     const entryEl = document.getElementById('histPicksEntry');
     entryEl.addEventListener('input', (e) => {
@@ -3262,7 +3409,8 @@
     'Vikings': 'Minnesota Vikings', 'Steelers': 'Pittsburgh Steelers', 'Texans': 'Houston Texans',
     'Packers': 'Green Bay Packers', 'Broncos': 'Denver Broncos', 'Seahawks': 'Seattle Seahawks',
     'Rams': 'Los Angeles Rams', 'Chiefs': 'Kansas City Chiefs', 'Jaguars': 'Jacksonville Jaguars',
-    'Bills': 'Buffalo Bills',
+    'Bills': 'Buffalo Bills', 'Eagles': 'Philadelphia Eagles', 'Ravens': 'Baltimore Ravens',
+    'Chargers': 'Los Angeles Chargers', 'Lions': 'Detroit Lions',
   };
   function dstName(nickname) { return DST_NICKNAME_TO_FULL_NAME[nickname] || nickname; }
 
