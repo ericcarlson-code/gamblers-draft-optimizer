@@ -27,6 +27,7 @@ from optimizer.depth_chart import (  # noqa: E402
 )
 from optimizer.projections import STAT_FIELDS, build_projection  # noqa: E402
 from optimizer.rookie_projections import build_round_position_baseline, project_rookies  # noqa: E402
+from scripts.build_rankings_artifact_data import _build_name_resolver  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 VETERAN_MODEL_YEARS = [2023, 2024, 2025]
@@ -105,6 +106,42 @@ def main() -> None:
         print("No draft class / baseline data available -- skipping rookie projections")
 
     projection = pd.concat([veteran_projection, rookie_projection], ignore_index=True)
+
+    # Trim the universe to the user's requested 500-player board: the real
+    # ~468-player standard/non-PPR consensus ADP list (data/historical/
+    # consensus_adp_2026.csv, see load_consensus_adp() in
+    # build_rankings_artifact_data.py) plus all 32 D/ST teams -- that source
+    # has zero defense coverage, so DEF rows are always kept regardless of
+    # the consensus list. Uses the same suffix/accent-tolerant name matching
+    # as the ADP/Flock joins (_build_name_resolver) rather than a bare-name
+    # dict, since that mismatch class (e.g. "James Cook" vs "James Cook III")
+    # has hit this codebase repeatedly.
+    # The consensus source's own spelling occasionally diverges from our
+    # board's nflreadpy-derived name in ways _build_name_resolver's suffix/
+    # accent stripping can't catch (nicknames, dropped apostrophes) -- these
+    # 4 were confirmed as real players missing this trim purely due to
+    # spelling, not genuine data gaps. Mirrors the DST_NICKNAME_TO_FULL_NAME
+    # pattern used elsewhere in this codebase for the same class of problem.
+    CONSENSUS_NAME_ALIASES = {
+        "Devon Achane": "De'Von Achane",
+        "Joshua Palmer": "Josh Palmer",
+        "Hollywood Brown": "Marquise Brown",
+        "Zonovan Knight": "Bam Knight",
+    }
+
+    before = len(projection)
+    consensus_path = DATA_DIR / "consensus_adp_2026.csv"
+    if consensus_path.exists():
+        consensus_names = {CONSENSUS_NAME_ALIASES.get(n, n) for n in pd.read_csv(consensus_path)["name"]}
+        resolver = _build_name_resolver({n: True for n in consensus_names})
+        keep = projection.apply(
+            lambda r: r["position"] == "DEF" or bool(resolver(r["name"])), axis=1
+        )
+        projection = projection[keep].reset_index(drop=True)
+        print(f"Trimmed universe {before} -> {len(projection)} players (consensus list + all DEF)")
+    else:
+        print(f"No {consensus_path} found -- skipping universe trim, keeping all {before} players")
+
     out_path = DATA_DIR / "2026_projections.csv"
     projection.to_csv(out_path, index=False)
     print(f"Wrote {len(projection)} projected players to {out_path}")
