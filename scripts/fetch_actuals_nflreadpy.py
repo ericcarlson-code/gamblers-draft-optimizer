@@ -40,6 +40,20 @@ from scripts.fetch_actuals import CSV_FIELDS, DATA_DIR, fetch_team_defense
 
 FANTASY_POSITIONS = {"QB", "RB", "WR", "TE", "K"}
 
+# Two-way/hybrid players nflreadpy tags by their primary defensive/depth-chart
+# position, so the FANTASY_POSITIONS filter below silently drops them despite
+# real fantasy-relevant offensive production. A narrow named override (not a
+# broadened FANTASY_POSITIONS, which would flood the board with every real
+# CB/FB in the league) -- same pattern as CONSENSUS_NAME_ALIASES/
+# DST_NICKNAME_TO_FULL_NAME elsewhere in this codebase for this class of
+# problem. Juszczyk maps to RB since league_config.json's roster slots have
+# no dedicated FB slot -- RB is the closest fantasy-eligible slot for a
+# receiving fullback.
+POSITION_OVERRIDES = {
+    ("Travis Hunter", "CB"): "WR",
+    ("Kyle Juszczyk", "FB"): "RB",
+}
+
 
 def _val(row: pd.Series, col: str) -> float:
     v = row.get(col, 0)
@@ -52,9 +66,10 @@ def fetch_season(season: int) -> dict[str, dict]:
 
     for _, row in df.iterrows():
         position = row.get("position")
+        name = row.get("player_display_name")
+        position = POSITION_OVERRIDES.get((name, position), position)
         if position not in FANTASY_POSITIONS:
             continue
-        name = row.get("player_display_name")
         if not name or pd.isna(name):
             continue
 

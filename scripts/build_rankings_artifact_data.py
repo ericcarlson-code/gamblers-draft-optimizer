@@ -259,6 +259,7 @@ def score_file(
     cfg: dict,
     adp_lookup: dict[str, float] | None = None,
     consensus_lookup: dict[str, dict] | None = None,
+    apply_scarcity: bool = True,
 ) -> pd.DataFrame:
     raw = pd.read_csv(path)
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
@@ -282,7 +283,7 @@ def score_file(
     board["proj_pass_td"] = td_count_cols["proj_pass_td"]
     board["proj_rush_td"] = td_count_cols["proj_rush_td"]
     board["proj_rec_td"] = td_count_cols["proj_rec_td"]
-    board = compute_vor(board, cfg)
+    board = compute_vor(board, cfg, apply_scarcity=apply_scarcity)
     board = assign_tiers(board, cfg)
     board = board.sort_values("vor", ascending=False).reset_index(drop=True)
     board["overall_rank"] = range(1, len(board) + 1)
@@ -358,7 +359,10 @@ def load_fantasy_draft_results() -> dict[str, list[dict]]:
 def build_data_bundle(cfg: dict) -> dict:
     """{'2026': [...rows with history...], '2025': [...], ..., '2020': [...]}"""
     year_boards = {
-        year: score_file(DATA_DIR / f"{year}_actual_stats.csv", cfg, adp_lookup=load_adp(year))
+        # apply_scarcity=False: these score PAST seasons' real results (value
+        # actually delivered), not the upcoming draft -- shouldn't be
+        # reshaped by a boost calibrated for draft-day QB scarcity.
+        year: score_file(DATA_DIR / f"{year}_actual_stats.csv", cfg, adp_lookup=load_adp(year), apply_scarcity=False)
         for year in HISTORY_YEARS
     }
     projection_board = score_file(
@@ -392,6 +396,7 @@ def build_data_bundle(cfg: dict) -> dict:
             "league": cfg["league"],
             "scoring": cfg["scoring"],
             "season": cfg["season"],
+            "scarcity_boosts": cfg.get("scarcity_boosts", {}),
             "notes": cfg.get("notes", []),
         },
         "2026": projection_rows,

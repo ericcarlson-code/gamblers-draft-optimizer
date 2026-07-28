@@ -69,4 +69,4 @@ def test_games_played_map_reads_canonical_columns():
     ])
     result = games_played_map(df)
     assert result[("Phil Mafah", "RB")] == 1
-    assert ("Some Kicker", "K") not in result  # K isn't a depth-chart position we damp
+    assert result[("Some Kicker", "K")] == 17  # K is damped too now (nflreadpy tags it "PK" upstream, normalized to "K")

@@ -32,7 +32,15 @@ DEFAULT_DEEP_BENCH_DAMPING = 0.2
 # depth-chart shuffling since.
 LOW_SAMPLE_GAMES_THRESHOLD = 4
 
-DEPTH_CHART_POSITIONS = ("QB", "RB", "WR", "TE")
+DEPTH_CHART_POSITIONS = ("QB", "RB", "WR", "TE", "K")
+
+# nflreadpy's own depth-chart feed tags kickers "PK", not "K" -- a different
+# vocabulary than the canonical schema used everywhere else in this codebase
+# (and than nflreadpy's OWN load_player_stats() output, which does use "K").
+# Filter the raw feed on "PK", then normalize to "K" immediately below so
+# every dict this module builds is keyed by the one canonical position code.
+_RAW_POS_ALIASES = {"PK": "K"}
+_RAW_DEPTH_CHART_POSITIONS = tuple(DEPTH_CHART_POSITIONS) + tuple(_RAW_POS_ALIASES)
 
 _latest_snapshot_cache: dict[int, pd.DataFrame] = {}
 
@@ -48,7 +56,8 @@ def _load_latest_depth_chart(season: int) -> pd.DataFrame:
         import nflreadpy as nfl
 
         df = nfl.load_depth_charts(seasons=[season]).to_pandas()
-        df = df[df["pos_abb"].isin(DEPTH_CHART_POSITIONS)]
+        df = df[df["pos_abb"].isin(_RAW_DEPTH_CHART_POSITIONS)].copy()
+        df["pos_abb"] = df["pos_abb"].replace(_RAW_POS_ALIASES)
         _latest_snapshot_cache[season] = df.sort_values("dt").drop_duplicates(
             subset=["player_name", "pos_abb"], keep="last"
         )

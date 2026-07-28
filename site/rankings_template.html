@@ -1639,7 +1639,7 @@
   }
 
   let activeView = "2026";
-  let DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
+  let DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
   let activePos = "All";
   let query = "";
   let sortKey = "overall_rank";
@@ -1677,7 +1677,7 @@
       btn.setAttribute('aria-pressed', v.key === activeView ? 'true' : 'false');
       btn.addEventListener('click', () => {
         activeView = v.key;
-        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
+        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
         renderViewPills();
         renderProjectionModePills();
         updateSubtitle();
@@ -1706,7 +1706,7 @@
       btn.addEventListener('click', () => {
         projectionMode = m.key;
         renderProjectionModePills();
-        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
+        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
         renderStats();
         renderTable();
       });
@@ -2152,7 +2152,7 @@
   // so Mock Draft can recompute value live from whatever's left in the pool,
   // exactly like the live app does.
   // ===========================================================================
-  function computeVOR(players, numTeams, rosterSlots) {
+  function computeVOR(players, numTeams, rosterSlots, applyScarcity = true) {
     const byPosition = {};
     for (const p of players) (byPosition[p.position] = byPosition[p.position] || []).push(p);
     const baselines = {};
@@ -2165,8 +2165,29 @@
       else baselines[pos] = pool[rank - 1].points;
     }
     const withVor = players.map(p => ({ ...p, vor: p.points - (baselines[p.position] ?? 0) }));
+    if (applyScarcity) applyScarcityBoosts(withVor);
     withVor.sort((a, b) => b.vor - a.vor);
     return withVor;
+  }
+
+  // Mirrors optimizer/vor.py's apply_scarcity_boosts() -- must move together
+  // with that Python function. See league_config.json's scarcity_boosts.note
+  // for why this exists (this league's real early-QB draft "run"). Mutates
+  // each player's .vor in place by position rank; VOR stays the sole ranking
+  // signal, this just corrects a positional-run dynamic flat VOR misses.
+  function applyScarcityBoosts(withVor) {
+    const boosts = LEAGUE_META.scarcity_boosts || {};
+    for (const position in boosts) {
+      const params = boosts[position];
+      if (!params || typeof params !== 'object') continue; // skip "note"
+      const { max_multiplier: maxMult, taper_to_rank: taper } = params;
+      const posOrder = withVor.filter(p => p.position === position).sort((a, b) => b.vor - a.vor);
+      posOrder.forEach((p, i) => {
+        const rank = i + 1;
+        const frac = taper > 1 ? Math.max(0, (taper - rank) / (taper - 1)) : 0;
+        p.vor *= 1 + (maxMult - 1) * frac;
+      });
+    }
   }
 
   function assignTiers(players, gapThresholdStdevs) {
@@ -2217,8 +2238,8 @@
     return rows;
   }
 
-  function rescoreBoard(rows) {
-    const scored = computeVOR(rows, LEAGUE_META.num_teams, LEAGUE_META.roster_slots);
+  function rescoreBoard(rows, applyScarcity = true) {
+    const scored = computeVOR(rows, LEAGUE_META.num_teams, LEAGUE_META.roster_slots, applyScarcity);
     const withTiers = assignTiers(scored, LEAGUE_META.gap_threshold_stdevs);
     withTiers.forEach((p, i) => { p.overall_rank = i + 1; });
     return attachAdpValue(withTiers);
@@ -3141,7 +3162,7 @@
 
   function computeHistoricalReview(year, entries) {
     const numTeams = LEAGUE_META.num_teams;
-    const pool = rescoreBoard(DATA_BY_VIEW[year]);
+    const pool = rescoreBoard(DATA_BY_VIEW[year], false);
     const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
     const matchedNames = new Set();
 
@@ -3233,7 +3254,7 @@
     const q = query.trim().toLowerCase();
     if (!q) { picklistEl.innerHTML = ''; picklistEl.style.display = 'none'; return; }
     const taken = new Set((histEntriesByYear[year] || []).map(e => e.player));
-    const matches = rescoreBoard(DATA_BY_VIEW[year])
+    const matches = rescoreBoard(DATA_BY_VIEW[year], false)
       .filter(p => p.name.toLowerCase().includes(q) && !taken.has(p.name))
       .slice(0, 8);
     picklistEl.style.display = matches.length ? 'block' : 'none';
@@ -3277,7 +3298,7 @@
 
   function computeFullDraftReview(year, team) {
     const allPicks = FANTASY_DRAFT_RESULTS[year] || [];
-    const pool = rescoreBoard(DATA_BY_VIEW[year]);
+    const pool = rescoreBoard(DATA_BY_VIEW[year], false);
     const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
     const draftedNames = new Set(allPicks.filter(e => e.resolved).map(e => e.player.toLowerCase()));
 
@@ -3646,7 +3667,7 @@
     // DATA is a cached scored snapshot for activeView (only otherwise
     // refreshed on a view-pill click) -- refresh it here too, or a save
     // while already sitting on a view would keep showing stale VOR/tiers.
-    DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
+    DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
     renderStats();
     renderTable();
     renderLeagueDetails();
@@ -3684,7 +3705,7 @@
       currentWeek = Number.isFinite(raw) ? Math.max(1, Math.min(raw, gamesPerSeason)) : currentWeek;
       saveCurrentWeek(currentWeek);
       document.getElementById('currentWeekInput').value = currentWeek;
-      DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
+      DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
       renderProjectionModePills();
       renderStats();
       renderTable();

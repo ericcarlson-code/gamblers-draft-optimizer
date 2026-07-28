@@ -28,6 +28,10 @@
     },
     "note": "Starter counts per position (BN excluded from replacement-level math since it can hold any position)."
   },
+  "scarcity_boosts": {
+    "QB": { "max_multiplier": 1.9, "taper_to_rank": 16 },
+    "note": "Real historical draft behavior for this league shows an early QB run that flat VOR-over-replacement doesn't capture on its own -- 2024's real draft had 7 QBs in the first 20 picks (10 by pick 30), 2025's had 9 in the first 20 (11 by pick 30), and real 2QB-format ADP shows the same pattern (e.g. Lamar Jackson 4.7, Joe Burrow 4.3) even though the model's own pre-boost VOR ranked them #21/#31 overall. This multiplies a position's VOR by a factor that decays linearly from max_multiplier at that position's #1-ranked player down to 1.0x at taper_to_rank (and stays 1.0x beyond it) -- VOR remains the sole ranking mechanism (this boosts VOR itself, doesn't blend in ADP), it just corrects for a positional-run/scarcity dynamic that a static per-position replacement baseline doesn't model. Recalibrate these two numbers (or add another position, if real evidence ever supports it) without a code change."
+  },
   "scoring": {
     "passing": {
       "yards_per_point": 50,
