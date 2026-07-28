@@ -453,6 +453,21 @@
   .stack-callout-item:first-of-type { margin-top: 8px; }
   .stack-callout .stack-reason { display: inline-block; margin: 2px 0 0 4px; max-width: none; }
 
+  .value-edge-panel {
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+  .value-edge-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+  @media (max-width: 780px) { .value-edge-columns { grid-template-columns: 1fr; } }
+  .value-edge-col-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .value-edge-col-value { color: var(--accent); }
+  .value-edge-col-fade { color: var(--accent-2); }
+  .value-edge-item { margin-top: 6px; display: block; }
+  .value-edge-reason { display: block; font-size: 11.5px; color: var(--ink-muted); margin-top: 2px; max-width: none; }
+
   #stacksTeamGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .stacks-team-card {
     border: 1px solid var(--line);
@@ -1167,6 +1182,8 @@
       </div>
     </div>
 
+    <div id="draftValueEdgesPanel"></div>
+
     <div class="table-shell" id="rankingsTableShell">
       <div class="table-scroll">
         <table>
@@ -1183,7 +1200,7 @@
               <th class="num" data-key="proj_rush_rec_td" title="Projected rushing + receiving touchdowns (defense/special-teams TDs bucketed in here too).">Rush/Rec TD</th>
               <th class="num" data-key="adp" title="Consensus 2-QB-format Average Draft Position from Fantasy Football Calculator -- real ADP, historical where available (2020-2024), live for 2026. Not shown for 2025 (no historical data source for that season).">ADP</th>
               <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
-              <th class="num" data-key="flock_overall_rank" title="Flock Fantasy's forward-looking 2026 consensus rank -- standard PPR scoring, NOT this league's custom rules. A reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to Flock's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ by enough that it's often a real data bug worth checking, not just a legitimate scoring difference.">Flock</th>
+              <th class="num" data-key="flock_overall_rank" title="Flock Fantasy's forward-looking 2026 consensus rank -- standard PPR scoring, NOT this league's custom rules. A reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to Flock's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ enough to matter -- since most opponents draft off standard PPR consensus like this, not this league's real rules, a big gap is often a real draft-day edge (see the Draft Value Edges panel above), not just a data error to double-check.">Flock</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
           </thead>
@@ -1574,7 +1591,7 @@
         (player.flock_pos_rank != null ? `, ${player.position}${player.flock_pos_rank}` : '') +
         (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '') + priorNote;
       const flagHtml = player.flock_diverges
-        ? `<span class="flock-flag" title="Our rank (#${player.overall_rank}) differs from Flock's (#${player.flock_overall_rank}) by ${Math.abs(player.overall_rank - player.flock_overall_rank)} spots -- worth reviewing, often a sign of a data bug rather than a legitimate scoring difference.">⚠</span>`
+        ? `<span class="flock-flag" title="Our rank (#${player.overall_rank}) differs from Flock's (#${player.flock_overall_rank}) by ${Math.abs(player.overall_rank - player.flock_overall_rank)} spots -- since this league scores differently than standard PPR (what Flock and most opponents' cheat sheets use), a gap this big is often a real draft-day edge, not just a scoring disagreement. See the Draft Value Edges panel above.">⚠</span>`
         : '';
       return `<span title="${detail}">#${player.flock_overall_rank}</span>${flagHtml}`;
     }
@@ -1587,9 +1604,84 @@
     const detail = `Flock's forward 2026 consensus: ${player.position}${player.flock_pos_rank}` +
       (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '') + priorNote;
     const flagHtml = posDiverges
-      ? `<span class="flock-flag" title="Our position rank (${player.position}${ourPosRank}) differs from Flock's (${player.position}${player.flock_pos_rank}) by ${Math.abs(ourPosRank - player.flock_pos_rank)} spots -- worth reviewing.">⚠</span>`
+      ? `<span class="flock-flag" title="Our position rank (${player.position}${ourPosRank}) differs from Flock's (${player.position}${player.flock_pos_rank}) by ${Math.abs(ourPosRank - player.flock_pos_rank)} spots -- a real draft-day edge in a league most opponents will draft off standard PPR consensus for.">⚠</span>`
       : '';
     return `<span title="${detail}">${player.position}${player.flock_pos_rank}</span>${flagHtml}`;
+  }
+
+  // ===========================================================================
+  // Draft Value Edges -- this league runs non-PPR/2-QB custom scoring, but
+  // most real opponents will be working off a standard PPR cheat sheet (like
+  // Flock). A big gap between OUR rank and Flock's isn't just a "our data
+  // might be wrong" caveat (the flockCellHtml flag above already existed for
+  // that) -- it's a signal about where the MARKET's mental model is wrong for
+  // THIS league specifically:
+  //   - we rank them much better than Flock -> the market undervalues them
+  //     under this league's rules -> they'll likely last longer in a real
+  //     draft than our own rank alone would suggest (a value).
+  //   - Flock ranks them much better than we do -> the market overvalues
+  //     them here -> an opponent using generic rankings may reach for them
+  //     early (a fade -- let someone else "waste" the pick).
+  // Deliberately a simple binary flag (reuses the existing flock_diverges
+  // threshold), not a tiered scoring system, per explicit direction.
+  // ===========================================================================
+  function computeDraftValueEdges(pool) {
+    // Cap to players actually relevant to a real draft decision -- without
+    // this, the biggest RAW rank gaps come from deep-bench players ranked
+    // #600+ by both sources (e.g. a backup QB we rank #762 vs Flock's #265),
+    // which are real gaps but drown out genuinely actionable edges among
+    // players anyone would actually consider drafting. A real draftable pool
+    // is roughly num_teams * total_rounds picks; padded a bit further for
+    // near-the-margin/waiver-relevant edges.
+    const draftablePicks = LEAGUE_META.num_teams * totalRoundsFor(LEAGUE_META.roster_slots);
+    const relevanceCutoff = draftablePicks + 40;
+    const candidates = pool.filter(p =>
+      p.flock_overall_rank != null && p.flock_diverges &&
+      (p.overall_rank <= relevanceCutoff || p.flock_overall_rank <= relevanceCutoff)
+    );
+    const values = candidates
+      .filter(p => p.flock_overall_rank > p.overall_rank)
+      .sort((a, b) => (b.flock_overall_rank - b.overall_rank) - (a.flock_overall_rank - a.overall_rank));
+    const fades = candidates
+      .filter(p => p.overall_rank > p.flock_overall_rank)
+      .sort((a, b) => (b.overall_rank - b.flock_overall_rank) - (a.overall_rank - a.flock_overall_rank));
+    return { values, fades };
+  }
+
+  function draftValueEdgeItemHtml(p, kind) {
+    const gap = Math.abs(p.overall_rank - p.flock_overall_rank);
+    const reason = kind === 'value'
+      ? `We have them #${p.overall_rank} overall; Flock's PPR consensus has them #${p.flock_overall_rank} -- a ${gap}-spot gap. Opponents drafting off standard PPR rankings will likely let them fall further than our rank alone would suggest.`
+      : `Flock's PPR consensus has them #${p.flock_overall_rank} overall; we have them #${p.overall_rank} -- a ${gap}-spot gap. An opponent drafting off standard PPR rankings may reach for them well before our model says they're worth it.`;
+    return `
+      <div class="value-edge-item">
+        <span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>
+        <span class="team">${p.team}</span>
+        <span class="pos-chip">${p.position}</span>
+        <span class="value-edge-reason">${reason}</span>
+      </div>`;
+  }
+
+  function renderDraftValueEdgesPanel() {
+    const container = document.getElementById('draftValueEdgesPanel');
+    if (!container) return;
+    if (activeView !== '2026') { container.innerHTML = ''; return; }
+    const { values, fades } = computeDraftValueEdges(DATA);
+    if (!values.length && !fades.length) { container.innerHTML = ''; return; }
+    container.innerHTML = `
+      <div class="value-edge-panel">
+        <label class="field-label" title="This league's non-PPR/2-QB scoring means most opponents' standard-PPR cheat sheets are wrong for THIS draft -- these are the biggest gaps between our rank and Flock's PPR consensus, in both directions.">Draft Value Edges -- where the market's PPR consensus is likely wrong for this league</label>
+        <div class="value-edge-columns">
+          <div class="value-edge-col">
+            <span class="value-edge-col-label value-edge-col-value">Value targets -- market undervalues them here</span>
+            ${values.slice(0, 5).map(p => draftValueEdgeItemHtml(p, 'value')).join('') || '<span class="trend-empty">None right now.</span>'}
+          </div>
+          <div class="value-edge-col">
+            <span class="value-edge-col-label value-edge-col-fade">Fade targets -- market overvalues them here</span>
+            ${fades.slice(0, 5).map(p => draftValueEdgeItemHtml(p, 'fade')).join('') || '<span class="trend-empty">None right now.</span>'}
+          </div>
+        </div>
+      </div>`;
   }
 
   let activeView = "2026";
@@ -1874,6 +1966,12 @@
       const trigger = e.target.closest('[data-trend-name], [data-player-name]');
       if (trigger) openPlayerModal(trigger.dataset.trendName || trigger.dataset.playerName, DATA);
     });
+    // Draft Value Edges panel sits above the table, not inside #tbody --
+    // needs its own delegated listener for the same click-to-open behavior.
+    document.getElementById('draftValueEdgesPanel').addEventListener('click', (e) => {
+      const trigger = e.target.closest('[data-player-name]');
+      if (trigger) openPlayerModal(trigger.dataset.playerName, DATA);
+    });
     // Mock Draft: always the 2026 pool, rescored fresh so it reflects any
     // live league-setting edits, same as the pick panel itself.
     document.getElementById('mockPickPanel').addEventListener('click', (e) => {
@@ -1958,6 +2056,7 @@
       });
     }
     attach('tbody', () => DATA);
+    attach('draftValueEdgesPanel', () => DATA);
     attach('mockPickPanel', () => rescoreBoard(DATA_BY_VIEW['2026']));
   }
 
@@ -2015,6 +2114,7 @@
   }
 
   function renderTable() {
+    renderDraftValueEdgesPanel();
     const tableShell = document.getElementById('rankingsTableShell');
     const comingSoon = document.getElementById('thisWeekComingSoon');
     const empty = document.getElementById('emptyState');
@@ -2849,6 +2949,27 @@
           })
           .slice(0, 3);
 
+        // Same market-divergence logic as Rankings' Draft Value Edges panel,
+        // scoped to the currently-eligible pool -- live, in-the-moment
+        // surfacing of where an opponent's standard-PPR cheat sheet is wrong
+        // for this league, right where the pick decision actually happens.
+        const { values: edgeValues, fades: edgeFades } = computeDraftValueEdges(eligibleTop);
+        const valueEdgeCalloutHtml = (edgeValues.length || edgeFades.length)
+          ? `<div class="value-edge-panel">
+              <label class="field-label">Draft value edges right now (market's PPR consensus vs. this league's scoring)</label>
+              <div class="value-edge-columns">
+                <div class="value-edge-col">
+                  <span class="value-edge-col-label value-edge-col-value">Will likely last -- take later than ADP</span>
+                  ${edgeValues.slice(0, 3).map(p => draftValueEdgeItemHtml(p, 'value')).join('') || '<span class="trend-empty">None right now.</span>'}
+                </div>
+                <div class="value-edge-col">
+                  <span class="value-edge-col-label value-edge-col-fade">Others may reach -- don't compete for these</span>
+                  ${edgeFades.slice(0, 3).map(p => draftValueEdgeItemHtml(p, 'fade')).join('') || '<span class="trend-empty">None right now.</span>'}
+                </div>
+              </div>
+            </div>`
+          : '';
+
         const stackCalloutHtml = stackOpportunities.length
           ? `<div class="stack-callout">
               <label class="field-label">Stack opportunities right now</label>
@@ -2911,6 +3032,7 @@
         const mockQueryEscaped = mockQuery.replace(/"/g, '&quot;');
         pickPanel.innerHTML = `
           <div class="mock-pick-card">
+            ${valueEdgeCalloutHtml}
             ${stackCalloutHtml}
             <label class="field-label">Your pick — ranked by value (greyed cards have no roster room right now)</label>
             <div class="pills" id="mockPositionPills">
