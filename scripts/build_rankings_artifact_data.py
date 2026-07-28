@@ -12,6 +12,7 @@ Run from the repo root:
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 import pandas as pd
@@ -87,31 +88,54 @@ def _strip_suffix(name: str) -> str:
     return _SUFFIX_RE.sub("", name).strip()
 
 
+def _strip_accents(name: str) -> str:
+    """Folds accented characters to their plain-ASCII equivalent (e.g.
+    "Pineiro" vs "Piñeiro") -- a second real name-formatting mismatch
+    class found the same way the suffix one was: nflreadpy (our board)
+    strips the tilde, but Fantasy Football Calculator's ADP source keeps it,
+    silently dropping "Eddy Piñeiro" from ADP entirely (found via a
+    session 8 data-gap audit). Uses NFKD decomposition + dropping combining
+    marks, the standard accent-fold technique."""
+    return "".join(c for c in unicodedata.normalize("NFKD", name) if not unicodedata.combining(c))
+
+
 def _build_name_resolver(lookup: dict[str, object]):
     """Our board's canonical name (from nflreadpy) doesn't always agree with
-    an external source's own name on whether a generational suffix is
-    included -- confirmed real gaps against BOTH Fantasy Football Calculator
-    ADP and the Flock Fantasy reference data: "James Cook" (board) vs "James
-    Cook III" (FFC), "Travis Etienne" vs "Travis Etienne Jr.", "Aaron Jones"
-    vs "Aaron Jones Sr.", "Kenneth Walker III" (board) vs "Kenneth Walker"
-    (Flock) -- all clearly fantasy-relevant players silently missing a match
-    for a name-formatting reason, not a real data gap. Falls back to a
-    suffix-stripped match, but only when exactly one entry shares that
-    stripped name, so a genuine same-name-different-player collision still
-    can't silently borrow the wrong value. Shared by ADP and Flock joins."""
-    stripped_counts: dict[str, int] = {}
-    stripped_value: dict[str, object] = {}
+    an external source's own name on formatting -- two confirmed real-gap
+    classes so far, both against BOTH Fantasy Football Calculator ADP and
+    the Flock Fantasy reference data:
+    (1) generational suffix: "James Cook" (board) vs "James Cook III" (FFC),
+        "Travis Etienne" vs "Travis Etienne Jr.", "Aaron Jones" vs "Aaron
+        Jones Sr.", "Kenneth Walker III" (board) vs "Kenneth Walker" (Flock).
+    (2) accented characters: "Eddy Pineiro" (board, accent stripped) vs
+        "Eddy Piñeiro" (FFC ADP, accent kept).
+    All clearly fantasy-relevant players silently missing a match for a
+    name-formatting reason, not a real data gap. Falls back first to a
+    suffix-stripped match, then to a suffix+accent-folded match, each only
+    when exactly one entry shares that key, so a genuine same-name-
+    different-player collision still can't silently borrow the wrong value.
+    Shared by ADP and Flock joins."""
+    suffix_counts: dict[str, int] = {}
+    suffix_value: dict[str, object] = {}
+    folded_counts: dict[str, int] = {}
+    folded_value: dict[str, object] = {}
     for name, value in lookup.items():
-        key = _strip_suffix(name)
-        stripped_counts[key] = stripped_counts.get(key, 0) + 1
-        stripped_value[key] = value
+        suffix_key = _strip_suffix(name)
+        suffix_counts[suffix_key] = suffix_counts.get(suffix_key, 0) + 1
+        suffix_value[suffix_key] = value
+        folded_key = _strip_accents(suffix_key)
+        folded_counts[folded_key] = folded_counts.get(folded_key, 0) + 1
+        folded_value[folded_key] = value
 
     def resolve(name: str):
         if name in lookup:
             return lookup[name]
-        key = _strip_suffix(name)
-        if stripped_counts.get(key) == 1:
-            return stripped_value[key]
+        suffix_key = _strip_suffix(name)
+        if suffix_counts.get(suffix_key) == 1:
+            return suffix_value[suffix_key]
+        folded_key = _strip_accents(suffix_key)
+        if folded_counts.get(folded_key) == 1:
+            return folded_value[folded_key]
         return None
 
     return resolve
