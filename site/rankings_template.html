@@ -1209,6 +1209,10 @@
         <div id="mockOnClock" class="mock-on-clock"></div>
         <button class="btn-secondary" id="mockResetBtn">Reset Mock Draft</button>
       </div>
+      <details class="mock-team-panel" id="mockTeamPanel">
+        <summary>Team Power Rankings &amp; Draft Order <span id="mockTeamPanelSummary" class="mock-team-panel-summary"></span></summary>
+        <div class="table-shell"><div class="table-scroll"><table id="mockTeamsTable"><thead><tr><th class="num">Slot</th><th>Team</th><th class="num">Total VOR</th><th>Progress</th></tr></thead><tbody id="mockTeamsBody"></tbody></table></div></div>
+      </details>
       <div class="draft-board-wrap" id="mockDraftBoardWrap">
         <div class="draft-board-toolbar">
           <button class="btn-secondary btn-sm" id="mockBoardExpandBtn" title="Expand draft board to full screen">⛶ Expand</button>
@@ -1224,15 +1228,9 @@
       </div>
       <div id="mockPickPanel"></div>
       <div id="mockGradeReport"></div>
-      <div class="mock-columns">
-        <div>
-          <h3 class="subhead">Draft Log</h3>
-          <div class="table-shell"><div class="table-scroll"><table id="mockLogTable"><thead><tr><th>Pick</th><th>Rd</th><th>Team</th><th>Player</th><th>Pos</th><th class="num">VOR</th></tr></thead><tbody id="mockLogBody"></tbody></table></div></div>
-        </div>
-        <div>
-          <h3 class="subhead">Team Power Rankings</h3>
-          <div class="table-shell"><div class="table-scroll"><table id="mockTeamsTable"><thead><tr><th>Team</th><th class="num">Total VOR</th><th class="num">Players</th></tr></thead><tbody id="mockTeamsBody"></tbody></table></div></div>
-        </div>
+      <div>
+        <h3 class="subhead">Draft Log</h3>
+        <div class="table-shell"><div class="table-scroll"><table id="mockLogTable"><thead><tr><th>Pick</th><th>Rd</th><th>Team</th><th>Player</th><th>Pos</th><th class="num">VOR</th></tr></thead><tbody id="mockLogBody"></tbody></table></div></div>
       </div>
     </div>
   </section>
@@ -1262,10 +1260,7 @@
   </section>
 
   <section id="section-teamrosters" class="app-section" hidden>
-    <p class="section-intro">Manually track every team's real current roster -- a stand-in for Yahoo sync, which isn't wired up yet. Saved in this browser only (nothing is sent anywhere), so it'll still be here next time you open this page. Rename a team by editing its name field.</p>
-    <h3 class="subhead">Team Power Rankings</h3>
-    <div class="table-shell" style="margin-bottom:22px;"><div class="table-scroll"><table><thead><tr><th>Team</th><th class="num">Total VOR</th><th class="num">Players</th></tr></thead><tbody id="teamRosterSummaryBody"></tbody></table></div></div>
-    <div class="team-roster-grid" id="teamRosterCards"></div>
+    <div class="empty-state">This year's owners/teams aren't determined yet, so there's nothing real to track here. Once the league sets rosters for the season, this tab will come back with the same real-roster tracking as before.</div>
   </section>
 
   <section id="section-historical" class="app-section" hidden>
@@ -1443,7 +1438,7 @@
     return Math.max(1, Math.min(week, gamesPerSeason));
   }
   let currentWeek = loadCurrentWeek() ?? computeDefaultWeek();
-  let projectionMode = 'season'; // 'season' | 'thisweek' | 'restofseason' -- only meaningful on the 2026 view
+  let projectionMode = 'restofseason'; // 'thisweek' | 'restofseason' -- only meaningful on the 2026 view
 
   // Scales points (and the TD-count columns, proportionally) down to a single
   // week or the remaining weeks of the season. VOR/tier get recomputed fresh
@@ -1478,7 +1473,6 @@
   function applyProjectionMode(rows) {
     if (activeView !== '2026') return rows; // only this season's pool has injury data at all
     const withStatus = attachInjuryStatus(rows);
-    if (projectionMode === 'season') return withStatus;
 
     const season = LEAGUE_META.season || {};
     const gamesPerSeason = season.games_per_season || 17;
@@ -1649,7 +1643,6 @@
   }
 
   const PROJECTION_MODES = [
-    { key: 'season', label: 'Season Total' },
     { key: 'thisweek', label: 'This Week' },
     { key: 'restofseason', label: 'Rest of Season' },
   ];
@@ -2224,14 +2217,15 @@
   // available once starters are full. Fully separate from the Rankings tab.
   // ===========================================================================
   let mockDraft = null;
-  let mockSortKey = 'value'; // 'value' | 'adp' | 'position'
+  let mockSortKey = 'value'; // 'value' | 'adp'
+  let mockPositionFilter = 'ALL'; // 'ALL' | 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF'
   let mockQuery = '';
   const MOCK_SORT_OPTIONS = [
     { key: 'value', label: 'Value' },
     { key: 'adp', label: 'ADP' },
-    { key: 'position', label: 'Position' },
   ];
   const MOCK_POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+  const MOCK_POSITION_FILTERS = ['ALL', ...MOCK_POSITION_ORDER];
 
   function buildSnakeOrder(numTeams, totalRounds) {
     const order = [];
@@ -2524,7 +2518,7 @@
       } else {
         slot = 'OVERFLOW';
       }
-      return { name: p.name, position: p.position, vor: p.vor, slot, injuryStatus: p.injuryStatus || null, projection_source: p.projection_source || null };
+      return { name: p.name, team: p.team, position: p.position, vor: p.vor, slot, injuryStatus: p.injuryStatus || null, projection_source: p.projection_source || null };
     });
     return { assignments, slotCounts };
   }
@@ -2557,7 +2551,7 @@
 
     const body = document.getElementById('myRosterBody');
     body.innerHTML = assignments.length
-      ? assignments.map(a => `<tr><td>${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
+      ? assignments.map(a => `<tr><td>${playerImageHtml(a.name, a.team)}${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
       : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
   }
 
@@ -2574,7 +2568,7 @@
       return `<div class="roster-slot-cell${fullClass}"><span class="rs-pos">${pos}</span><span class="rs-count">${filled}/${total}</span></div>`;
     }).join('');
     const rowsHtml = assignments.length
-      ? assignments.map(a => `<tr><td>${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
+      ? assignments.map(a => `<tr><td>${playerImageHtml(a.name, a.team)}${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
       : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
     document.getElementById('teamRosterModalContent').innerHTML = `
       <h2 class="subhead">${teamLabel}${teamLabel === 'Me' ? ' (You)' : ''}</h2>
@@ -2766,20 +2760,22 @@
         // is currently typed in the pool's search box.
         const eligibleTop = eligible.slice(0, 30);
 
-        // Card-grid display pool: respects the sort/search controls below.
+        // Card-grid display pool: respects the position tab/search/sort
+        // controls below. Position filtering happens before search/sort so
+        // "stranded eligible" and the top-30 cap (below) both stay scoped
+        // to whichever position tab is active, not the whole board.
+        const positionedPool = mockPositionFilter === 'ALL'
+          ? withTiers
+          : withTiers.filter(p => p.position === mockPositionFilter);
         const searchedPool = mockQuery.trim()
-          ? withTiers.filter(p => p.name.toLowerCase().includes(mockQuery.trim().toLowerCase()))
-          : withTiers;
+          ? positionedPool.filter(p => p.name.toLowerCase().includes(mockQuery.trim().toLowerCase()))
+          : positionedPool;
         const sortedPool = [...searchedPool].sort((a, b) => {
           if (mockSortKey === 'adp') {
             if (a.adp == null && b.adp == null) return 0;
             if (a.adp == null) return 1;
             if (b.adp == null) return -1;
             return a.adp - b.adp;
-          }
-          if (mockSortKey === 'position') {
-            const ia = MOCK_POSITION_ORDER.indexOf(a.position), ib = MOCK_POSITION_ORDER.indexOf(b.position);
-            return ia !== ib ? ia - ib : b.vor - a.vor;
           }
           return b.vor - a.vor; // 'value' -- VOR desc, withTiers' own native order
         });
@@ -2797,9 +2793,28 @@
         // legal position (often K or DEF) naturally ranks below the
         // top-30 cutoff -- without this, the human could be shown 30 cards
         // and NONE of them draftable.
+        //
+        // Real bug found+fixed (session 8): this used to add EVERY eligible
+        // player missing from the top 30, not just enough to guarantee
+        // reachability. Early in a draft almost every position still has
+        // roster room, so "eligible" is nearly the entire ~750-player pool --
+        // confirmed this was silently rendering 700+ cards instead of ~30
+        // from pick 1 (pre-existing, not introduced by the position-tab
+        // filter above, which just made the blowup obvious per-position).
+        // Fix: only backfill the single best-VOR stranded player for a
+        // position that has ZERO eligible (actually draftable) card already
+        // sitting in the top 30 -- that's the actual invariant the original
+        // comment describes, not "show every legal player."
         const eligibleMatchingSearch = sortedPool.filter(p => eligibleNames.has(p.name));
         const valueTopNames = new Set(valueTop.map(p => p.name));
-        const strandedEligible = eligibleMatchingSearch.filter(p => !valueTopNames.has(p.name));
+        const eligiblePositionsInValueTop = new Set(valueTop.filter(p => eligibleNames.has(p.name)).map(p => p.position));
+        const strandedByPosition = new Map();
+        for (const p of eligibleMatchingSearch) {
+          if (valueTopNames.has(p.name) || eligiblePositionsInValueTop.has(p.position)) continue;
+          const existing = strandedByPosition.get(p.position);
+          if (!existing || p.vor > existing.vor) strandedByPosition.set(p.position, p);
+        }
+        const strandedEligible = [...strandedByPosition.values()];
         const top = strandedEligible.length ? [...valueTop, ...strandedEligible] : valueTop;
 
         // True stacks only: a QB + his own pass-catcher, or the RB+WR/WR+WR/
@@ -2898,6 +2913,9 @@
           <div class="mock-pick-card">
             ${stackCalloutHtml}
             <label class="field-label">Your pick — ranked by value (greyed cards have no roster room right now)</label>
+            <div class="pills" id="mockPositionPills">
+              ${MOCK_POSITION_FILTERS.map(pos => `<button class="pill pill-sm${mockPositionFilter === pos ? ' active' : ''}" data-position="${pos}">${pos === 'ALL' ? 'All' : pos}</button>`).join('')}
+            </div>
             <div class="mock-pool-controls">
               <div class="pills" id="mockSortPills">
                 ${MOCK_SORT_OPTIONS.map(o => `<button class="pill pill-sm${mockSortKey === o.key ? ' active' : ''}" data-sort="${o.key}">${o.label}</button>`).join('')}
@@ -2906,6 +2924,12 @@
             </div>
             <div class="player-card-grid">${cards}</div>
           </div>`;
+        pickPanel.querySelectorAll('#mockPositionPills button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            mockPositionFilter = btn.dataset.position;
+            renderMockDraft();
+          });
+        });
         pickPanel.querySelectorAll('#mockSortPills button').forEach(btn => {
           btn.addEventListener('click', () => {
             mockSortKey = btn.dataset.sort;
@@ -2952,16 +2976,23 @@
       `<tr><td>${r.pick}</td><td>${r.round}</td><td>${r.team}</td><td>${playerImageHtml(r.name, r.nflTeam)}${r.name}</td><td>${r.position}</td><td class="num">${r.vor.toFixed(1)}</td></tr>`
     ).join('');
 
-    const totals = {};
-    for (const r of mockDraft.picksLog) {
-      totals[r.team] = totals[r.team] || { vor: 0, count: 0 };
-      totals[r.team].vor += r.vor;
-      totals[r.team].count += 1;
-    }
-    const rows = Object.entries(totals).sort((a, b) => b[1].vor - a[1].vor);
-    document.getElementById('mockTeamsBody').innerHTML = rows.map(([team, t]) =>
-      `<tr><td>${team}</td><td class="num">${t.vor.toFixed(1)}</td><td class="num">${t.count}</td></tr>`
+    // Built from mockDraft.teamLabels/rosters directly (not picksLog), so
+    // every team shows up with its real draft slot and progress even before
+    // its first pick -- picksLog-derived totals would silently omit any team
+    // that hadn't picked yet.
+    const rosterSlotsTotal = Object.values(LEAGUE_META.roster_slots).reduce((s, n) => s + n, 0);
+    const teamRows = mockDraft.teamLabels.map((team, i) => {
+      const players = mockDraft.rosters[team] || [];
+      const vor = players.reduce((s, p) => s + p.vor, 0);
+      return { slot: i + 1, team, vor, count: players.length };
+    }).sort((a, b) => b.vor - a.vor);
+    document.getElementById('mockTeamsBody').innerHTML = teamRows.map(t =>
+      `<tr><td class="num">${t.slot}</td><td>${t.team}${t.team === 'Me' ? ' (You)' : ''}</td><td class="num">${t.vor.toFixed(1)}</td><td>${t.count}/${rosterSlotsTotal}</td></tr>`
     ).join('');
+    const leader = teamRows[0];
+    document.getElementById('mockTeamPanelSummary').textContent = leader && leader.count
+      ? `— ${leader.team} leads (${leader.vor.toFixed(1)} VOR)`
+      : '';
   }
 
   function initMockDraft() {
@@ -3481,123 +3512,15 @@
     return set;
   }
 
-  function renderTeamRosterSummary() {
-    const rows = TEAM_IDS.map(id => {
-      const players = rosterState.rosters[id].map(n => playerByName(n)).filter(Boolean);
-      const totalVor = players.reduce((s, p) => s + p.vor, 0);
-      return { name: rosterState.teamNames[id], totalVor, count: players.length };
-    }).sort((a, b) => b.totalVor - a.totalVor);
-    document.getElementById('teamRosterSummaryBody').innerHTML = rows.length
-      ? rows.map(r => `<tr><td>${r.name}</td><td class="num">${r.totalVor.toFixed(1)}</td><td class="num">${r.count}</td></tr>`).join('')
-      : '<tr><td colspan="3" class="trend-empty">No rosters entered yet.</td></tr>';
-  }
-
-  function renderTeamRosterCard(id) {
-    const rosterSlots = LEAGUE_META.roster_slots;
-    const rawNames = rosterState.rosters[id];
-    const players = rawNames.map(n => playerByName(n)).filter(Boolean);
-    // Names that don't resolve (e.g. a preset roster entry whose spelling
-    // doesn't exactly match our data) shouldn't just silently vanish --
-    // surface them so they can be fixed or removed via the same button
-    // used for matched players.
-    const unmatchedNames = rawNames.filter(n => !playerByName(n));
-    const { assignments } = computeSlotAssignments(players, rosterSlots);
-
-    const slotCounts = {};
-    for (const pos in rosterSlots) slotCounts[pos] = 0;
-    for (const a of assignments) if (a.slot !== 'OVERFLOW') slotCounts[a.slot] = (slotCounts[a.slot] || 0) + 1;
-
-    const slotGrid = Object.keys(rosterSlots).map(pos => {
-      const filled = slotCounts[pos] || 0;
-      const total = rosterSlots[pos];
-      return `<div class="roster-slot-cell${filled >= total ? ' rs-full' : ''}"><span class="rs-pos">${pos}</span><span class="rs-count">${filled}/${total}</span></div>`;
-    }).join('');
-
-    const rosterRows = assignments.map(a => `
-      <tr>
-        <td>${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td>
-        <td><span class="pos-chip">${a.position}</span></td>
-        <td>${a.slot}</td>
-        <td><button class="roster-row-remove" data-role="remove-player" data-team-id="${id}" data-name="${a.name}">×</button></td>
-      </tr>`).join('');
-
-    const unmatchedNote = unmatchedNames.length
-      ? `<p class="hist-note">Couldn't match: ${unmatchedNames.map(n =>
-          `${n} <button class="roster-row-remove" data-role="remove-player" data-team-id="${id}" data-name="${n}">×</button>`
-        ).join(', ')} (check spelling, or remove and re-add via search)</p>`
-      : '';
-
-    return `
-      <div class="team-roster-card" data-team-id="${id}">
-        <input class="team-name-input" data-role="team-name" data-team-id="${id}" value="${rosterState.teamNames[id]}" />
-        <div class="roster-slot-grid">${slotGrid}</div>
-        <input type="text" class="trade-search" data-role="team-search" data-team-id="${id}" placeholder="Search players to add…" />
-        <div class="trade-picklist" data-role="team-picklist" data-team-id="${id}" style="display:none;"></div>
-        <div class="table-shell"><div class="table-scroll"><table>
-          <thead><tr><th>Player</th><th>Pos</th><th>Slot</th><th></th></tr></thead>
-          <tbody>${rosterRows || '<tr><td colspan="4" class="trend-empty">No players yet.</td></tr>'}</tbody>
-        </table></div></div>
-        ${unmatchedNote}
-      </div>`;
-  }
-
-  function renderTeamRosterCards() {
-    document.getElementById('teamRosterCards').innerHTML = TEAM_IDS.map(renderTeamRosterCard).join('');
-  }
-
-  function renderTeamRosters() {
-    renderTeamRosterSummary();
-    renderTeamRosterCards();
-  }
-
-  function renderTeamPicklist(teamId, query) {
-    const picklistEl = document.querySelector(`[data-role="team-picklist"][data-team-id="${teamId}"]`);
-    const q = query.trim().toLowerCase();
-    if (!q) { picklistEl.innerHTML = ''; picklistEl.style.display = 'none'; return; }
-    const taken = allRosteredNames();
-    const matches = rescoreBoard(DATA_BY_VIEW['2026'])
-      .filter(p => p.name.toLowerCase().includes(q) && !taken.has(p.name))
-      .slice(0, 8);
-    picklistEl.style.display = matches.length ? 'block' : 'none';
-    picklistEl.innerHTML = matches.map(p =>
-      `<div class="trade-picklist-item" data-role="add-player" data-team-id="${teamId}" data-name="${p.name}"><span>${p.name} (${p.position}, ${p.team})</span><span class="vor-val">${p.vor.toFixed(1)}</span></div>`
-    ).join('');
-  }
-
-  function initTeamRosters() {
-    const section = document.getElementById('section-teamrosters');
-
-    section.addEventListener('input', (e) => {
-      const target = e.target;
-      if (target.matches('[data-role="team-name"]')) {
-        rosterState.teamNames[target.dataset.teamId] = target.value;
-        saveRosterState();
-        renderTeamRosterSummary(); // avoid re-rendering cards mid-keystroke -- would steal focus
-      } else if (target.matches('[data-role="team-search"]')) {
-        renderTeamPicklist(target.dataset.teamId, target.value);
-      }
-    });
-
-    section.addEventListener('click', (e) => {
-      const addEl = e.target.closest('[data-role="add-player"]');
-      if (addEl) {
-        const teamId = addEl.dataset.teamId;
-        rosterState.rosters[teamId].push(addEl.dataset.name);
-        saveRosterState();
-        renderTeamRosters();
-        return;
-      }
-      const removeEl = e.target.closest('[data-role="remove-player"]');
-      if (removeEl) {
-        const teamId = removeEl.dataset.teamId;
-        rosterState.rosters[teamId] = rosterState.rosters[teamId].filter(n => n !== removeEl.dataset.name);
-        saveRosterState();
-        renderTeamRosters();
-      }
-    });
-
-    renderTeamRosters();
-  }
+  // Team Rosters' rendering/editing UI was removed (Batch 2 item 4, session
+  // 8) -- this year's owners/teams aren't determined yet, so the tab is now
+  // just a "Coming Soon" placeholder (see #section-teamrosters). rosterState/
+  // defaultRosterState/saveRosterState/allRosteredNames stay defined and
+  // reconciled by applyLeagueOverrides() below (roster DATA remains real and
+  // in use for Historical Review's underlying model), but nothing renders
+  // them to this tab anymore. PRESET_ROSTERS_2025 also stays for the same
+  // reason. Resurrect renderTeamRosterCard/initTeamRosters from git history
+  // if this tab needs to come back.
 
   // ===========================================================================
   // League Details -- read-only render of the full league_config.json,
@@ -3705,7 +3628,6 @@
     DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]));
     renderStats();
     renderTable();
-    renderTeamRosters();
     renderLeagueDetails();
 
     return { droppedInfo, mockWasReset };
@@ -3820,7 +3742,6 @@
   initMockDraft();
   initTradeCalculator();
   initHistoricalReview();
-  initTeamRosters();
   initLeagueEditForm();
   initPlayerModal();
   initTeamRosterModal();
