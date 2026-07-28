@@ -71,14 +71,29 @@ def td_counts(stats: dict) -> tuple[float, float, float]:
 
 
 def load_adp(year: int | None = None) -> dict[str, float]:
-    """name -> consensus ADP for that draft season (see scripts/fetch_adp.py).
-    year=None loads the current/live ADP (data/historical/adp.csv, used for
-    the 2026 board); a specific year loads that season's real historical ADP
-    (data/historical/{year}_adp.csv) where Fantasy Football Calculator has it
-    archived. Returns {} (not an error) for years with no archived data --
-    currently just 2025 -- so those boards simply have no adp/value_vs_adp
-    columns rather than failing the build."""
-    path = DATA_DIR / (f"{year}_adp.csv" if year else "adp.csv")
+    """name -> real historical ADP for that draft season (see
+    scripts/fetch_adp.py), from Fantasy Football Calculator's per-year
+    archive (data/historical/{year}_adp.csv). Used only by the HISTORY_YEARS
+    loop below -- the live 2026 board uses load_consensus_adp() instead (see
+    that function's docstring). Returns {} (not an error) for years with no
+    archived data -- currently just 2025 -- so those boards simply have no
+    adp/value_vs_adp columns rather than failing the build."""
+    path = DATA_DIR / f"{year}_adp.csv"
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    return dict(zip(df["name"], df["adp"]))
+
+
+def load_consensus_adp() -> dict[str, float]:
+    """name -> standard/non-PPR consensus ADP for the live 2026 board, from
+    data/historical/consensus_adp_2026.csv (user-provided, averaged across
+    Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC -- replaces the old FFC
+    2QB-format API and the old Flock PPR reference entirely, per the user's
+    explicit "no PPR rankings anywhere on the site" instruction). Same
+    {name: adp} shape as load_adp() so it's a drop-in replacement for the
+    2026 board specifically; historical years keep using load_adp(year)."""
+    path = DATA_DIR / "consensus_adp_2026.csv"
     if not path.exists():
         return {}
     df = pd.read_csv(path)
@@ -375,7 +390,7 @@ def build_data_bundle(cfg: dict) -> dict:
         for year in HISTORY_YEARS
     }
     projection_board = score_file(
-        DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_adp(), flock_lookup=load_flock_rankings()
+        DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_consensus_adp(), flock_lookup=load_flock_rankings()
     )
 
     # Index each year's VOR by (name, position) for fast per-player lookup.
