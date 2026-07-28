@@ -50,20 +50,24 @@ def td_points(stats: dict, cfg: dict) -> float:
     return 0.0
 
 
-def td_counts(stats: dict) -> tuple[float, float]:
-    """Projected touchdown COUNTS (not point value), split passing vs.
-    rushing+receiving -- the user wants these differentiated rather than
-    blended into one dependency percentage. QBs are the only position that
-    can throw a TD; DEF's return/defensive TDs are bucketed into the
-    rush/rec column for simplicity since they aren't passing plays either."""
+def td_counts(stats: dict) -> tuple[float, float, float]:
+    """Projected touchdown COUNTS (not point value), split passing/rushing/
+    receiving into 3 separate columns (previously rushing+receiving were
+    blended into one -- Batch 2 item 8 asked to split them out; a QB's own
+    rush_td already lived in the combined column before this split, still
+    goes in the rush slot here, not receiving). QBs are the only position
+    that can throw a TD. DEF's return/defensive TDs aren't really a
+    "rushing" or "receiving" play -- bucketed into the rush slot as the
+    closest fit (a return is a running play, just not from scrimmage),
+    a judgment call flagged here rather than inventing a 4th column for it."""
     position = stats.get("position")
     if position == "QB":
-        return stats.get("pass_td", 0), stats.get("rush_td", 0)
+        return stats.get("pass_td", 0), stats.get("rush_td", 0), 0.0
     if position in ("RB", "WR", "TE"):
-        return 0.0, stats.get("rush_td", 0) + stats.get("rec_td", 0)
+        return 0.0, stats.get("rush_td", 0), stats.get("rec_td", 0)
     if position == "DEF":
-        return 0.0, stats.get("def_td", 0) + stats.get("def_return_td", 0)
-    return 0.0, 0.0
+        return 0.0, stats.get("def_td", 0) + stats.get("def_return_td", 0), 0.0
+    return 0.0, 0.0, 0.0
 
 
 def load_adp(year: int | None = None) -> dict[str, float]:
@@ -278,9 +282,10 @@ def score_file(
     td_pts = df.apply(lambda r: td_points(r.to_dict(), cfg), axis=1)
     board["td_dependency_pct"] = (td_pts / board["points"].where(board["points"] > 0)).fillna(0.0) * 100
     td_count_cols = df.apply(lambda r: td_counts(r.to_dict()), axis=1, result_type="expand")
-    td_count_cols.columns = ["proj_pass_td", "proj_rush_rec_td"]
+    td_count_cols.columns = ["proj_pass_td", "proj_rush_td", "proj_rec_td"]
     board["proj_pass_td"] = td_count_cols["proj_pass_td"]
-    board["proj_rush_rec_td"] = td_count_cols["proj_rush_rec_td"]
+    board["proj_rush_td"] = td_count_cols["proj_rush_td"]
+    board["proj_rec_td"] = td_count_cols["proj_rec_td"]
     board = compute_vor(board, cfg)
     board = assign_tiers(board, cfg)
     board = board.sort_values("vor", ascending=False).reset_index(drop=True)
@@ -305,7 +310,7 @@ def score_file(
 def to_rows(board: pd.DataFrame) -> list[dict]:
     cols = [
         "overall_rank", "name", "position", "team", "points", "vor", "tier",
-        "td_dependency_pct", "proj_pass_td", "proj_rush_rec_td",
+        "td_dependency_pct", "proj_pass_td", "proj_rush_td", "proj_rec_td",
     ]
     rows = board[cols].round(1).to_dict("records")
     stat_cols = [f for f in RAW_STAT_FIELDS if f in board.columns]
