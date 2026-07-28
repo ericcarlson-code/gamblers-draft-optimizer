@@ -127,6 +127,7 @@
   }
   .title-row { display: flex; align-items: center; gap: 14px; }
   .football-icon { width: clamp(32px, 6vw, 48px); height: auto; flex-shrink: 0; }
+  .eyebrow-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .eyebrow {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
@@ -135,6 +136,18 @@
     color: var(--accent);
     font-weight: 700;
   }
+  .league-details-trigger {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .league-details-trigger:hover { color: var(--accent); border-color: var(--accent); }
   h1.title {
     font-family: 'Bebas Neue', sans-serif;
     font-weight: 400;
@@ -468,18 +481,6 @@
   .value-edge-item { margin-top: 6px; display: block; }
   .value-edge-reason { display: block; font-size: 11.5px; color: var(--ink-muted); margin-top: 2px; max-width: none; }
 
-  #stacksTeamGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-  .stacks-team-card {
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface);
-    box-shadow: var(--shadow);
-    padding: 14px 16px;
-  }
-  .stacks-team-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .stacks-team-logo { width: 26px; height: 26px; object-fit: contain; }
-  .stacks-team-name { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.02em; }
-  .stacks-team-card .stack-reason { display: inline-block; margin: 2px 0 0 4px; max-width: none; }
   .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
   #mockSlotInput {
@@ -1142,7 +1143,10 @@
 
 <div class="wrap">
   <header class="masthead">
-    <div class="eyebrow">The Gamblers · Yahoo League 732599</div>
+    <div class="eyebrow-row">
+      <div class="eyebrow">The Gamblers · Yahoo League 732599</div>
+      <button class="league-details-trigger" id="leagueDetailsTrigger" type="button">⚙ League Details</button>
+    </div>
     <div class="title-row">
       <svg class="football-icon" viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M2,30 C2,10 25,2 50,2 C75,2 98,10 98,30 C98,50 75,58 50,58 C25,58 2,50 2,30 Z" fill="#8B5A2B" stroke="#5C3A1A" stroke-width="2"/>
@@ -1181,8 +1185,6 @@
         <input id="searchInput" type="text" placeholder="Find a player…" aria-label="Search players" />
       </div>
     </div>
-
-    <div id="draftValueEdgesPanel"></div>
 
     <div class="table-shell" id="rankingsTableShell">
       <div class="table-scroll">
@@ -1253,11 +1255,6 @@
     </div>
   </section>
 
-  <section id="section-stacks" class="app-section" hidden>
-    <p class="section-intro">Every real NFL team ranked by its best internal stack (QB+pass-catcher, RB+RB backfields, and other same-team combos) -- the same correlated-upside evaluation Mock Draft uses for pick recommendations, applied across the whole 2026 pool instead of just your current roster.</p>
-    <div id="stacksTeamGrid"></div>
-  </section>
-
   <section id="section-trade" class="app-section" hidden>
     <p class="section-intro">Pick players for each side of a trade to compare net VOR swing under current league scoring. Uses the 2026 Projections values.</p>
     <div class="trade-columns">
@@ -1275,10 +1272,6 @@
       </div>
     </div>
     <div class="trade-result" id="tradeResult"></div>
-  </section>
-
-  <section id="section-teamrosters" class="app-section" hidden>
-    <div class="empty-state">This year's owners/teams aren't determined yet, so there's nothing real to track here. Once the league sets rosters for the season, this tab will come back with the same real-roster tracking as before.</div>
   </section>
 
   <section id="section-historical" class="app-section" hidden>
@@ -1302,8 +1295,29 @@
     <div id="histResults"></div>
   </section>
 
-  <section id="section-leaguedetails" class="app-section" hidden>
-    <p class="section-intro">League name, number of teams, and roster slots are editable and apply immediately everywhere on this site (Rankings, Mock Draft, Stack Rankings, Team Rosters) — saved in this browser. Scoring rules further down are still read-only reference for now; editing those live is a separate, bigger project since it needs raw stats shipped to the browser, not just final points.</p>
+  <footer>
+    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). In the Trend column, the solid line is actual results (2020–2025); the dashed segment and hollow dot are the 2026 projection, not an observed result. Mock Draft and Trade Calculator both run entirely in your browser from the 2026 Projections dataset — nothing is sent anywhere. This is a static snapshot; open the live app for real-time draft tracking against your actual draft.
+  </footer>
+</div>
+
+<div class="modal-overlay" id="playerModalOverlay" hidden>
+  <div class="modal-box modal-box-wide">
+    <button class="modal-close" id="playerModalClose" aria-label="Close">×</button>
+    <div id="playerModalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="teamRosterModalOverlay" hidden>
+  <div class="modal-box">
+    <button class="modal-close" id="teamRosterModalClose" aria-label="Close">×</button>
+    <div id="teamRosterModalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="leagueDetailsModalOverlay" hidden>
+  <div class="modal-box modal-box-wide">
+    <button class="modal-close" id="leagueDetailsModalClose" aria-label="Close">×</button>
+    <p class="section-intro">League name, number of teams, and roster slots are editable and apply immediately everywhere on this site (Rankings, Mock Draft, Historical Review) — saved in this browser. Scoring rules further down are still read-only reference for now; editing those live is a separate, bigger project since it needs raw stats shipped to the browser, not just final points.</p>
 
     <div class="league-edit-row">
       <div>
@@ -1354,38 +1368,6 @@
 
     <h3 class="subhead">Notes</h3>
     <ul class="notes-list" id="leagueNotesList"></ul>
-  </section>
-
-  <section id="section-leaguescores" class="app-section" hidden>
-    <div class="coming-soon">
-      <div class="coming-soon-badge">Coming Soon</div>
-      <h2 class="subhead" style="font-size:28px;">League Scores</h2>
-      <p class="section-intro" style="max-width:60ch;">
-        Real weekly matchup scores for this specific league — either synced from Yahoo (pending API access approval)
-        or entered by hand week to week. Yahoo's own scoring sometimes comes out slightly different from this
-        league's actual rules, so the plan is to pull the underlying raw stats and score them ourselves here,
-        not just copy Yahoo's number. This is also the foundation for a future dollar-edge view: which decisions
-        carried the most expected value under this league's payout math, not a payout tracker itself.
-      </p>
-    </div>
-  </section>
-
-  <footer>
-    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). In the Trend column, the solid line is actual results (2020–2025); the dashed segment and hollow dot are the 2026 projection, not an observed result. Mock Draft and Trade Calculator both run entirely in your browser from the 2026 Projections dataset — nothing is sent anywhere. This is a static snapshot; open the live app for real-time draft tracking against your actual draft.
-  </footer>
-</div>
-
-<div class="modal-overlay" id="playerModalOverlay" hidden>
-  <div class="modal-box modal-box-wide">
-    <button class="modal-close" id="playerModalClose" aria-label="Close">×</button>
-    <div id="playerModalContent"></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="teamRosterModalOverlay" hidden>
-  <div class="modal-box">
-    <button class="modal-close" id="teamRosterModalClose" aria-label="Close">×</button>
-    <div id="teamRosterModalContent"></div>
   </div>
 </div>
 
@@ -1653,28 +1635,6 @@
         <span class="team">${p.team}</span>
         <span class="pos-chip">${p.position}</span>
         <span class="value-edge-reason">${reason}</span>
-      </div>`;
-  }
-
-  function renderDraftValueEdgesPanel() {
-    const container = document.getElementById('draftValueEdgesPanel');
-    if (!container) return;
-    if (activeView !== '2026') { container.innerHTML = ''; return; }
-    const { values, fades } = computeDraftValueEdges(DATA);
-    if (!values.length && !fades.length) { container.innerHTML = ''; return; }
-    container.innerHTML = `
-      <div class="value-edge-panel">
-        <label class="field-label" title="This league's non-PPR/2-QB scoring means most opponents' generic consensus cheat sheets are wrong for THIS draft -- these are the biggest gaps between our rank and the non-PPR consensus, in both directions.">Draft Value Edges -- where the market's consensus is likely wrong for this league</label>
-        <div class="value-edge-columns">
-          <div class="value-edge-col">
-            <span class="value-edge-col-label value-edge-col-value">Value targets -- market undervalues them here</span>
-            ${values.slice(0, 5).map(p => draftValueEdgeItemHtml(p, 'value')).join('') || '<span class="trend-empty">None right now.</span>'}
-          </div>
-          <div class="value-edge-col">
-            <span class="value-edge-col-label value-edge-col-fade">Fade targets -- market overvalues them here</span>
-            ${fades.slice(0, 5).map(p => draftValueEdgeItemHtml(p, 'fade')).join('') || '<span class="trend-empty">None right now.</span>'}
-          </div>
-        </div>
       </div>`;
   }
 
@@ -1960,12 +1920,6 @@
       const trigger = e.target.closest('[data-trend-name], [data-player-name]');
       if (trigger) openPlayerModal(trigger.dataset.trendName || trigger.dataset.playerName, DATA);
     });
-    // Draft Value Edges panel sits above the table, not inside #tbody --
-    // needs its own delegated listener for the same click-to-open behavior.
-    document.getElementById('draftValueEdgesPanel').addEventListener('click', (e) => {
-      const trigger = e.target.closest('[data-player-name]');
-      if (trigger) openPlayerModal(trigger.dataset.playerName, DATA);
-    });
     // Mock Draft: always the 2026 pool, rescored fresh so it reflects any
     // live league-setting edits, same as the pick panel itself.
     document.getElementById('mockPickPanel').addEventListener('click', (e) => {
@@ -2050,7 +2004,6 @@
       });
     }
     attach('tbody', () => DATA);
-    attach('draftValueEdgesPanel', () => DATA);
     attach('mockPickPanel', () => rescoreBoard(DATA_BY_VIEW['2026']));
   }
 
@@ -2107,7 +2060,6 @@
   }
 
   function renderTable() {
-    renderDraftValueEdgesPanel();
     const tableShell = document.getElementById('rankingsTableShell');
     const comingSoon = document.getElementById('thisWeekComingSoon');
     const empty = document.getElementById('emptyState');
@@ -2278,12 +2230,8 @@
   const SECTIONS = [
     { key: 'rankings', label: 'Rankings' },
     { key: 'mockdraft', label: 'Mock Draft' },
-    { key: 'stacks', label: 'Stacks' },
     { key: 'trade', label: 'Trade Calculator' },
     { key: 'historical', label: 'Historical Review' },
-    { key: 'teamrosters', label: 'Team Rosters' },
-    { key: 'leaguedetails', label: 'League Details' },
-    { key: 'leaguescores', label: 'League Scores' },
   ];
   let activeSection = 'rankings';
 
@@ -2430,67 +2378,6 @@
       return { text: `${bestAlt.name} has ${gapPct.toFixed(0)}% higher VOR (${bestAlt.vor.toFixed(1)}) — reasonable value hit for the stack.`, tier: 'reasonable' };
     }
     return { text: `${bestAlt.name} has ${gapPct.toFixed(0)}% higher VOR (${bestAlt.vor.toFixed(1)}) — significant reach just for the stack.`, tier: 'reach' };
-  }
-
-  // ===========================================================================
-  // Stacks tab -- every real NFL team ranked by its best internal stack combo.
-  // Reuses the exact same STACK_PAIRS/isStackPair/HIGH_TD_DEPENDENCY_THRESHOLD
-  // machinery Mock Draft's live recommendations use, just applied across a
-  // whole team's roster instead of "does this candidate stack with MY roster."
-  // ===========================================================================
-  function computeTeamStacks() {
-    const pool = rescoreBoard(DATA_BY_VIEW['2026']);
-    const byTeam = {};
-    for (const p of pool) {
-      if (!p.team || p.position === 'DEF') continue;
-      (byTeam[p.team] = byTeam[p.team] || []).push(p);
-    }
-    const teams = Object.entries(byTeam).map(([team, players]) => {
-      const combos = [];
-      for (let i = 0; i < players.length; i++) {
-        for (let j = i + 1; j < players.length; j++) {
-          const a = players[i], b = players[j];
-          if (!isStackPair(a.position, b.position)) continue;
-          const highTd = (a.td_dependency_pct ?? 0) >= HIGH_TD_DEPENDENCY_THRESHOLD && (b.td_dependency_pct ?? 0) >= HIGH_TD_DEPENDENCY_THRESHOLD;
-          const injured = ['Out', 'IR', 'Doubtful'].includes(a.injuryStatus) || ['Out', 'IR', 'Doubtful'].includes(b.injuryStatus);
-          combos.push({ a, b, combinedVor: a.vor + b.vor, highTd, injured });
-        }
-      }
-      combos.sort((x, y) => y.combinedVor - x.combinedVor);
-      return { team, combos: combos.slice(0, 5) };
-    }).filter(t => t.combos.length > 0);
-    teams.sort((x, y) => y.combos[0].combinedVor - x.combos[0].combinedVor);
-    return teams;
-  }
-
-  function renderStacksTab() {
-    const wrap = document.getElementById('stacksTeamGrid');
-    if (!wrap) return;
-    const teams = computeTeamStacks();
-    wrap.innerHTML = teams.map(({ team, combos }) => {
-      const logo = TEAM_LOGOS[team];
-      const comboRows = combos.map(c => {
-        const injuredNames = [c.a, c.b].filter(p => ['Out', 'IR', 'Doubtful'].includes(p.injuryStatus)).map(p => p.name);
-        const reasonHtml = c.injured
-          ? `<span class="stack-reason reason-reach">${injuredNames.join(', ')} currently ${[c.a, c.b].find(p => ['Out', 'IR', 'Doubtful'].includes(p.injuryStatus)).injuryStatus} -- this stack isn't live right now.</span>`
-          : c.highTd
-          ? `<span class="stack-reason reason-clear">High TD-correlation: both share ${(c.a.td_dependency_pct ?? 0).toFixed(0)}%+/${(c.b.td_dependency_pct ?? 0).toFixed(0)}%+ of their points from TDs, not just a team.</span>`
-          : '';
-        return `
-          <div class="stack-callout-item">
-            <span class="stack-badge">${c.a.name} (${c.a.position}) + ${c.b.name} (${c.b.position}) — ${c.combinedVor.toFixed(1)} combined VOR</span>
-            ${reasonHtml}
-          </div>`;
-      }).join('');
-      return `
-        <div class="stacks-team-card">
-          <div class="stacks-team-header">
-            ${logo ? `<img src="${logo}" class="stacks-team-logo" alt="" />` : ''}
-            <span class="stacks-team-name">${team}</span>
-          </div>
-          ${comboRows}
-        </div>`;
-    }).join('');
   }
 
   // ===========================================================================
@@ -3774,7 +3661,7 @@
       const notes = ['Saved — applied everywhere on this site.'];
       if (mockWasReset) notes.push('Your in-progress mock draft was reset since league settings changed.');
       if (droppedInfo.length) {
-        notes.push('Removed from Team Rosters (no longer fit): ' + droppedInfo.map(d => `${d.name} (${d.count} player${d.count === 1 ? '' : 's'})`).join(', ') + '.');
+        notes.push('Removed roster records that no longer fit: ' + droppedInfo.map(d => `${d.name} (${d.count} player${d.count === 1 ? '' : 's'})`).join(', ') + '.');
       }
       const noticeEl = document.getElementById('leagueSaveNotice');
       noticeEl.textContent = notes.join(' ');
@@ -3785,7 +3672,7 @@
       const { droppedInfo, mockWasReset } = applyLeagueOverrides(null);
       const notes = ['Reset to defaults.'];
       if (mockWasReset) notes.push('Mock draft was reset.');
-      if (droppedInfo.length) notes.push('Team Rosters entries beyond the default team count were removed.');
+      if (droppedInfo.length) notes.push('Roster records beyond the default team count were removed.');
       const noticeEl = document.getElementById('leagueSaveNotice');
       noticeEl.textContent = notes.join(' ');
       noticeEl.classList.toggle('warn', droppedInfo.length > 0);
@@ -3802,6 +3689,29 @@
       renderStats();
       renderTable();
       document.getElementById('currentWeekNotice').textContent = `Saved — Week ${currentWeek}.`;
+    });
+  }
+
+  // League Details moved out of the main tab bar into a modal (Batch 5 item
+  // 1c) -- opened from the small trigger button next to the eyebrow text.
+  // All inner element IDs are unchanged from when this was a tab, so
+  // renderLeagueDetails()/initLeagueEditForm() needed no logic changes.
+  function openLeagueDetailsModal() {
+    document.getElementById('leagueDetailsModalOverlay').hidden = false;
+  }
+
+  function closeLeagueDetailsModal() {
+    document.getElementById('leagueDetailsModalOverlay').hidden = true;
+  }
+
+  function initLeagueDetailsModal() {
+    document.getElementById('leagueDetailsTrigger').addEventListener('click', openLeagueDetailsModal);
+    document.getElementById('leagueDetailsModalClose').addEventListener('click', closeLeagueDetailsModal);
+    document.getElementById('leagueDetailsModalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'leagueDetailsModalOverlay') closeLeagueDetailsModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLeagueDetailsModal();
     });
   }
 
@@ -3868,8 +3778,8 @@
   }
 
   // Apply any saved league-config overrides before anything else renders, so
-  // Team Rosters/Mock Draft never show a flash of the default (baked-in)
-  // team count before snapping to the user's saved edits.
+  // Mock Draft never shows a flash of the default (baked-in) team count
+  // before snapping to the user's saved edits.
   applyLeagueOverrides(loadLeagueOverrides(), { persist: false });
 
   renderSectionTabs();
@@ -3879,6 +3789,7 @@
   initLeagueEditForm();
   initPlayerModal();
   initTeamRosterModal();
+  initLeagueDetailsModal();
   initPlayerTooltips();
   renderLeagueDetails();
 
@@ -3889,5 +3800,4 @@
   renderStats();
   renderSortHeaders();
   renderTable();
-  renderStacksTab();
 </script>
