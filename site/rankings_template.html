@@ -2566,6 +2566,24 @@
     );
   }
 
+  // Weighted-random pick among the top `topN` of an already-ranked list --
+  // rank 1 is still the most likely outcome, but not guaranteed, so real
+  // opponents' picks (and therefore Sim Draft, which uses this same
+  // function) actually vary run to run instead of being fully deterministic.
+  // Weights decay linearly by rank within the slice (topN, topN-1, ..., 1).
+  function weightedPickFromTop(rankedList, topN = 3) {
+    const pool = rankedList.slice(0, Math.min(topN, rankedList.length));
+    if (pool.length <= 1) return pool[0];
+    const weights = pool.map((_, i) => pool.length - i);
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < pool.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return pool[i];
+    }
+    return pool[pool.length - 1];
+  }
+
   function pickForBot(availableRanked, teamRoster, rosterSlots) {
     // teamRoster: array of already-drafted player objects (not just position strings) --
     // storing full players (not just their positions) is what lets the UI also flag
@@ -2573,9 +2591,9 @@
     const starterPositions = computeStarterNeeds(teamRoster, rosterSlots);
     if (starterPositions.length > 0) {
       const eligible = availableRanked.filter(p => starterPositions.includes(p.position));
-      if (eligible.length > 0) return eligible[0];
+      if (eligible.length > 0) return weightedPickFromTop(eligible);
     }
-    return availableRanked[0];
+    return weightedPickFromTop(availableRanked);
   }
 
   // A "true stack" is a QB paired with his own pass-catcher, the secondary

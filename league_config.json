@@ -47,9 +47,9 @@
       "reception": 0
     },
     "misc": {
-      "return_touchdown": 6,
       "offensive_fumble_return_touchdown": 6,
-      "two_point_conversion": 2
+      "two_point_conversion": 2,
+      "note": "return_touchdown (punt/kick return TDs) is intentionally NOT here -- confirmed 2026-07-28 that a return TD is a DEFENSE-only stat (6pts, see scoring.defense.return_touchdown), not also credited to the individual returner. Previously this section also had 'return_touchdown': 6, which double-counted the same play on both the returner's own line and the DEF unit's -- optimizer/scoring.py's score_misc() no longer reads it."
     },
     "kicking": {
       "extra_point": 1,

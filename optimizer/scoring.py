@@ -60,9 +60,13 @@ def score_receiving(stats: dict, cfg: dict) -> float:
 
 
 def score_misc(stats: dict, cfg: dict) -> float:
+    # Punt/kick return TDs are NOT scored here for the individual returner --
+    # confirmed by the user directly (2026-07-28) that a return TD is a
+    # DEFENSE/special-teams stat worth 6pts (see score_defense's
+    # def_return_td), not also an individual-player stat. Crediting both
+    # would double-count the same real-world play.
     misc_cfg = cfg["scoring"]["misc"]
-    points = _get(stats, "return_td") * misc_cfg["return_touchdown"]
-    points += _get(stats, "off_fumble_return_td") * misc_cfg["offensive_fumble_return_touchdown"]
+    points = _get(stats, "off_fumble_return_td") * misc_cfg["offensive_fumble_return_touchdown"]
     points += _get(stats, "two_pt") * misc_cfg["two_point_conversion"]
     return points
 
