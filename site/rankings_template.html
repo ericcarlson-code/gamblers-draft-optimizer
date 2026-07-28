@@ -1070,7 +1070,7 @@
   .cell-muted { color: var(--ink-muted); }
   .value-positive { color: var(--accent); font-weight: 600; }
   .value-negative { color: var(--danger); font-weight: 600; }
-  .flock-flag { color: var(--danger); margin-left: 4px; cursor: help; font-size: 12px; }
+  .consensus-flag { color: var(--danger); margin-left: 4px; cursor: help; font-size: 12px; }
 
   .pos-chip {
     display: inline-block;
@@ -1199,9 +1199,9 @@
               <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
               <th class="num" data-key="proj_rush_td" title="Projected rushing touchdowns (defense/special-teams return TDs bucketed in here too, closest fit for a non-scrimmage running play).">Rush TD</th>
               <th class="num" data-key="proj_rec_td" title="Projected receiving touchdowns.">Rec TD</th>
-              <th class="num" data-key="adp" title="Consensus 2-QB-format Average Draft Position from Fantasy Football Calculator -- real ADP, historical where available (2020-2024), live for 2026. Not shown for 2025 (no historical data source for that season).">ADP</th>
+              <th class="num" data-key="adp" title="For 2026: standard/non-PPR consensus ADP averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC. For historical years: real 2-QB-format ADP from Fantasy Football Calculator, where archived (2020-2024). Not shown for 2025 (no historical data source for that season).">ADP</th>
               <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
-              <th class="num" data-key="flock_overall_rank" title="Flock Fantasy's forward-looking 2026 consensus rank -- standard PPR scoring, NOT this league's custom rules. A reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to Flock's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ enough to matter -- since most opponents draft off standard PPR consensus like this, not this league's real rules, a big gap is often a real draft-day edge (see the Draft Value Edges panel above), not just a data error to double-check.">Flock</th>
+              <th class="num" data-key="consensus_overall_rank" title="The standard/non-PPR consensus ADP's own overall rank (averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC) -- a reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to the consensus's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ enough to matter -- since this league's non-PPR/2-QB scoring differs from most opponents' generic cheat sheets, a big gap is often a real draft-day edge (see the Draft Value Edges panel above), not just a data error to double-check.">Consensus</th>
               <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
             </tr>
           </thead>
@@ -1558,19 +1558,19 @@
     return `<span class="${cls}">${sign}${value.toFixed(1)}</span>`;
   }
 
-  // Flock Fantasy consensus reference (standard 2026 PPR -- NOT this
-  // league's custom scoring) -- display/sanity-check only, never read by
-  // compute_vor/assign_tiers on the Python side. The flag isn't "Flock is
-  // right and we're wrong" -- it's "these two disagree by enough that it's
-  // worth a human second look," since a real data bug (stale team, missing
-  // depth-chart signal) reads exactly like this divergence.
+  // Standard/non-PPR consensus ADP reference (averaged across Flock/
+  // Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC) -- display/sanity-check only,
+  // never read by compute_vor/assign_tiers on the Python side. The flag
+  // isn't "the market is right and we're wrong" -- it's "these two disagree
+  // by enough that it's worth a human second look," since a real data bug
+  // (stale team, missing depth-chart signal) reads exactly like this
+  // divergence.
   //
-  // Position-filtered view (activePos !== 'All') shows Flock's POSITION
-  // rank instead of overall (e.g. "QB3"), matching how Flock's own site
-  // presents it -- compared against our own model's position rank in the
-  // current pool, not our overall rank, since "our #118 vs Flock's QB3"
-  // wouldn't mean anything.
-  const FLOCK_POS_DIVERGENCE_THRESHOLD = 10;
+  // Position-filtered view (activePos !== 'All') shows the consensus's
+  // POSITION rank instead of overall (e.g. "QB3"), compared against our own
+  // model's position rank in the current pool, not our overall rank, since
+  // "our #118 vs consensus QB3" wouldn't mean anything.
+  const CONSENSUS_POS_DIVERGENCE_THRESHOLD = 10;
 
   function computeOurPositionRanks(pool) {
     const byPosition = {};
@@ -1583,78 +1583,70 @@
     return ranks;
   }
 
-  function flockCellHtml(player, ourPosRank) {
+  function consensusCellHtml(player, ourPosRank) {
     if (activePos === 'All') {
-      if (player.flock_overall_rank == null) return '<span class="cell-muted">—</span>';
-      const priorNote = player.flock_prior_ovr_rank != null
-        ? ` (last season's actual output ranked #${player.flock_prior_ovr_rank} overall -- a big gap here is often an injury-shortened prior season, not a bug)`
+      if (player.consensus_overall_rank == null) return '<span class="cell-muted">—</span>';
+      const detail = `Consensus ADP rank: #${player.consensus_overall_rank} overall` +
+        (player.consensus_pos_rank != null ? `, ${player.position}${player.consensus_pos_rank}` : '');
+      const flagHtml = player.consensus_diverges
+        ? `<span class="consensus-flag" title="Our rank (#${player.overall_rank}) differs from the consensus's (#${player.consensus_overall_rank}) by ${Math.abs(player.overall_rank - player.consensus_overall_rank)} spots -- since this league's non-PPR/2-QB scoring differs from most opponents' generic cheat sheets, a gap this big is often a real draft-day edge, not just a scoring disagreement. See the Draft Value Edges panel above.">⚠</span>`
         : '';
-      const detail = `Flock's forward 2026 consensus: #${player.flock_overall_rank} overall` +
-        (player.flock_pos_rank != null ? `, ${player.position}${player.flock_pos_rank}` : '') +
-        (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '') + priorNote;
-      const flagHtml = player.flock_diverges
-        ? `<span class="flock-flag" title="Our rank (#${player.overall_rank}) differs from Flock's (#${player.flock_overall_rank}) by ${Math.abs(player.overall_rank - player.flock_overall_rank)} spots -- since this league scores differently than standard PPR (what Flock and most opponents' cheat sheets use), a gap this big is often a real draft-day edge, not just a scoring disagreement. See the Draft Value Edges panel above.">⚠</span>`
-        : '';
-      return `<span title="${detail}">#${player.flock_overall_rank}</span>${flagHtml}`;
+      return `<span title="${detail}">#${player.consensus_overall_rank}</span>${flagHtml}`;
     }
 
-    if (player.flock_pos_rank == null) return '<span class="cell-muted">—</span>';
-    const posDiverges = ourPosRank != null && Math.abs(ourPosRank - player.flock_pos_rank) >= FLOCK_POS_DIVERGENCE_THRESHOLD;
-    const priorNote = player.flock_prior_pos_rank != null
-      ? ` (last season's actual output ranked ${player.position}${player.flock_prior_pos_rank})`
-      : '';
-    const detail = `Flock's forward 2026 consensus: ${player.position}${player.flock_pos_rank}` +
-      (player.flock_fpts != null ? `, ${player.flock_fpts.toFixed(1)} FPTS/gm (PPR)` : '') + priorNote;
+    if (player.consensus_pos_rank == null) return '<span class="cell-muted">—</span>';
+    const posDiverges = ourPosRank != null && Math.abs(ourPosRank - player.consensus_pos_rank) >= CONSENSUS_POS_DIVERGENCE_THRESHOLD;
+    const detail = `Consensus ADP rank: ${player.position}${player.consensus_pos_rank}`;
     const flagHtml = posDiverges
-      ? `<span class="flock-flag" title="Our position rank (${player.position}${ourPosRank}) differs from Flock's (${player.position}${player.flock_pos_rank}) by ${Math.abs(ourPosRank - player.flock_pos_rank)} spots -- a real draft-day edge in a league most opponents will draft off standard PPR consensus for.">⚠</span>`
+      ? `<span class="consensus-flag" title="Our position rank (${player.position}${ourPosRank}) differs from the consensus's (${player.position}${player.consensus_pos_rank}) by ${Math.abs(ourPosRank - player.consensus_pos_rank)} spots -- a real draft-day edge in a league most opponents will draft off generic consensus rankings for.">⚠</span>`
       : '';
-    return `<span title="${detail}">${player.position}${player.flock_pos_rank}</span>${flagHtml}`;
+    return `<span title="${detail}">${player.position}${player.consensus_pos_rank}</span>${flagHtml}`;
   }
 
   // ===========================================================================
   // Draft Value Edges -- this league runs non-PPR/2-QB custom scoring, but
-  // most real opponents will be working off a standard PPR cheat sheet (like
-  // Flock). A big gap between OUR rank and Flock's isn't just a "our data
-  // might be wrong" caveat (the flockCellHtml flag above already existed for
-  // that) -- it's a signal about where the MARKET's mental model is wrong for
-  // THIS league specifically:
-  //   - we rank them much better than Flock -> the market undervalues them
-  //     under this league's rules -> they'll likely last longer in a real
-  //     draft than our own rank alone would suggest (a value).
-  //   - Flock ranks them much better than we do -> the market overvalues
+  // most real opponents will be working off a generic consensus cheat sheet
+  // (the same Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC average shown in
+  // the Consensus column). A big gap between OUR rank and the consensus's
+  // isn't just a "our data might be wrong" caveat (the consensusCellHtml
+  // flag above already exists for that) -- it's a signal about where the
+  // MARKET's mental model is wrong for THIS league specifically:
+  //   - we rank them much better than consensus -> the market undervalues
+  //     them under this league's rules -> they'll likely last longer in a
+  //     real draft than our own rank alone would suggest (a value).
+  //   - consensus ranks them much better than we do -> the market overvalues
   //     them here -> an opponent using generic rankings may reach for them
   //     early (a fade -- let someone else "waste" the pick).
-  // Deliberately a simple binary flag (reuses the existing flock_diverges
+  // Deliberately a simple binary flag (reuses the existing consensus_diverges
   // threshold), not a tiered scoring system, per explicit direction.
   // ===========================================================================
   function computeDraftValueEdges(pool) {
     // Cap to players actually relevant to a real draft decision -- without
     // this, the biggest RAW rank gaps come from deep-bench players ranked
-    // #600+ by both sources (e.g. a backup QB we rank #762 vs Flock's #265),
-    // which are real gaps but drown out genuinely actionable edges among
-    // players anyone would actually consider drafting. A real draftable pool
-    // is roughly num_teams * total_rounds picks; padded a bit further for
-    // near-the-margin/waiver-relevant edges.
+    // #600+ by both sources, which are real gaps but drown out genuinely
+    // actionable edges among players anyone would actually consider
+    // drafting. A real draftable pool is roughly num_teams * total_rounds
+    // picks; padded a bit further for near-the-margin/waiver-relevant edges.
     const draftablePicks = LEAGUE_META.num_teams * totalRoundsFor(LEAGUE_META.roster_slots);
     const relevanceCutoff = draftablePicks + 40;
     const candidates = pool.filter(p =>
-      p.flock_overall_rank != null && p.flock_diverges &&
-      (p.overall_rank <= relevanceCutoff || p.flock_overall_rank <= relevanceCutoff)
+      p.consensus_overall_rank != null && p.consensus_diverges &&
+      (p.overall_rank <= relevanceCutoff || p.consensus_overall_rank <= relevanceCutoff)
     );
     const values = candidates
-      .filter(p => p.flock_overall_rank > p.overall_rank)
-      .sort((a, b) => (b.flock_overall_rank - b.overall_rank) - (a.flock_overall_rank - a.overall_rank));
+      .filter(p => p.consensus_overall_rank > p.overall_rank)
+      .sort((a, b) => (b.consensus_overall_rank - b.overall_rank) - (a.consensus_overall_rank - a.overall_rank));
     const fades = candidates
-      .filter(p => p.overall_rank > p.flock_overall_rank)
-      .sort((a, b) => (b.overall_rank - b.flock_overall_rank) - (a.overall_rank - a.flock_overall_rank));
+      .filter(p => p.overall_rank > p.consensus_overall_rank)
+      .sort((a, b) => (b.overall_rank - b.consensus_overall_rank) - (a.overall_rank - a.consensus_overall_rank));
     return { values, fades };
   }
 
   function draftValueEdgeItemHtml(p, kind) {
-    const gap = Math.abs(p.overall_rank - p.flock_overall_rank);
+    const gap = Math.abs(p.overall_rank - p.consensus_overall_rank);
     const reason = kind === 'value'
-      ? `We have them #${p.overall_rank} overall; Flock's PPR consensus has them #${p.flock_overall_rank} -- a ${gap}-spot gap. Opponents drafting off standard PPR rankings will likely let them fall further than our rank alone would suggest.`
-      : `Flock's PPR consensus has them #${p.flock_overall_rank} overall; we have them #${p.overall_rank} -- a ${gap}-spot gap. An opponent drafting off standard PPR rankings may reach for them well before our model says they're worth it.`;
+      ? `We have them #${p.overall_rank} overall; the non-PPR consensus has them #${p.consensus_overall_rank} -- a ${gap}-spot gap. Opponents drafting off generic rankings will likely let them fall further than our rank alone would suggest.`
+      : `The non-PPR consensus has them #${p.consensus_overall_rank} overall; we have them #${p.overall_rank} -- a ${gap}-spot gap. An opponent drafting off generic rankings may reach for them well before our model says they're worth it.`;
     return `
       <div class="value-edge-item">
         <span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>
@@ -1672,7 +1664,7 @@
     if (!values.length && !fades.length) { container.innerHTML = ''; return; }
     container.innerHTML = `
       <div class="value-edge-panel">
-        <label class="field-label" title="This league's non-PPR/2-QB scoring means most opponents' standard-PPR cheat sheets are wrong for THIS draft -- these are the biggest gaps between our rank and Flock's PPR consensus, in both directions.">Draft Value Edges -- where the market's PPR consensus is likely wrong for this league</label>
+        <label class="field-label" title="This league's non-PPR/2-QB scoring means most opponents' generic consensus cheat sheets are wrong for THIS draft -- these are the biggest gaps between our rank and the non-PPR consensus, in both directions.">Draft Value Edges -- where the market's consensus is likely wrong for this league</label>
         <div class="value-edge-columns">
           <div class="value-edge-col">
             <span class="value-edge-col-label value-edge-col-value">Value targets -- market undervalues them here</span>
@@ -2160,7 +2152,7 @@
         <td class="num">${(d.proj_rec_td ?? 0).toFixed(1)}</td>
         <td class="num">${adpHtml(d.adp)}</td>
         <td class="num">${valueVsAdpHtml(d.value_vs_adp)}</td>
-        <td class="num">${flockCellHtml(d, ourPositionRanks ? ourPositionRanks.get(d.name) : null)}</td>
+        <td class="num">${consensusCellHtml(d, ourPositionRanks ? ourPositionRanks.get(d.name) : null)}</td>
         <td class="num trend-cell">${sparklineSvg(d.history, d.name)}</td>
       `;
       tbody.appendChild(tr);
@@ -2200,7 +2192,7 @@
   });
 
   // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
-  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_td: 'Rush TD', proj_rec_td: 'Rec TD', adp: 'ADP', value_vs_adp: 'Value vs ADP', flock_overall_rank: 'Flock' };
+  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_td: 'Rush TD', proj_rec_td: 'Rec TD', adp: 'ADP', value_vs_adp: 'Value vs ADP', consensus_overall_rank: 'Consensus' };
   document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
 
   // ===========================================================================
@@ -2955,12 +2947,13 @@
 
         // Same market-divergence logic as Rankings' Draft Value Edges panel,
         // scoped to the currently-eligible pool -- live, in-the-moment
-        // surfacing of where an opponent's standard-PPR cheat sheet is wrong
-        // for this league, right where the pick decision actually happens.
+        // surfacing of where an opponent's generic consensus cheat sheet is
+        // wrong for this league, right where the pick decision actually
+        // happens.
         const { values: edgeValues, fades: edgeFades } = computeDraftValueEdges(eligibleTop);
         const valueEdgeCalloutHtml = (edgeValues.length || edgeFades.length)
           ? `<div class="value-edge-panel">
-              <label class="field-label">Draft value edges right now (market's PPR consensus vs. this league's scoring)</label>
+              <label class="field-label">Draft value edges right now (market's non-PPR consensus vs. this league's scoring)</label>
               <div class="value-edge-columns">
                 <div class="value-edge-col">
                   <span class="value-edge-col-label value-edge-col-value">Will likely last -- take later than ADP</span>

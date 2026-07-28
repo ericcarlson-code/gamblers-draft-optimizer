@@ -182,91 +182,54 @@ def attach_adp_value(board: pd.DataFrame, adp_lookup: dict[str, float]) -> pd.Da
     return board
 
 
-# How far our own overall_rank can diverge from Flock's before it's flagged
-# as "worth reviewing" rather than a normal scoring-model disagreement. This
-# is exactly the mechanism that would have caught Kenneth Walker (our rank
-# ~118 vs Flock's 49, a 69-spot gap) and Phil Mafah (before the depth-chart
-# fix) automatically -- a judgment call, not a measured cutoff; raise it if
-# it flags too many legitimate scoring-driven differences, lower it if real
-# bugs are still slipping through unflagged.
-FLOCK_DIVERGENCE_THRESHOLD = 35
+# How far our own overall_rank can diverge from the consensus's before it's
+# flagged as "worth reviewing" rather than a normal scoring-model
+# disagreement -- a judgment call, not a measured cutoff; raise it if it
+# flags too many legitimate scoring-driven differences, lower it if real
+# bugs are still slipping through unflagged. (Formerly compared against
+# Flock's standalone PPR rankings; replaced with this multi-source non-PPR
+# consensus per the user's explicit "no PPR rankings anywhere" instruction --
+# same threshold value carried over unchanged.)
+CONSENSUS_DIVERGENCE_THRESHOLD = 35
 
 
-def load_flock_rankings() -> dict[str, dict]:
-    """name -> {overall_rank, pos_rank, fpts, prior_ovr_rank, prior_pos_rank}
-    from Flock Fantasy's 2026 consensus rankings (data/historical/
-    flock_fantasy_2026.csv, manually compiled -- no fetch script, this is
-    pasted reference data, not a live source). Standard PPR scoring, NOT
-    this league's custom rules -- used only as a display/sanity-check
-    reference (see attach_flock_reference), never blended into VOR or any
-    actual ranking math.
-
-    IMPORTANT: the source table has TWO different rankings easy to confuse.
-    The row's own sequential position in the list (flock_list_no) is the
-    forward-looking 2026 consensus rank -- that's what "overall_rank"/
-    "pos_rank" mean here. The CSV's own separate "overall_rank"/"pos_rank"
-    COLUMNS are something else entirely: a retrospective rank by actual 2025
-    output only (kept here as prior_ovr_rank/prior_pos_rank for context --
-    e.g. Jayden Daniels is Flock's forward #8 overall/QB3, but only played 7
-    games in 2025 and ranked #34/#17 by that season's actual production).
-    Confirmed by cross-checking players where both agree (Josh Allen: #1
-    list position, #1 in both columns) against ones where they diverge
-    sharply due to an injury-shortened prior season (Daniels, Lamar
-    Jackson). Comparing OUR forward 2026 projection against Flock's
-    RETROSPECTIVE column would have been comparing the wrong two things.
-
-    Returns {} if the file doesn't exist rather than erroring, since this
-    reference is optional polish, not a build dependency."""
-    path = DATA_DIR / "flock_fantasy_2026.csv"
+def load_consensus_rankings() -> dict[str, dict]:
+    """name -> {overall_rank, pos_rank} from the standard/non-PPR consensus
+    ADP dataset (data/historical/consensus_adp_2026.csv -- user-provided,
+    averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC). Used only
+    as a display/sanity-check reference (see attach_consensus_reference),
+    never blended into VOR or any actual ranking math. Returns {} if the
+    file doesn't exist rather than erroring, since this reference is
+    optional polish, not a build dependency."""
+    path = DATA_DIR / "consensus_adp_2026.csv"
     if not path.exists():
         return {}
     df = pd.read_csv(path)
-    df = df[df["flock_list_no"].notna()].copy()
-    df["flock_list_no"] = df["flock_list_no"].astype(int)
-    # Forward-looking position rank: this position's players, in the SAME
-    # list order, numbered 1..N -- not the CSV's separate (retrospective)
-    # pos_rank column.
-    df["derived_pos_rank"] = df.groupby("position")["flock_list_no"].rank(method="first").astype(int)
-
     out = {}
     for row in df.itertuples():
-        out[row.name] = {
-            "overall_rank": row.flock_list_no,
-            "pos_rank": row.derived_pos_rank,
-            "fpts": None if pd.isna(row.fpts) else float(row.fpts),
-            "prior_ovr_rank": None if pd.isna(row.overall_rank) else int(row.overall_rank),
-            "prior_pos_rank": None if pd.isna(row.pos_rank) else int(row.pos_rank),
-        }
+        out[row.name] = {"overall_rank": int(row.rank), "pos_rank": int(row.pos_rank)}
     return out
 
 
-def attach_flock_reference(board: pd.DataFrame, flock_lookup: dict[str, dict]) -> pd.DataFrame:
-    """Adds 'flock_overall_rank'/'flock_pos_rank'/'flock_fpts'/'flock_diverges'
+def attach_consensus_reference(board: pd.DataFrame, consensus_lookup: dict[str, dict]) -> pd.DataFrame:
+    """Adds 'consensus_overall_rank'/'consensus_pos_rank'/'consensus_diverges'
     -- a visible cross-check column, plus a flag for when our own ranking
-    differs enough from Flock's real PPR consensus that it's more likely to
-    be a data bug than a legitimate scoring-driven difference (this is
-    exactly how Kenneth Walker's stale-team bug and Phil Mafah's
-    committee-blind projection would have surfaced automatically, instead
-    of needing the user to notice by hand). Reference only -- never read by
-    compute_vor/assign_tiers, and must stay that way."""
+    differs enough from the real multi-source consensus that it's more
+    likely to be a data bug than a legitimate scoring-driven difference.
+    Reference only -- never read by compute_vor/assign_tiers, and must stay
+    that way."""
     board = board.copy()
-    resolver = _build_name_resolver(flock_lookup)
-    flock_data = board["name"].map(resolver)
-    board["flock_overall_rank"] = flock_data.map(lambda d: d["overall_rank"] if d else None)
-    board["flock_pos_rank"] = flock_data.map(lambda d: d["pos_rank"] if d else None)
-    board["flock_fpts"] = flock_data.map(lambda d: d["fpts"] if d else None)
-    # Retrospective context only (last season's actual-output-based rank) --
-    # shown in the tooltip to explain a big divergence (e.g. an injury-
-    # shortened prior season), never used for flock_diverges itself.
-    board["flock_prior_ovr_rank"] = flock_data.map(lambda d: d["prior_ovr_rank"] if d else None)
-    board["flock_prior_pos_rank"] = flock_data.map(lambda d: d["prior_pos_rank"] if d else None)
+    resolver = _build_name_resolver(consensus_lookup)
+    consensus_data = board["name"].map(resolver)
+    board["consensus_overall_rank"] = consensus_data.map(lambda d: d["overall_rank"] if d else None)
+    board["consensus_pos_rank"] = consensus_data.map(lambda d: d["pos_rank"] if d else None)
 
     def diverges(row):
-        if pd.isna(row["flock_overall_rank"]):
+        if pd.isna(row["consensus_overall_rank"]):
             return False
-        return abs(row["overall_rank"] - row["flock_overall_rank"]) >= FLOCK_DIVERGENCE_THRESHOLD
+        return abs(row["overall_rank"] - row["consensus_overall_rank"]) >= CONSENSUS_DIVERGENCE_THRESHOLD
 
-    board["flock_diverges"] = board.apply(diverges, axis=1)
+    board["consensus_diverges"] = board.apply(diverges, axis=1)
     return board
 
 
@@ -277,7 +240,7 @@ def score_file(
     path: Path,
     cfg: dict,
     adp_lookup: dict[str, float] | None = None,
-    flock_lookup: dict[str, dict] | None = None,
+    consensus_lookup: dict[str, dict] | None = None,
 ) -> pd.DataFrame:
     raw = pd.read_csv(path)
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
@@ -310,15 +273,12 @@ def score_file(
     else:
         board["adp"] = None
         board["value_vs_adp"] = None
-    if flock_lookup:
-        board = attach_flock_reference(board, flock_lookup)
+    if consensus_lookup:
+        board = attach_consensus_reference(board, consensus_lookup)
     else:
-        board["flock_overall_rank"] = None
-        board["flock_pos_rank"] = None
-        board["flock_fpts"] = None
-        board["flock_prior_ovr_rank"] = None
-        board["flock_prior_pos_rank"] = None
-        board["flock_diverges"] = False
+        board["consensus_overall_rank"] = None
+        board["consensus_pos_rank"] = None
+        board["consensus_diverges"] = False
     return board
 
 
@@ -335,17 +295,11 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
         value_vs_adp = board["value_vs_adp"].iloc[i]
         row["adp"] = None if pd.isna(adp) else round(float(adp), 1)
         row["value_vs_adp"] = None if pd.isna(value_vs_adp) else float(value_vs_adp)
-        flock_rank = board["flock_overall_rank"].iloc[i]
-        flock_pos_rank = board["flock_pos_rank"].iloc[i]
-        flock_fpts = board["flock_fpts"].iloc[i]
-        row["flock_overall_rank"] = None if pd.isna(flock_rank) else int(flock_rank)
-        row["flock_pos_rank"] = None if pd.isna(flock_pos_rank) else int(flock_pos_rank)
-        row["flock_fpts"] = None if pd.isna(flock_fpts) else round(float(flock_fpts), 1)
-        row["flock_diverges"] = bool(board["flock_diverges"].iloc[i])
-        prior_ovr = board["flock_prior_ovr_rank"].iloc[i]
-        prior_pos = board["flock_prior_pos_rank"].iloc[i]
-        row["flock_prior_ovr_rank"] = None if pd.isna(prior_ovr) else int(prior_ovr)
-        row["flock_prior_pos_rank"] = None if pd.isna(prior_pos) else int(prior_pos)
+        consensus_rank = board["consensus_overall_rank"].iloc[i]
+        consensus_pos_rank = board["consensus_pos_rank"].iloc[i]
+        row["consensus_overall_rank"] = None if pd.isna(consensus_rank) else int(consensus_rank)
+        row["consensus_pos_rank"] = None if pd.isna(consensus_pos_rank) else int(consensus_pos_rank)
+        row["consensus_diverges"] = bool(board["consensus_diverges"].iloc[i])
         # Full raw stat line for the player detail page -- nested under its
         # own key rather than flattened, so it doesn't collide with any of
         # the derived column names above (e.g. Rankings' "TD%" column key).
@@ -390,7 +344,7 @@ def build_data_bundle(cfg: dict) -> dict:
         for year in HISTORY_YEARS
     }
     projection_board = score_file(
-        DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_consensus_adp(), flock_lookup=load_flock_rankings()
+        DATA_DIR / "2026_projections.csv", cfg, adp_lookup=load_consensus_adp(), consensus_lookup=load_consensus_rankings()
     )
 
     # Index each year's VOR by (name, position) for fast per-player lookup.
