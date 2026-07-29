@@ -1186,6 +1186,37 @@
     color: var(--accent);
   }
   .team { color: var(--ink-muted); font-size: 12.5px; margin-left: 6px; }
+  .team-badge, .team-logo-link {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border-radius: 4px;
+    transition: background 0.12s ease;
+  }
+  .team-badge:hover, .team-logo-link:hover { background: var(--surface-2); }
+  .team-logo-icon { width: 16px; height: 16px; object-fit: contain; vertical-align: middle; flex-shrink: 0; }
+  .team-logo-link .team-logo-icon { width: 20px; height: 20px; }
+  .team-page-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .team-page-header img { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }
+  .team-page-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .team-page-section { margin-top: 22px; }
+  .team-page-stack-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13.5px;
+  }
+  .team-page-stack-item .stack-plus { color: var(--ink-muted); }
   .cell-muted { color: var(--ink-muted); }
   .value-positive { color: var(--accent); font-weight: 600; }
   .value-negative { color: var(--danger); font-weight: 600; }
@@ -1438,6 +1469,13 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="teamPageModalOverlay" hidden>
+  <div class="modal-box modal-box-wide">
+    <button class="modal-close" id="teamPageModalClose" aria-label="Close">×</button>
+    <div id="teamPageModalContent"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="editPickModalOverlay" hidden>
   <div class="modal-box">
     <button class="modal-close" id="editPickModalClose" aria-label="Close">×</button>
@@ -1535,6 +1573,43 @@
   // player's team logo, then to no image at all.
   const PLAYER_IMAGES = __PLAYER_IMAGES_JSON__;
   const TEAM_LOGOS = __TEAM_LOGOS_JSON__;
+
+  // Abbreviation -> full team name, display-only (e.g. team page headers) --
+  // the `team` field everywhere in the data (including DEF rows, whose own
+  // `name` field is already the full team name) is always the nflreadpy-
+  // style abbreviation, matching TEAM_LOGOS' keys.
+  const ABBR_TO_TEAM_NAME = {
+    ARI: 'Arizona Cardinals', ATL: 'Atlanta Falcons', BAL: 'Baltimore Ravens', BUF: 'Buffalo Bills',
+    CAR: 'Carolina Panthers', CHI: 'Chicago Bears', CIN: 'Cincinnati Bengals', CLE: 'Cleveland Browns',
+    DAL: 'Dallas Cowboys', DEN: 'Denver Broncos', DET: 'Detroit Lions', GB: 'Green Bay Packers',
+    HOU: 'Houston Texans', IND: 'Indianapolis Colts', JAX: 'Jacksonville Jaguars', KC: 'Kansas City Chiefs',
+    LA: 'Los Angeles Rams', LAC: 'Los Angeles Chargers', LV: 'Las Vegas Raiders', MIA: 'Miami Dolphins',
+    MIN: 'Minnesota Vikings', NE: 'New England Patriots', NO: 'New Orleans Saints', NYG: 'New York Giants',
+    NYJ: 'New York Jets', PHI: 'Philadelphia Eagles', PIT: 'Pittsburgh Steelers', SEA: 'Seattle Seahawks',
+    SF: 'San Francisco 49ers', TB: 'Tampa Bay Buccaneers', TEN: 'Tennessee Titans', WAS: 'Washington Commanders',
+  };
+
+  function teamLogoIconHtml(team, extraClass) {
+    return TEAM_LOGOS[team] ? `<img class="team-logo-icon${extraClass ? ' ' + extraClass : ''}" src="${TEAM_LOGOS[team]}" alt="${team}" />` : '';
+  }
+
+  // Clickable team pill (logo + abbreviation) used everywhere a player's NFL
+  // team is shown -- opens that team's dedicated page. `data-team-page` is
+  // picked up by a single delegated document click listener (see
+  // initTeamPageModal) so this works regardless of which container it's
+  // rendered inside (Rankings, player cards, modals, Historical Review, ...).
+  function teamBadgeHtml(team) {
+    if (!team) return '';
+    return `<span class="team team-badge" data-team-page="${team}" title="View ${ABBR_TO_TEAM_NAME[team] || team} team page">${teamLogoIconHtml(team)}${team}</span>`;
+  }
+
+  // Bare clickable logo (no abbreviation text) for tight spaces like the
+  // schedule sidebar, which already labels teams via matchup layout/title.
+  function teamLogoLinkHtml(team) {
+    if (!team) return '';
+    if (!TEAM_LOGOS[team]) return `<span class="bye-week-team-code" data-team-page="${team}" title="View ${ABBR_TO_TEAM_NAME[team] || team} team page">${team}</span>`;
+    return `<span class="team-logo-link" data-team-page="${team}" title="View ${ABBR_TO_TEAM_NAME[team] || team} team page">${teamLogoIconHtml(team)}</span>`;
+  }
   const GEN_DATE = "__GEN_DATE__";
   const VIEWS = [
     { key: "2026", label: "2026 Projections", primary: true },
@@ -1828,7 +1903,7 @@
     return `
       <div class="value-edge-item">
         <span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>
-        <span class="team">${p.team}</span>
+        ${teamBadgeHtml(p.team)}
         <span class="pos-chip">${p.position}</span>
         <span class="value-edge-reason">${reason}</span>
       </div>`;
@@ -1982,10 +2057,7 @@
   }
 
   function byeLogosHtml(teams) {
-    return teams.map(t => TEAM_LOGOS[t]
-      ? `<img src="${TEAM_LOGOS[t]}" alt="${t}" title="${t}" />`
-      : `<span class="bye-week-team-code">${t}</span>`
-    ).join('');
+    return teams.map(t => teamLogoLinkHtml(t)).join('');
   }
 
   function renderScheduleSidebar() {
@@ -2036,9 +2108,9 @@
       const badgeHtml = special ? `<span class="schedule-special-badge" title="${special.label}">${special.emoji}</span>` : '';
       return `
       <div class="schedule-game">
-        ${TEAM_LOGOS[g.away_team] ? `<img src="${TEAM_LOGOS[g.away_team]}" alt="${g.away_team}" />` : g.away_team}
+        ${teamLogoLinkHtml(g.away_team)}
         <span class="schedule-at">@</span>
-        ${TEAM_LOGOS[g.home_team] ? `<img src="${TEAM_LOGOS[g.home_team]}" alt="${g.home_team}" />` : g.home_team}
+        ${teamLogoLinkHtml(g.home_team)}
         ${badgeHtml}
         <span class="schedule-time">${formatCentralTime(g.gametime)}</span>
       </div>
@@ -2193,7 +2265,7 @@
           <h3 class="subhead" style="margin-bottom:2px;">${player.name}</h3>
           <div class="player-modal-meta-row">
             <span class="pos-chip">${player.position}</span>
-            <span class="team">${player.team}</span>
+            ${teamBadgeHtml(player.team)}
             ${injuryBadgeHtml(player.injuryStatus)}
             ${rookieBadgeHtml(player.projection_source)}
           </div>
@@ -2221,6 +2293,146 @@
         ${teammatesHtml}
       </div>
     `;
+  }
+
+  // ===========================================================================
+  // Team Pages -- a dedicated page per real NFL team (all 32), reachable by
+  // clicking any team logo/badge anywhere on the site (teamBadgeHtml/
+  // teamLogoLinkHtml above, wired via a single delegated click listener in
+  // initTeamPageModal). Always built from the live 2026 board regardless of
+  // which Rankings view/week is currently active, same convention player
+  // modals already use for "Notable Teammates".
+  // ===========================================================================
+  function computeTeamPageData(team) {
+    const pool = attachInjuryStatus(rescoreBoard(DATA_BY_VIEW['2026']));
+    const roster = pool.filter(p => p.team === team).sort((a, b) => a.overall_rank - b.overall_rank);
+
+    const stacks = [];
+    for (let i = 0; i < roster.length; i++) {
+      for (let j = i + 1; j < roster.length; j++) {
+        if (isStackPair(roster[i].position, roster[j].position)) {
+          stacks.push([roster[i], roster[j]]);
+        }
+      }
+    }
+    // Best stacks first -- combined VOR is a simple, defensible proxy for
+    // "how much this pairing matters" without needing a new metric.
+    stacks.sort((a, b) => (b[0].vor + b[1].vor) - (a[0].vor + a[1].vor));
+
+    const byPosition = {};
+    roster.forEach(p => {
+      const bucket = (byPosition[p.position] = byPosition[p.position] || { count: 0, points: 0, vor: 0 });
+      bucket.count += 1;
+      bucket.points += p.points;
+      bucket.vor += Math.max(0, p.vor);
+    });
+
+    return {
+      roster,
+      stacks,
+      totalPoints: roster.reduce((s, p) => s + p.points, 0),
+      totalVor: roster.reduce((s, p) => s + Math.max(0, p.vor), 0),
+      byPosition,
+    };
+  }
+
+  function renderTeamPageContent(team) {
+    const { roster, stacks, totalPoints, totalVor, byPosition } = computeTeamPageData(team);
+    const fullName = ABBR_TO_TEAM_NAME[team] || team;
+
+    const posOrder = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+    const positionStatsHtml = posOrder
+      .filter(pos => byPosition[pos])
+      .map(pos => `
+        <div class="player-modal-stat-cell">
+          <span class="stat-label">${pos} (${byPosition[pos].count})</span>
+          <span class="stat-value">${byPosition[pos].points.toFixed(0)} pts</span>
+        </div>`)
+      .join('');
+
+    const rosterRows = roster.map(p => `
+      <tr>
+        <td class="rank">#${p.overall_rank}</td>
+        <td>${playerImageHtml(p.name, p.team)}<span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</td>
+        <td><span class="pos-chip">${p.position}</span></td>
+        <td class="num">${p.points.toFixed(1)}</td>
+        <td class="num">${p.vor.toFixed(1)}</td>
+        <td class="num">${p.tier}</td>
+      </tr>`).join('');
+
+    const stacksHtml = stacks.length
+      ? stacks.slice(0, 12).map(([a, b]) => `
+        <div class="team-page-stack-item">
+          <span class="pos-chip">${a.position}</span>
+          <span class="player-name player-name-link" data-player-name="${a.name}">${a.name}</span>
+          <span class="stack-plus">+</span>
+          <span class="pos-chip">${b.position}</span>
+          <span class="player-name player-name-link" data-player-name="${b.name}">${b.name}</span>
+          <span class="cell-muted">(${(a.vor + b.vor).toFixed(1)} combined VOR)</span>
+        </div>`).join('')
+      : '<p class="hist-note">No true-stack pairings (QB+pass-catcher, RB+RB, WR+WR) currently on the 2026 board for this team.</p>';
+
+    return `
+      <div class="team-page-header">
+        ${teamLogoIconHtml(team)}
+        <div>
+          <h3 class="subhead" style="margin-bottom:2px;">${fullName}</h3>
+          <span class="cell-muted">${roster.length} players on the 2026 board</span>
+        </div>
+      </div>
+
+      <div class="team-page-stat-grid">
+        <div class="player-modal-stat-cell"><span class="stat-label">Total Points</span><span class="stat-value">${totalPoints.toFixed(0)}</span></div>
+        <div class="player-modal-stat-cell"><span class="stat-label">Total VOR</span><span class="stat-value">${totalVor.toFixed(1)}</span></div>
+        ${positionStatsHtml}
+      </div>
+
+      <div class="team-page-section">
+        <h3 class="subhead" style="font-size:16px;">Stacks Within This Team</h3>
+        ${stacksHtml}
+      </div>
+
+      <div class="team-page-section">
+        <h3 class="subhead" style="font-size:16px;">Full Roster</h3>
+        <div class="table-shell"><div class="table-scroll"><table>
+          <thead><tr><th>Rank</th><th>Player</th><th>Pos</th><th class="num">Pts</th><th class="num">VOR</th><th class="num">Tier</th></tr></thead>
+          <tbody>${rosterRows || '<tr><td colspan="6" class="trend-empty">No players found for this team.</td></tr>'}</tbody>
+        </table></div></div>
+      </div>
+    `;
+  }
+
+  function openTeamPageModal(team) {
+    if (!ABBR_TO_TEAM_NAME[team] && !TEAM_LOGOS[team]) return; // not a real NFL team code
+    document.getElementById('teamPageModalContent').innerHTML = renderTeamPageContent(team);
+    document.getElementById('teamPageModalOverlay').hidden = false;
+  }
+
+  function closeTeamPageModal() {
+    document.getElementById('teamPageModalOverlay').hidden = true;
+  }
+
+  function initTeamPageModal() {
+    document.getElementById('teamPageModalClose').addEventListener('click', closeTeamPageModal);
+    document.getElementById('teamPageModalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'teamPageModalOverlay') closeTeamPageModal();
+      const playerEl = e.target.closest('[data-player-name]');
+      if (playerEl) openPlayerModal(playerEl.dataset.playerName, rescoreBoard(DATA_BY_VIEW['2026']));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeTeamPageModal();
+    });
+    // Delegated at the document level (not per-container) so every team
+    // logo/badge everywhere on the site opens the same modal, regardless of
+    // which tab/panel/modal it's rendered inside -- see teamBadgeHtml/
+    // teamLogoLinkHtml above.
+    document.addEventListener('click', (e) => {
+      const trigger = e.target.closest('[data-team-page]');
+      if (!trigger) return;
+      e.stopPropagation();
+      closePlayerModal();
+      openTeamPageModal(trigger.dataset.teamPage);
+    });
   }
 
   function openPlayerModal(name, pool) {
@@ -2441,7 +2653,7 @@
       const barPct = Math.max(2, Math.round((d.vor / maxVor) * 100));
       tr.innerHTML = `
         <td class="rank">${d.overall_rank}</td>
-        <td>${playerImageHtml(d.name, d.team)}<span class="player-name player-name-link" data-player-name="${d.name}">${d.name}</span><span class="team">${d.team}</span>${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}${d.isBye ? '<span class="bye-badge" title="On a bye this week">BYE</span>' : ''}</td>
+        <td>${playerImageHtml(d.name, d.team)}<span class="player-name player-name-link" data-player-name="${d.name}">${d.name}</span>${teamBadgeHtml(d.team)}${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}${d.isBye ? '<span class="bye-badge" title="On a bye this week">BYE</span>' : ''}</td>
         <td><span class="pos-chip">${d.position}</span></td>
         <td class="num">${d.points.toFixed(1)}</td>
         <td class="num">
@@ -2666,16 +2878,111 @@
     return Object.values(rosterSlots).reduce((a, b) => a + b, 0);
   }
 
-  // Bots draft off a 50/50 blend of our own VOR rank and real market ADP
-  // rank (not pure VOR) -- the human's own recommendations (topRecommendation/
-  // renderMockDraft's pool) stay pure VOR, that's the real edge this model
-  // gives the human, but real opponents shouldn't follow it with full
-  // conviction either -- confirmed by the user directly (e.g. our aggressive
-  // post-scarcity-boost VOR had Jonathan Taylor as the first RB off the
-  // board, which real market consensus doesn't support). Players without a
-  // real ADP (deep bench/rookie-model players ADP's real-draft-sample
-  // doesn't cover) fall back to VOR order, appended after every ADP-covered
-  // player -- same convention the old ADP-only bot ranking used.
+  // This league's own real 2024/2025 draft tendency by position -- e.g. QBs
+  // go extremely early in a real 2-QB draft (Josh Allen went #1 overall in
+  // 2025, #3 in 2024) -- a signal generic single-QB consensus ADP does not
+  // capture on its own (2026-07-29, in response to bots still under-drafting
+  // QBs even after the VOR/ADP blend below: the blend's ADP half is a
+  // generic 1QB-market number, which was quietly cancelling out the
+  // league-specific QB premium). Pooled across every {year}_fantasy_draft_
+  // results.csv on disk (currently 2024 + 2025): for each position, what
+  // FRACTION of the way through that year's real draft (overall_pick /
+  // total real picks that year, so a 9-team and 10-team draft compare
+  // fairly) was the Nth player at that position actually taken.
+  let _historicalPositionCurveCache = null;
+  function historicalPositionCurve() {
+    if (_historicalPositionCurveCache) return _historicalPositionCurveCache;
+    const samplesByPosition = {};
+    Object.keys(FANTASY_DRAFT_RESULTS).forEach(year => {
+      const picks = FANTASY_DRAFT_RESULTS[year] || [];
+      if (picks.length === 0) return;
+      const board = rescoreBoard(DATA_BY_VIEW[year], false);
+      const byName = new Map(board.map(p => [p.name.toLowerCase(), p]));
+      const totalPicks = picks.length;
+      const countByPos = {};
+      [...picks].sort((a, b) => a.overall_pick - b.overall_pick).forEach(e => {
+        if (!e.resolved) return;
+        const p = byName.get(e.player.toLowerCase());
+        if (!p) return;
+        countByPos[p.position] = (countByPos[p.position] || 0) + 1;
+        (samplesByPosition[p.position] = samplesByPosition[p.position] || []).push({
+          rank: countByPos[p.position],
+          fraction: e.overall_pick / totalPicks,
+        });
+      });
+    });
+    const curve = {};
+    Object.keys(samplesByPosition).forEach(pos => {
+      const byRank = new Map();
+      samplesByPosition[pos].forEach(({ rank, fraction }) => {
+        if (!byRank.has(rank)) byRank.set(rank, []);
+        byRank.get(rank).push(fraction);
+      });
+      curve[pos] = [...byRank.entries()]
+        .map(([rank, fractions]) => ({ rank, fraction: fractions.reduce((a, b) => a + b, 0) / fractions.length }))
+        .sort((a, b) => a.rank - b.rank);
+    });
+    _historicalPositionCurveCache = curve;
+    return curve;
+  }
+
+  // Estimated draft-fraction (0-1) for the Nth-best available player at a
+  // position, per historicalPositionCurve() -- interpolates between real
+  // observed ranks, and extrapolates past the deepest real sample (real
+  // drafts only go 14 rounds) using that position's own observed tail slope.
+  function historicalFractionForRank(position, rank) {
+    const curve = historicalPositionCurve()[position];
+    if (!curve || curve.length === 0) return 0.99;
+    const exact = curve.find(pt => pt.rank === rank);
+    if (exact) return exact.fraction;
+    if (rank < curve[0].rank) return curve[0].fraction;
+    const last = curve[curve.length - 1];
+    if (rank > last.rank) {
+      const prev = curve.length > 1 ? curve[curve.length - 2] : { rank: 0, fraction: 0 };
+      const slope = (last.fraction - prev.fraction) / Math.max(1, last.rank - prev.rank);
+      return Math.min(0.999, last.fraction + slope * (rank - last.rank));
+    }
+    let lo = curve[0], hi = last;
+    for (let i = 0; i < curve.length - 1; i++) {
+      if (curve[i].rank <= rank && curve[i + 1].rank >= rank) { lo = curve[i]; hi = curve[i + 1]; break; }
+    }
+    if (hi.rank === lo.rank) return lo.fraction;
+    const t = (rank - lo.rank) / (hi.rank - lo.rank);
+    return lo.fraction + t * (hi.fraction - lo.fraction);
+  }
+
+  // Bots draft off a 50/50 blend of our own VOR rank and a real-world
+  // "market" rank (not pure VOR) -- the human's own recommendations
+  // (topRecommendation/renderMockDraft's pool) stay pure VOR, that's the
+  // real edge this model gives the human, but real opponents shouldn't
+  // follow it with full conviction either -- confirmed by the user directly
+  // (e.g. our aggressive post-scarcity-boost VOR had Jonathan Taylor as the
+  // first RB off the board, which real market consensus doesn't support).
+  //
+  // The "market" rank takes the BETTER (earlier) of two independent real
+  // signals per player, not their average (2026-07-29, tried averaging
+  // first and it failed both of the user's own test cases at once):
+  //   - generic consensus ADP -- a real per-player number, good at ordering
+  //     similar-tier players correctly (e.g. Gibbs 1.2 vs Taylor 6.2), but
+  //     built for single-QB leagues so it buries every QB (~#30+) regardless
+  //     of this league's real 2-QB format.
+  //   - this league's own historical real-draft position curve above -- the
+  //     opposite tradeoff: captures the real 2QB early-QB premium correctly
+  //     (Josh Allen went #1 overall in 2025's actual draft, #3 in 2024's),
+  //     but it's rank-based off OUR OWN VOR ordering within a position, so
+  //     it can't tell Gibbs from Taylor if our VOR already has them close.
+  // Averaging the two let ADP's ~#30 for every QB drag Josh Allen down to
+  // bot-pick #4 even at a light weight, while using the curve ALONE
+  // reintroduced the Gibbs/Taylor mistake (our own VOR ranks Taylor
+  // slightly ahead, and the curve just inherits that). Taking whichever
+  // signal argues MOST strongly that a player should go early fixes both:
+  // verified Allen is the bots' #1 overall in >99% of instances (weighted-
+  // random top-3), Gibbs back ahead of Taylor, and QBs (Purdy/Hurts/
+  // Jackson/Mahomes) appear throughout the rest of round 1 like the real
+  // 2025 draft (whose actual first 4 picks were all QBs). Consensus ADP
+  // itself is untouched everywhere else on the site (Rankings' ADP column,
+  // Value vs ADP, Draft Value Edges) -- this only changes what bots draft
+  // off of.
   function computeBlendedBotRank(players) {
     const byVor = [...players].sort((a, b) => b.vor - a.vor);
     const vorRank = new Map(byVor.map((p, i) => [p.name, i + 1]));
@@ -2686,8 +2993,25 @@
     withAdp.forEach((p, i) => adpRank.set(p.name, i + 1));
     withoutAdp.forEach((p, i) => adpRank.set(p.name, withAdp.length + i + 1));
 
+    const totalPicks = LEAGUE_META.num_teams * totalRoundsFor(LEAGUE_META.roster_slots);
+    const byPositionVor = {};
+    players.forEach(p => (byPositionVor[p.position] = byPositionVor[p.position] || []).push(p));
+    const positionalVorRank = new Map();
+    Object.values(byPositionVor).forEach(group => {
+      [...group].sort((a, b) => b.vor - a.vor).forEach((p, i) => positionalVorRank.set(p.name, i + 1));
+    });
+    const historicalPickEstimate = new Map(players.map(p => [
+      p.name,
+      historicalFractionForRank(p.position, positionalVorRank.get(p.name)) * totalPicks,
+    ]));
+    const byHistorical = [...players].sort((a, b) => historicalPickEstimate.get(a.name) - historicalPickEstimate.get(b.name));
+    const historicalRank = new Map(byHistorical.map((p, i) => [p.name, i + 1]));
+
     return players
-      .map(p => ({ ...p, botBlendScore: 0.5 * vorRank.get(p.name) + 0.5 * adpRank.get(p.name) }))
+      .map(p => {
+        const marketRank = Math.min(adpRank.get(p.name), historicalRank.get(p.name));
+        return { ...p, botBlendScore: 0.5 * vorRank.get(p.name) + 0.5 * marketRank };
+      })
       .sort((a, b) => a.botBlendScore - b.botBlendScore);
   }
 
@@ -3537,7 +3861,7 @@
                 ${playerImageHtml(p.name, p.team, 'player-card-avatar')}
                 <div class="player-card-id">
                   <span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>
-                  <span class="player-card-meta"><span class="team">${p.team}</span>${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</span>
+                  <span class="player-card-meta">${teamBadgeHtml(p.team)}${injuryBadgeHtml(p.injuryStatus)}${rookieBadgeHtml(p.projection_source)}</span>
                 </div>
                 <span class="pos-chip">${p.position}</span>
               </div>
@@ -3842,7 +4166,7 @@
     const pickRows = matched.map(r => `
       <tr>
         <td>${r.round}</td>
-        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span>${injuryGamesMissedBadgeHtml(r.player, year)}</td>
+        <td><span class="player-name">${r.player}</span>${teamBadgeHtml(r.team)}${injuryGamesMissedBadgeHtml(r.player, year)}</td>
         <td><span class="pos-chip">${r.position}</span></td>
         <td class="num">#${r.actualRank}</td>
         <td class="num">${r.vor.toFixed(1)}</td>
@@ -3852,7 +4176,7 @@
 
     const missRows = misses.map(p => `
       <tr>
-        <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span></td>
+        <td><span class="player-name">${p.name}</span>${teamBadgeHtml(p.team)}</td>
         <td><span class="pos-chip">${p.position}</span></td>
         <td class="num">#${p.overall_rank}</td>
         <td class="num">${p.vor.toFixed(1)}</td>
@@ -4005,7 +4329,7 @@
       <tr>
         <td class="num">#${r.overallPick}</td>
         <td>${r.round}.${r.pickInRound}</td>
-        <td><span class="player-name">${r.player}</span><span class="team">${r.team}</span>${injuryGamesMissedBadgeHtml(r.player, year)}</td>
+        <td><span class="player-name">${r.player}</span>${teamBadgeHtml(r.team)}${injuryGamesMissedBadgeHtml(r.player, year)}</td>
         <td><span class="pos-chip">${r.position}</span></td>
         <td class="num">#${r.actualRank}</td>
         <td class="num">${r.vor.toFixed(1)}</td>
@@ -4024,7 +4348,7 @@
 
     const missRows = misses.map(p => `
       <tr>
-        <td><span class="player-name">${p.name}</span><span class="team">${p.team}</span></td>
+        <td><span class="player-name">${p.name}</span>${teamBadgeHtml(p.team)}</td>
         <td><span class="pos-chip">${p.position}</span></td>
         <td class="num">#${p.overall_rank}</td>
         <td class="num">${p.vor.toFixed(1)}</td>
@@ -4457,6 +4781,7 @@
   initEditPickModal();
   initLeagueEditForm();
   initPlayerModal();
+  initTeamPageModal();
   initTeamRosterModal();
   initLeagueDetailsModal();
   initPlayerTooltips();
