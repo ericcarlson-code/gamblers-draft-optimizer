@@ -3947,7 +3947,13 @@
       else if (ratio >= 0.6) verdict = { tag: 'solid', label: 'Solid' };
       else verdict = { tag: 'reach', label: 'Bust' };
       let reason = `Pick #${e.overall_pick} overall (Round ${e.round}) finished ranked #${p.overall_rank} (${p.vor.toFixed(1)} VOR) that season.`;
-      if (p.adp != null) {
+      // Skipped for 2024: that season's real league had 9 teams (no
+      // Wildcard), but FFC has no 9-team historical archive and silently
+      // substitutes its closest available pool (~12 teams) -- so the ADP-
+      // implied overall pick number assumes a different draft cadence than
+      // the real 2024 draft actually had, making a direct pick-number
+      // comparison invalid/misleading rather than just imprecise.
+      if (p.adp != null && String(year) !== '2024') {
         const adpPick = Math.round(p.adp);
         if (adpPick < e.overall_pick) reason += ` Real market ADP had them going #${adpPick} overall -- you got them ${e.overall_pick - adpPick} pick${e.overall_pick - adpPick === 1 ? '' : 's'} later than the market expected.`;
         else if (adpPick > e.overall_pick) reason += ` Real market ADP had them going #${adpPick} overall -- you reached ${adpPick - e.overall_pick} pick${adpPick - e.overall_pick === 1 ? '' : 's'} ahead of the market.`;
