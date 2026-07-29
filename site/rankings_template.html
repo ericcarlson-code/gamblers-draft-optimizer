@@ -2924,6 +2924,28 @@
     return samples[Math.floor(Math.random() * samples.length)];
   }
 
+  // DEF specifically doesn't stretch early the way K does (2026-07-29,
+  // user feedback after testing: "don't let defensives get drafted above
+  // round 11 and with that rarely in round 11 and sometimes in round 12
+  // -- defenses don't stretch that high like the kickers"). The raw
+  // 2024/2025 sample is too thin/noisy to reproduce that shape directly
+  // (round 11 happened to be the single most common real round in the
+  // 2-year sample), so this is a hand-set weighted table instead of
+  // historicalPositionRoundSamples -- round 11 rare, 12 uncommon, 13/14
+  // the norm. K keeps its real early outliers (Brandon Aubrey, round 4)
+  // untouched.
+  const DEF_TARGET_ROUND_WEIGHTS = { 11: 1, 12: 2, 13: 4, 14: 5 };
+  function sampleDefTargetRound() {
+    const entries = Object.entries(DEF_TARGET_ROUND_WEIGHTS);
+    const total = entries.reduce((sum, [, w]) => sum + w, 0);
+    let r = Math.random() * total;
+    for (const [round, w] of entries) {
+      r -= w;
+      if (r <= 0) return parseInt(round, 10);
+    }
+    return parseInt(entries[entries.length - 1][0], 10);
+  }
+
   // Real evidence of how this league's own teams vary on a 3rd (bench) QB:
   // pooled by real team-season (year+team), NOT just individual picks --
   // e.g. real data shows Hoofers drafted QBs in rounds 1, 2, 3 (literally
@@ -3820,7 +3842,7 @@
     teamLabels.forEach(label => {
       if (label === 'Me') return;
       teamTargetRounds[label] = {
-        DEF: sampleHistoricalRound('DEF', totalRounds - 1),
+        DEF: sampleDefTargetRound(),
         K: sampleHistoricalRound('K', totalRounds - 1),
         QB: sampleWantsExtraQbRound(), // null = this team just isn't the 3rd-QB type
       };
