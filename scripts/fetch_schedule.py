@@ -21,7 +21,7 @@ import nflreadpy as nfl
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scripts.fetch_actuals import DATA_DIR
 
-CSV_FIELDS = ["week", "gameday", "gametime", "away_team", "home_team"]
+CSV_FIELDS = ["week", "gameday", "gametime", "away_team", "home_team", "location"]
 
 
 def fetch_schedule(season: int) -> list[dict]:
@@ -31,9 +31,18 @@ def fetch_schedule(season: int) -> list[dict]:
         games.append({
             "week": int(row["week"]),
             "gameday": row.get("gameday") or "",
+            # nflreadpy's gametime is Eastern Time (confirmed against known
+            # kickoff slots -- 13:00/16:05/16:25/20:20 ET). Not converted
+            # here -- the site converts to the user's own timezone at
+            # render time so this stays a plain, source-of-truth ET value.
             "gametime": row.get("gametime") or "",
             "away_team": row.get("away_team") or "",
             "home_team": row.get("home_team") or "",
+            # "Neutral" (vs "Home") is nflreadpy's own flag for a non-home-
+            # stadium game -- in practice this is exactly the international
+            # game slate (London/Germany/Brazil/Australia), used client-side
+            # to badge those games.
+            "location": row.get("location") or "",
         })
     return sorted(games, key=lambda g: (g["week"], g["gameday"], g["gametime"]))
 

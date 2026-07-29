@@ -357,14 +357,18 @@ def load_fantasy_draft_results() -> dict[str, list[dict]]:
 
 
 def load_schedule() -> dict[str, list[dict]]:
-    """{week: [{gameday, gametime, away_team, home_team}]} for the live 2026
-    board, from data/historical/2026_schedule.csv (scripts/fetch_schedule.py).
-    {} if the file doesn't exist yet -- e.g. before the real schedule has
-    been fetched for the season -- rather than erroring the whole build."""
+    """{week: [{gameday, gametime, away_team, home_team, location}]} for the
+    live 2026 board, from data/historical/2026_schedule.csv
+    (scripts/fetch_schedule.py). gametime is Eastern Time (nflreadpy's own
+    convention) -- converted to the viewer's timezone client-side, not here.
+    location is "Home" or "Neutral" (nflreadpy's flag for international
+    games). {} if the file doesn't exist yet -- e.g. before the real
+    schedule has been fetched for the season -- rather than erroring the
+    whole build."""
     path = DATA_DIR / "2026_schedule.csv"
     if not path.exists():
         return {}
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, keep_default_na=False)
     by_week: dict[str, list[dict]] = {}
     for row in df.itertuples():
         by_week.setdefault(str(row.week), []).append({
@@ -372,6 +376,7 @@ def load_schedule() -> dict[str, list[dict]]:
             "gametime": row.gametime,
             "away_team": row.away_team,
             "home_team": row.home_team,
+            "location": row.location,
         })
     return by_week
 

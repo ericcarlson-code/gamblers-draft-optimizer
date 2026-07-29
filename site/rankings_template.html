@@ -888,7 +888,8 @@
   }
   .schedule-game img { width: 22px; height: 22px; object-fit: contain; }
   .schedule-game .schedule-at { color: var(--ink-muted); font-size: 12px; }
-  .schedule-game .schedule-time { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-muted); }
+  .schedule-special-badge { font-size: 13px; line-height: 1; cursor: help; }
+  .schedule-game .schedule-time { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-muted); white-space: nowrap; }
   .hist-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
   .hist-controls select, .week-select {
     font-family: 'Public Sans', sans-serif;
@@ -1891,6 +1892,46 @@
   // week (not Rest of Season) is selected, since Rest of Season has no
   // single week's matchups to show. Reuses TEAM_LOGOS, the same lookup
   // playerImageHtml() falls back to.
+  // nflreadpy's gametime is always Eastern Time -- Central is always exactly
+  // 1 hour behind ET year-round (both regions observe the same US DST
+  // schedule), so a flat subtraction is safe with no timezone-library
+  // dependency. User is in Minnesota (Central).
+  function formatCentralTime(etTimeStr) {
+    if (!etTimeStr) return '';
+    const [h, m] = etTimeStr.split(':').map(Number);
+    let hour = h - 1;
+    if (hour < 0) hour += 24;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    let hour12 = hour % 12;
+    if (hour12 === 0) hour12 = 12;
+    return `${hour12}:${String(m).padStart(2, '0')} ${period} CT`;
+  }
+
+  // Thanksgiving is the 4th Thursday of November -- computed directly
+  // rather than hardcoded per-year, so this stays correct in future seasons.
+  function isThanksgivingDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (d.getMonth() !== 10) return false; // November
+    const year = d.getFullYear();
+    let thursdayCount = 0;
+    for (let day = 1; day <= 30; day++) {
+      if (new Date(year, 10, day).getDay() === 4) {
+        thursdayCount++;
+        if (thursdayCount === 4) return d.getDate() === day;
+      }
+    }
+    return false;
+  }
+
+  // "Neutral" (vs "Home") is nflreadpy's own flag for a non-home-stadium
+  // game -- in practice this is the international game slate (London/
+  // Germany/Brazil/Australia).
+  function specialGameBadge(game) {
+    if (isThanksgivingDate(game.gameday)) return { emoji: '🦃', label: 'Thanksgiving Day game' };
+    if (game.location === 'Neutral') return { emoji: '🌍', label: 'International game' };
+    return null;
+  }
+
   function renderScheduleSidebar() {
     const sidebar = document.getElementById('scheduleSidebar');
     const selectedWeek = activeView === '2026' && projectionMode.startsWith('week')
@@ -1904,20 +1945,25 @@
       .slice()
       .sort((a, b) => (a.gameday + a.gametime).localeCompare(b.gameday + b.gametime));
     sidebar.hidden = false;
-    document.getElementById('scheduleSidebarTitle').textContent = `Week ${selectedWeek} Schedule`;
+    document.getElementById('scheduleSidebarTitle').textContent = `Week ${selectedWeek} Schedule (Central Time)`;
     const list = document.getElementById('scheduleSidebarList');
     if (games.length === 0) {
       list.innerHTML = '<div class="schedule-game">No schedule data for this week yet.</div>';
       return;
     }
-    list.innerHTML = games.map(g => `
+    list.innerHTML = games.map(g => {
+      const special = specialGameBadge(g);
+      const badgeHtml = special ? `<span class="schedule-special-badge" title="${special.label}">${special.emoji}</span>` : '';
+      return `
       <div class="schedule-game">
         ${TEAM_LOGOS[g.away_team] ? `<img src="${TEAM_LOGOS[g.away_team]}" alt="${g.away_team}" />` : g.away_team}
         <span class="schedule-at">@</span>
         ${TEAM_LOGOS[g.home_team] ? `<img src="${TEAM_LOGOS[g.home_team]}" alt="${g.home_team}" />` : g.home_team}
-        <span class="schedule-time">${g.gametime || ''}</span>
+        ${badgeHtml}
+        <span class="schedule-time">${formatCentralTime(g.gametime)}</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function sparklineSvg(history, playerName) {
