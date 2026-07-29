@@ -4036,7 +4036,8 @@
 
     let html = `<div class="draft-board-header-cell">Rd</div>`;
     teamLabels.forEach(label => {
-      html += `<div class="draft-board-header-cell${label === 'Me' ? ' draft-board-me' : ''}" data-team="${label}" title="View ${label}'s roster" role="button" tabindex="0">${label}</div>`;
+      const rosterTitle = label === 'Me' ? 'View my roster' : `View ${label}'s roster`;
+      html += `<div class="draft-board-header-cell${label === 'Me' ? ' draft-board-me' : ''}" data-team="${label}" title="${rosterTitle}" role="button" tabindex="0">${label}</div>`;
     });
 
     for (let round = 1; round <= totalRounds; round++) {
@@ -4047,7 +4048,7 @@
         if (entry) {
           const isJustPicked = lastEntry && entry === lastEntry;
           html += `<div class="draft-board-cell filled pos-${entry.position}${isJustPicked ? ' just-picked' : ''}" title="${entry.name} (${entry.position}) -- Rd ${entry.round}, ${entry.team}">
-            <button class="draft-board-edit-btn" data-edit-pick="${entry.pick}" title="Edit this pick" aria-label="Edit ${entry.team}'s Round ${entry.round} pick">✎</button>
+            <button class="draft-board-edit-btn" data-edit-pick="${entry.pick}" title="Edit this pick" aria-label="Edit ${entry.team === 'Me' ? 'my' : `${entry.team}'s`} Round ${entry.round} pick">✎</button>
             ${playerImageHtml(entry.name, entry.nflTeam, 'draft-board-avatar')}
             <span class="draft-board-name player-name-link" data-player-name="${entry.name}">${entry.name}</span>
           </div>`;
