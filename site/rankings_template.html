@@ -1345,7 +1345,7 @@
 
   <section id="section-mockdraft" class="app-section" hidden>
     <div id="mockDraftSetup">
-      <p class="section-intro">Bot opponents draft by this league's own VOR ranking + roster need in snake order, with some pick-to-pick variance so drafts don't play out identically every time. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
+      <p class="section-intro">Bot opponents draft off a 50/50 blend of this league's own VOR ranking and real market ADP (+ roster need) in snake order, with some pick-to-pick variance so drafts don't play out identically every time. Your own recommendations stay pure VOR -- that's the real edge this model gives you over opponents who partly follow generic market consensus instead. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
       <label class="field-label" for="mockSlotInput">Your draft slot (1–<span id="mockNumTeams"></span>)</label>
       <div class="mock-setup-row">
         <input type="number" id="mockSlotInput" min="1" value="1" />
@@ -2666,6 +2666,31 @@
     return Object.values(rosterSlots).reduce((a, b) => a + b, 0);
   }
 
+  // Bots draft off a 50/50 blend of our own VOR rank and real market ADP
+  // rank (not pure VOR) -- the human's own recommendations (topRecommendation/
+  // renderMockDraft's pool) stay pure VOR, that's the real edge this model
+  // gives the human, but real opponents shouldn't follow it with full
+  // conviction either -- confirmed by the user directly (e.g. our aggressive
+  // post-scarcity-boost VOR had Jonathan Taylor as the first RB off the
+  // board, which real market consensus doesn't support). Players without a
+  // real ADP (deep bench/rookie-model players ADP's real-draft-sample
+  // doesn't cover) fall back to VOR order, appended after every ADP-covered
+  // player -- same convention the old ADP-only bot ranking used.
+  function computeBlendedBotRank(players) {
+    const byVor = [...players].sort((a, b) => b.vor - a.vor);
+    const vorRank = new Map(byVor.map((p, i) => [p.name, i + 1]));
+
+    const withAdp = players.filter(p => p.adp != null).sort((a, b) => a.adp - b.adp);
+    const withoutAdp = players.filter(p => p.adp == null).sort((a, b) => b.vor - a.vor);
+    const adpRank = new Map();
+    withAdp.forEach((p, i) => adpRank.set(p.name, i + 1));
+    withoutAdp.forEach((p, i) => adpRank.set(p.name, withAdp.length + i + 1));
+
+    return players
+      .map(p => ({ ...p, botBlendScore: 0.5 * vorRank.get(p.name) + 0.5 * adpRank.get(p.name) }))
+      .sort((a, b) => a.botBlendScore - b.botBlendScore);
+  }
+
   // Positions where this roster still has an open STARTING slot (excludes
   // BN, which can hold any position) -- shared by pickForBot (bots) and the
   // human-facing recommendation ordering/auto-navigation in renderMockDraft.
@@ -3172,14 +3197,14 @@
   // Advances through bot turns only, stopping the instant it's "Me"'s turn
   // or the draft ends -- no rendering, so Sim Draft can call this in its own
   // loop without a wasted re-render after every single pick. Bots draft off
-  // our OWN VOR ranking (computeVOR's native sort, same scarcity-boosted
-  // ranking the human sees), not real-world market ADP -- confirmed by the
-  // user (2026-07-28) after noticing bots weren't taking any QB in round 1
-  // despite the top 3 VOR-ranked players all being QBs post-scarcity-boost;
-  // real external ADP doesn't carry that boost (it's real market data, not
-  // something this model computes), so ADP-driven bots were drafting QBs
-  // far too late relative to what this league's own model says they're
-  // worth. weightedPickFromTop still adds real pick-to-pick variance on top.
+  // computeBlendedBotRank's 50/50 VOR/ADP blend, not pure VOR -- confirmed
+  // by the user (2026-07-29) after a pure-VOR bot draft had Jonathan Taylor
+  // as the presumed first RB off the board, which real market ADP doesn't
+  // support (Jahmyr Gibbs 1.2 / Bijan Robinson 1.8 vs. Taylor's 6.2) -- the
+  // human's own recommendations (topRecommendation/renderMockDraft's pool)
+  // stay pure VOR, unaffected, since that's the real edge this model is
+  // meant to give the human over less-informed opponents. weightedPickFromTop
+  // still adds real pick-to-pick variance on top of the blended order.
   function runBotPicksUntilMe() {
     const numTeams = LEAGUE_META.num_teams;
     const rosterSlots = LEAGUE_META.roster_slots;
@@ -3189,7 +3214,8 @@
       const available = getMockAvailable();
       if (available.length === 0) break;
       const ranked = computeVOR(available, numTeams, rosterSlots);
-      const pick = pickForBot(ranked, mockDraft.rosters[teamLabel], rosterSlots);
+      const botRanked = computeBlendedBotRank(ranked);
+      const pick = pickForBot(botRanked, mockDraft.rosters[teamLabel], rosterSlots);
       recordMockPick(pick, teamLabel);
     }
   }
