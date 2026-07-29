@@ -1388,7 +1388,7 @@
         <div id="mockOnClock" class="mock-on-clock"></div>
         <button class="btn-secondary btn-sm" id="mockSimPickBtn" title="Auto-pick your turn using the current top recommendation">Sim Pick</button>
         <button class="btn-secondary btn-sm" id="mockSimDraftBtn" title="Auto-complete the rest of the draft (your picks via the top recommendation, bots via their normal logic)">Sim Draft</button>
-        <button class="btn-secondary btn-sm" id="mockUndoBtn" title="Undo the most recent pick">Undo Last Pick</button>
+        <button class="btn-secondary btn-sm" id="mockUndoBtn" title="Undo your last pick (and any bot picks made since) so you can pick again">Undo Last Pick</button>
         <button class="btn-secondary" id="mockResetBtn">Reset Mock Draft</button>
       </div>
       <details class="mock-team-panel" id="mockTeamPanel">
@@ -3375,9 +3375,25 @@
     }
   }
 
+  // "Undo Last Pick" means undo the human's own last pick, not whichever
+  // pick happens to be at the end of the log -- after the human picks,
+  // runMockDraftStep() immediately auto-runs every bot turn up to the
+  // human's NEXT turn, so the log's true last entry is almost always a bot
+  // pick by the time this button is pressed. Truncating just that one entry
+  // re-simulated the same bot pick right back in and left the human's own
+  // pick untouched, which looked like the button did nothing (2026-07-29,
+  // user report). Fixed: find the human's own most recent pick and rebuild
+  // back to right before it, dropping it and every bot pick made since --
+  // runMockDraftStep() then re-lands exactly on the human's turn (no bots
+  // to run in between) so they can make a fresh selection.
   function undoLastPick() {
     if (!mockDraft || !mockDraft.picksLog.length) return;
-    rebuildMockDraftFromLog(mockDraft.picksLog.slice(0, -1));
+    let lastMineIdx = -1;
+    for (let i = mockDraft.picksLog.length - 1; i >= 0; i--) {
+      if (mockDraft.picksLog[i].team === 'Me') { lastMineIdx = i; break; }
+    }
+    if (lastMineIdx === -1) return; // nothing of the human's own to undo yet
+    rebuildMockDraftFromLog(mockDraft.picksLog.slice(0, lastMineIdx));
     runMockDraftStep();
   }
 
