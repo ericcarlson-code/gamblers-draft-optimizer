@@ -2889,6 +2889,89 @@
     return Object.values(rosterSlots).reduce((a, b) => a + b, 0);
   }
 
+  // Real per-position ROUND numbers this league's own bots/humans actually
+  // drafted DEF/K in (2024 + 2025 pooled) -- e.g. real evidence: Brandon
+  // Aubrey went round 4 in BOTH years (a genuine recurring early-K outlier,
+  // not a fluke), Justin Tucker round 8, while other real DEF/K picks
+  // stretch all the way to round 14. Used by mockBotTeamTargetRounds (see
+  // startMockDraft) to give each simulated bot team its own randomly
+  // sampled "personal" DEF/K target round drawn from this real spread,
+  // instead of every bot converging on the identical round -- see
+  // pickForBot's DEF/K handling for how that target round is used.
+  let _historicalRoundSamplesCache = null;
+  function historicalPositionRoundSamples() {
+    if (_historicalRoundSamplesCache) return _historicalRoundSamplesCache;
+    const samples = {};
+    Object.keys(FANTASY_DRAFT_RESULTS).forEach(year => {
+      const picks = FANTASY_DRAFT_RESULTS[year] || [];
+      if (picks.length === 0) return;
+      const board = rescoreBoard(DATA_BY_VIEW[year], false);
+      const byName = new Map(board.map(p => [p.name.toLowerCase(), p]));
+      picks.forEach(e => {
+        if (!e.resolved) return;
+        const p = byName.get(e.player.toLowerCase());
+        if (!p) return;
+        (samples[p.position] = samples[p.position] || []).push(e.round);
+      });
+    });
+    _historicalRoundSamplesCache = samples;
+    return samples;
+  }
+
+  function sampleHistoricalRound(position, fallbackRound) {
+    const samples = historicalPositionRoundSamples()[position];
+    if (!samples || samples.length === 0) return fallbackRound;
+    return samples[Math.floor(Math.random() * samples.length)];
+  }
+
+  // Real evidence of how this league's own teams vary on a 3rd (bench) QB:
+  // pooled by real team-season (year+team), NOT just individual picks --
+  // e.g. real data shows Hoofers drafted QBs in rounds 1, 2, 3 (literally
+  // back to back) in BOTH 2024 and 2025, while roughly 60% of real
+  // team-seasons carried only the 2 mandatory starters and never took a
+  // 3rd at all. `rate` is the real fraction of team-seasons that DID take
+  // a 3rd QB; `rounds` is the real round that 3rd QB actually went in each
+  // of those seasons (so sampling from it can reproduce a genuine
+  // round-3 outlier, not just "eventually, whenever"). Used by
+  // sampleWantsExtraQbRound below -- separate from
+  // historicalPositionRoundSamples('QB'), which pools every QB pick
+  // (mostly the 2 mandatory starters) and wouldn't isolate this specific
+  // behavior.
+  let _historicalExtraQbCache = null;
+  function historicalExtraQbProfile() {
+    if (_historicalExtraQbCache) return _historicalExtraQbCache;
+    const byTeamSeason = {};
+    Object.keys(FANTASY_DRAFT_RESULTS).forEach(year => {
+      const picks = FANTASY_DRAFT_RESULTS[year] || [];
+      if (picks.length === 0) return;
+      const board = rescoreBoard(DATA_BY_VIEW[year], false);
+      const byName = new Map(board.map(p => [p.name.toLowerCase(), p]));
+      picks.forEach(e => {
+        if (!e.resolved) return;
+        const p = byName.get(e.player.toLowerCase());
+        if (!p || p.position !== 'QB') return;
+        const key = `${year}|${e.team}`;
+        (byTeamSeason[key] = byTeamSeason[key] || []).push(e.round);
+      });
+    });
+    const seasons = Object.values(byTeamSeason);
+    const extraRounds = seasons.filter(r => r.length >= 3).map(r => [...r].sort((a, b) => a - b)[2]);
+    _historicalExtraQbCache = { rate: seasons.length ? extraRounds.length / seasons.length : 0, rounds: extraRounds };
+    return _historicalExtraQbCache;
+  }
+
+  // First rolls whether this bot team is even the "wants a 3rd QB" type at
+  // all, at this league's real observed rate -- most teams simply aren't,
+  // and should never get nudged toward one. Only for the teams that are,
+  // samples which round from the real seasons that actually did it (so
+  // "right away" outliers like Hoofers' round 3 stay possible, not just
+  // "eventually").
+  function sampleWantsExtraQbRound() {
+    const { rate, rounds } = historicalExtraQbProfile();
+    if (rounds.length === 0 || Math.random() >= rate) return null;
+    return rounds[Math.floor(Math.random() * rounds.length)];
+  }
+
   // This league's own real 2024/2025 draft tendency by position -- e.g. QBs
   // go extremely early in a real 2-QB draft (Josh Allen went #1 overall in
   // 2025, #3 in 2024) -- a signal generic single-QB consensus ADP does not
@@ -3123,14 +3206,124 @@
     return pool[pool.length - 1];
   }
 
-  function pickForBot(availableRanked, teamRoster, rosterSlots) {
+  // Like computeStarterNeeds, but returns how many MORE copies of each
+  // position are still needed, not just which positions have any need at
+  // all -- pickForBot's hard structural floor below needs the real slot
+  // count (this league's real roster needs 2 K, not 1), not just a count
+  // of distinct positions, or it undercounts true urgency.
+  function starterRemainingCounts(rosterPlayers, rosterSlots) {
+    const counts = {};
+    for (const p of rosterPlayers) counts[p.position] = (counts[p.position] || 0) + 1;
+    const remaining = {};
+    Object.keys(rosterSlots).forEach(pos => {
+      if (pos === 'BN') return;
+      const need = rosterSlots[pos] - (counts[pos] || 0);
+      if (need > 0) remaining[pos] = need;
+    });
+    return remaining;
+  }
+
+  function pickForBot(availableRanked, teamRoster, rosterSlots, currentRound, totalRounds, teamLabel) {
     // teamRoster: array of already-drafted player objects (not just position strings) --
     // storing full players (not just their positions) is what lets the UI also flag
     // stacks against your own roster while drafting, not just count position needs.
-    const starterPositions = computeStarterNeeds(teamRoster, rosterSlots);
-    if (starterPositions.length > 0) {
-      const eligible = availableRanked.filter(p => starterPositions.includes(p.position));
+    const remainingCounts = starterRemainingCounts(teamRoster, rosterSlots);
+    const starterPositions = Object.keys(remainingCounts);
+    if (starterPositions.length === 0) return weightedPickFromTop(availableRanked);
+
+    const roundsRemaining = (totalRounds ?? Infinity) - (currentRound ?? 1) + 1;
+    const totalRemainingSlots = Object.values(remainingCounts).reduce((a, b) => a + b, 0);
+
+    // Hard structural floor: once the rounds left can no longer cover every
+    // still-needed slot with any room to spare, there's no more slack to
+    // defer ANY of them, DEF/K included -- every remaining pick must go
+    // toward one. Forces strictly toward whichever needed position(s) have
+    // the MOST copies still outstanding (the least slack) rather than
+    // letting weightedPickFromTop choose freely across the whole needed
+    // set -- verified via testing that the free-choice version let bots
+    // draft a 2nd K every time (this league needs 2) while DEF (needing
+    // only 1) never got forced at all before the draft ended, an illegal,
+    // incomplete roster. This is also exactly how a real "DEF/K pushed all
+    // the way to the last pick" outcome happens when the softer nudge below
+    // never quite wins out on its own.
+    if (roundsRemaining <= totalRemainingSlots) {
+      const maxRemaining = Math.max(...Object.values(remainingCounts));
+      const mostUrgent = starterPositions.filter(pos => remainingCounts[pos] === maxRemaining);
+      const eligible = availableRanked.filter(p => mostUrgent.includes(p.position));
       if (eligible.length > 0) return weightedPickFromTop(eligible);
+    }
+
+    // DEF/K: each bot team got its own randomly sampled "personal" target
+    // round back in startMockDraft, drawn from this league's real
+    // historical spread (round 4 Brandon Aubrey outliers next to real
+    // round-14 DEF/K picks, see historicalPositionRoundSamples above).
+    // Once that sampled round arrives, this pick is DEDICATED to it --
+    // takes priority over every other still-open need this turn, the same
+    // way a real drafter who's decided "I'm grabbing my kicker this round"
+    // just does it rather than continuing to weigh it against the rest of
+    // the board. (A first attempt just added a due DEF/K to the normal
+    // eligible pool alongside open skill needs instead of prioritizing it
+    // outright -- verified via testing that a kicker's raw rank is so far
+    // behind any open skill starter's that it never actually got chosen
+    // even once "eligible," defeating the point. A softer score-nudge
+    // version tried before that had the same problem for the same reason.)
+    // Before its sampled round, a position isn't competing for the pick at
+    // all -- exactly like a real drafter mostly ignoring DEF/K until it's
+    // "time." Different teams' sampled rounds differ, so different
+    // simulated teams address DEF/K at genuinely different points instead
+    // of every team converging on the identical round.
+    const targets = mockDraft && mockDraft.teamTargetRounds && mockDraft.teamTargetRounds[teamLabel];
+    const dueFlexPositions = starterPositions.filter(pos => {
+      if (pos !== 'DEF' && pos !== 'K') return false;
+      const targetRound = targets && targets[pos];
+      return targetRound != null && currentRound >= targetRound;
+    });
+
+    // A 3rd (bench) QB isn't a mandatory starter slot at all, so it can't
+    // go through starterPositions/dueFlexPositions above -- it's its own
+    // separate real behavior (see sampleWantsExtraQbRound/
+    // historicalExtraQbProfile), only for the ~real-rate share of teams
+    // that are even the type to chase one, and only once their own
+    // sampled round arrives, and only for the FIRST bench QB (a 4th QB has
+    // no real historical precedent in this league, so it's never chased
+    // this way -- can still happen incidentally via ordinary late-round
+    // value like any other bench pick).
+    const currentQbCount = teamRoster.filter(p => p.position === 'QB').length;
+    const wantsExtraQb = currentQbCount === (rosterSlots.QB || 0) &&
+      targets && targets.QB != null && currentRound >= targets.QB;
+
+    if (dueFlexPositions.length > 0 || wantsExtraQb) {
+      const eligible = availableRanked.filter(p =>
+        dueFlexPositions.includes(p.position) || (wantsExtraQb && p.position === 'QB')
+      );
+      if (eligible.length > 0) return weightedPickFromTop(eligible);
+    }
+
+    // RB/WR/QB/TE starter needs always hard-filter the pool, same as
+    // before -- real drafters really do fill these promptly.
+    const promptNeeds = starterPositions.filter(pos => pos !== 'DEF' && pos !== 'K');
+    if (promptNeeds.length > 0) {
+      const eligible = availableRanked.filter(p => promptNeeds.includes(p.position));
+      if (eligible.length > 0) return weightedPickFromTop(eligible);
+    }
+
+    // No need due yet -- open to the full pool for ordinary bench value.
+    // Teams that aren't the "wants a 3rd QB" type (see
+    // sampleWantsExtraQbRound) actively skip a bench QB here, not just
+    // decline to chase one -- verified via testing that QB's real
+    // standalone VOR is strong enough to win this free-value competition
+    // almost every time on pure points alone, which would've kept
+    // producing a 3rd QB for ~99% of teams regardless of the real ~40%
+    // historical rate. Real drafters who don't carry a 3rd QB are making
+    // a deliberate roster-construction choice (bench WR/RB depth,
+    // handcuffs, etc. over a "just in case" QB), not just weighing points
+    // slightly differently -- so this is an explicit exclusion, not a
+    // soft deprioritization. Falls back to the unfiltered pool only if
+    // excluding QB would leave nothing left to draft (board nearly
+    // exhausted).
+    if (currentQbCount === (rosterSlots.QB || 0) && (!targets || targets.QB == null)) {
+      const withoutExtraQb = availableRanked.filter(p => p.position !== 'QB');
+      if (withoutExtraQb.length > 0) return weightedPickFromTop(withoutExtraQb);
     }
     return weightedPickFromTop(availableRanked);
   }
@@ -3616,6 +3809,23 @@
     let botIdx = 0;
     for (let i = 0; i < numTeams; i++) teamLabels.push((i + 1) === yourSlot ? 'Me' : botNames[botIdx++]);
 
+    // Each bot team's own personal DEF/K target round, randomly sampled
+    // from the real historical spread (see historicalPositionRoundSamples)
+    // -- 'Me' has none, the human decides for themself. Persists for the
+    // whole draft (including through undo/edit, which never touches this
+    // field) so a team's "personality" stays consistent across replays of
+    // the same mock draft, not re-rolled on every pick.
+    const totalRounds = totalRoundsFor(rosterSlots);
+    const teamTargetRounds = {};
+    teamLabels.forEach(label => {
+      if (label === 'Me') return;
+      teamTargetRounds[label] = {
+        DEF: sampleHistoricalRound('DEF', totalRounds - 1),
+        K: sampleHistoricalRound('K', totalRounds - 1),
+        QB: sampleWantsExtraQbRound(), // null = this team just isn't the 3rd-QB type
+      };
+    });
+
     mockDraft = {
       teamLabels,
       order,
@@ -3623,6 +3833,7 @@
       rosters: Object.fromEntries(teamLabels.map(l => [l, []])),
       picksLog: [],
       draftedNames: new Set(),
+      teamTargetRounds,
     };
     mockPositionFilters = new Set();
     mockPositionFiltersUserModified = false;
@@ -3652,14 +3863,16 @@
   function runBotPicksUntilMe() {
     const numTeams = LEAGUE_META.num_teams;
     const rosterSlots = LEAGUE_META.roster_slots;
+    const totalRounds = totalRoundsFor(rosterSlots);
     while (mockDraft.pickIdx < mockDraft.order.length) {
       const teamLabel = mockDraft.teamLabels[mockDraft.order[mockDraft.pickIdx]];
       if (teamLabel === 'Me') break;
       const available = getMockAvailable();
       if (available.length === 0) break;
+      const currentRound = Math.floor(mockDraft.pickIdx / numTeams) + 1;
       const ranked = computeVOR(available, numTeams, rosterSlots);
       const botRanked = computeBlendedBotRank(ranked, teamLabel);
-      const pick = pickForBot(botRanked, mockDraft.rosters[teamLabel], rosterSlots);
+      const pick = pickForBot(botRanked, mockDraft.rosters[teamLabel], rosterSlots, currentRound, totalRounds, teamLabel);
       recordMockPick(pick, teamLabel);
     }
   }
