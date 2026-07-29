@@ -1248,6 +1248,28 @@
     font-weight: 700;
   }
 
+  .tier-band-row td { padding: 0; border: none; }
+  .tier-band {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .pos-rank-badge {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
   .vor-bar-wrap {
     display: flex;
     align-items: center;
@@ -1349,9 +1371,9 @@
                 <th data-key="overall_rank">Rank</th>
                 <th data-key="name">Player</th>
                 <th data-key="position">Pos</th>
-                <th class="num" data-key="points">Pts</th>
-                <th class="num" data-key="vor">VOR</th>
-                <th class="num" data-key="tier">Tier</th>
+                <th class="num" data-key="points" title="Projected fantasy points for the rest of the season (or the selected week), computed from this league's own scoring rules -- not a generic site-wide projection.">Pts</th>
+                <th class="num" data-key="vor" title="Value Over Replacement -- points above what a freely available replacement-level player at the same position (the last starter-worthy player left, given this league's roster slots) would score. This is the model's actual ranking signal, not raw points -- it accounts for how scarce a position's production is in THIS league.">VOR</th>
+                <th class="num" data-key="tier" title="Players grouped by real statistical gaps in VOR within their own position -- a big drop-off to the next player starts a new tier. Same tier roughly means 'similar value, doesn't much matter who you take first.'">Tier</th>
                 <th class="num" data-key="td_dependency_pct" title="Share of this player's points that come from touchdowns rather than yardage/volume -- a proxy for week-to-week boom/bust variance, and for why a QB and his own pass-catcher are unusually correlated (a passing TD and a receiving TD are the same play).">TD%</th>
                 <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
                 <th class="num" data-key="proj_rush_td" title="Projected rushing touchdowns (defense/special-teams return TDs bucketed in here too, closest fit for a non-scrimmage running play).">Rush TD</th>
@@ -2667,12 +2689,29 @@
     empty.hidden = rows.length !== 0;
     const maxVor = getMaxVor();
     const ourPositionRanks = rankingsPositionFilters.size === 1 ? computeOurPositionRanks(DATA) : null;
+    // Tier divider bands only make sense when rows are actually in tier order --
+    // tiers are assigned PER POSITION (see assignTiers), so they reset to 1 for
+    // every position and would look like nonsense noise if positions interleave
+    // (the default "All" view) or the table isn't sorted by rank/VOR. Only show
+    // them filtered to exactly one position and sorted by the column that's
+    // guaranteed tier-monotonic; every other case keeps the plain per-row chip.
+    const showTierBands = ourPositionRanks !== null && (sortKey === 'overall_rank' || sortKey === 'vor');
+    let prevTier = null;
 
     for (const d of rows) {
+      if (showTierBands && prevTier !== null && d.tier !== prevTier) {
+        const bandRow = document.createElement('tr');
+        bandRow.className = 'tier-band-row';
+        bandRow.innerHTML = `<td colspan="14"><div class="tier-band" style="background:${tierColor(d.tier)}; color:${tierTextColor(d.tier)}">Tier ${d.tier}</div></td>`;
+        tbody.appendChild(bandRow);
+      }
+      prevTier = d.tier;
+
       const tr = document.createElement('tr');
       const barPct = Math.max(2, Math.round((d.vor / maxVor) * 100));
+      const posRank = ourPositionRanks ? ourPositionRanks.get(d.name) : null;
       tr.innerHTML = `
-        <td class="rank">${d.overall_rank}</td>
+        <td class="rank">${d.overall_rank}${posRank != null ? `<span class="pos-rank-badge">${d.position}${posRank}</span>` : ''}</td>
         <td>${playerImageHtml(d.name, d.team)}<span class="player-name player-name-link" data-player-name="${d.name}">${d.name}</span>${teamBadgeHtml(d.team)}${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}${d.isBye ? '<span class="bye-badge" title="On a bye this week">BYE</span>' : ''}</td>
         <td><span class="pos-chip">${d.position}</span></td>
         <td class="num">${d.points.toFixed(1)}</td>
@@ -2689,7 +2728,7 @@
         <td class="num">${(d.proj_rec_td ?? 0).toFixed(1)}</td>
         <td class="num">${adpHtml(d.adp)}</td>
         <td class="num">${valueVsAdpHtml(d.value_vs_adp)}</td>
-        <td class="num">${consensusCellHtml(d, ourPositionRanks ? ourPositionRanks.get(d.name) : null)}</td>
+        <td class="num">${consensusCellHtml(d, posRank)}</td>
         <td class="num trend-cell">${sparklineSvg(d.history, d.name)}</td>
       `;
       tbody.appendChild(tr);
@@ -4915,8 +4954,8 @@
   // League Details -- read-only render of the full league_config.json,
   // bundled into LEAGUE_META by scripts/build_rankings_artifact_data.py.
   // ===========================================================================
-  function kvCell(label, value) {
-    return `<div class="kv-cell"><span class="kv-label">${label}</span><span class="kv-value">${value}</span></div>`;
+  function kvCell(label, value, title) {
+    return `<div class="kv-cell"${title ? ` title="${title}"` : ''}><span class="kv-label">${label}</span><span class="kv-value">${value}</span></div>`;
   }
 
   function rangeLabel(min, max, unit) {
@@ -5117,7 +5156,6 @@
       kvCell('Rec Yards/Point', scoring.receiving.yards_per_point),
       kvCell('Rec TD', scoring.receiving.touchdown),
       kvCell('Per Reception (PPR)', scoring.receiving.reception),
-      kvCell('Return TD', scoring.misc.return_touchdown),
       kvCell('Off. Fumble Return TD', scoring.misc.offensive_fumble_return_touchdown),
       kvCell('2-Point Conversion', scoring.misc.two_point_conversion),
     ].join('');
@@ -5132,7 +5170,7 @@
     document.getElementById('defenseScoringGrid').innerHTML = [
       kvCell('TD', scoring.defense.touchdown),
       kvCell('Safety', scoring.defense.safety),
-      kvCell('Return TD', scoring.defense.return_touchdown),
+      kvCell('Return TD', scoring.defense.return_touchdown, 'A punt/kick return TD is scored to the DEFENSE unit only, not the individual returner -- worth noting this rarely factors into value anyway, since starting WRs are almost never a team\'s kick/punt returner in the modern NFL.'),
       kvCell('XP Returned', scoring.defense.extra_point_returned),
     ].join('');
     document.getElementById('paBucketsBody').innerHTML = scoring.defense.points_allowed_buckets.map(b =>
