@@ -890,6 +890,25 @@
   .schedule-game .schedule-at { color: var(--ink-muted); font-size: 12px; }
   .schedule-special-badge { font-size: 13px; line-height: 1; cursor: help; }
   .schedule-game .schedule-time { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink-muted); white-space: nowrap; }
+  .bye-week-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--line);
+  }
+  .bye-week-row.schedule-byes-this-week { background: color-mix(in srgb, var(--danger) 6%, var(--surface)); }
+  .bye-week-label {
+    flex-shrink: 0;
+    width: 44px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+  .bye-week-teams { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bye-week-teams img { width: 20px; height: 20px; object-fit: contain; }
+  .bye-week-team-code { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--ink-muted); }
   .hist-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
   .hist-controls select, .week-select {
     font-family: 'Public Sans', sans-serif;
@@ -1580,6 +1599,36 @@
     return playing.size > 0 && !playing.has(team);
   }
 
+  // The full set of real teams, derived from the schedule itself (union
+  // across every week) rather than TEAM_LOGOS -- guarantees this matches
+  // exactly the teams the schedule data actually knows about.
+  function allScheduleTeams() {
+    const teams = new Set();
+    for (const week in SCHEDULE_BY_WEEK) {
+      for (const g of SCHEDULE_BY_WEEK[week]) { teams.add(g.away_team); teams.add(g.home_team); }
+    }
+    return teams;
+  }
+
+  function byeTeamsForWeek(week) {
+    const all = allScheduleTeams();
+    const playing = teamsPlayingWeek(week);
+    if (playing.size === 0) return [];
+    return [...all].filter(t => !playing.has(t)).sort();
+  }
+
+  // {week: [team, team, ...]} for every week that has at least one bye --
+  // weeks 1-4 and the season's final weeks typically have none.
+  function computeAllByeWeeks() {
+    const weeks = Object.keys(SCHEDULE_BY_WEEK).map(Number).sort((a, b) => a - b);
+    const result = [];
+    for (const week of weeks) {
+      const teams = byeTeamsForWeek(week);
+      if (teams.length > 0) result.push({ week, teams });
+    }
+    return result;
+  }
+
   // Scales points (and the TD-count columns, proportionally) down to a single
   // week or the remaining weeks of the season. VOR/tier get recomputed fresh
   // against whichever scale is active via the shared rescoreBoard(), so
@@ -1932,26 +1981,57 @@
     return null;
   }
 
+  function byeLogosHtml(teams) {
+    return teams.map(t => TEAM_LOGOS[t]
+      ? `<img src="${TEAM_LOGOS[t]}" alt="${t}" title="${t}" />`
+      : `<span class="bye-week-team-code">${t}</span>`
+    ).join('');
+  }
+
   function renderScheduleSidebar() {
     const sidebar = document.getElementById('scheduleSidebar');
-    const selectedWeek = activeView === '2026' && projectionMode.startsWith('week')
-      ? parseInt(projectionMode.slice(4), 10)
-      : null;
-    if (selectedWeek === null) {
+    const titleEl = document.getElementById('scheduleSidebarTitle');
+    const list = document.getElementById('scheduleSidebarList');
+
+    if (activeView !== '2026') {
       sidebar.hidden = true;
       return;
     }
+    sidebar.hidden = false;
+
+    const selectedWeek = projectionMode.startsWith('week') ? parseInt(projectionMode.slice(4), 10) : null;
+
+    // Rest of Season has no single week's matchups to show -- use the same
+    // slot for a full-season bye-weeks reference instead of hiding it.
+    if (selectedWeek === null) {
+      const allByes = computeAllByeWeeks();
+      titleEl.textContent = '2026 Bye Weeks';
+      list.innerHTML = allByes.length
+        ? allByes.map(({ week, teams }) => `
+          <div class="bye-week-row">
+            <span class="bye-week-label">Wk ${week}</span>
+            <div class="bye-week-teams">${byeLogosHtml(teams)}</div>
+          </div>
+        `).join('')
+        : '<div class="schedule-game">No bye-week data yet.</div>';
+      return;
+    }
+
     const games = (SCHEDULE_BY_WEEK[String(selectedWeek)] || [])
       .slice()
       .sort((a, b) => (a.gameday + a.gametime).localeCompare(b.gameday + b.gametime));
-    sidebar.hidden = false;
-    document.getElementById('scheduleSidebarTitle').textContent = `Week ${selectedWeek} Schedule (Central Time)`;
-    const list = document.getElementById('scheduleSidebarList');
+    titleEl.textContent = `Week ${selectedWeek} Schedule (Central Time)`;
+
+    const byeTeams = byeTeamsForWeek(selectedWeek);
+    const byeRowHtml = byeTeams.length
+      ? `<div class="bye-week-row schedule-byes-this-week"><span class="bye-week-label">On Bye</span><div class="bye-week-teams">${byeLogosHtml(byeTeams)}</div></div>`
+      : '';
+
     if (games.length === 0) {
-      list.innerHTML = '<div class="schedule-game">No schedule data for this week yet.</div>';
+      list.innerHTML = byeRowHtml + '<div class="schedule-game">No schedule data for this week yet.</div>';
       return;
     }
-    list.innerHTML = games.map(g => {
+    list.innerHTML = byeRowHtml + games.map(g => {
       const special = specialGameBadge(g);
       const badgeHtml = special ? `<span class="schedule-special-badge" title="${special.label}">${special.emoji}</span>` : '';
       return `
