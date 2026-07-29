@@ -1558,6 +1558,17 @@
   // Review's full-league grade path (every team, true overall pick number)
   // instead of the single-team manual-entry fallback used for other years.
   const FANTASY_DRAFT_RESULTS = DATA_BY_VIEW.fantasy_draft_results || {};
+  // This real league's actual 10 team names (2025 season) -- Cardinals is
+  // the user's own team, listed first so it lines up with the 'Me' slot
+  // convention used elsewhere (see PRESET_ROSTERS_2025 further down, which
+  // must stay in sync with this list). Used by Mock Draft to label bot
+  // opponents with real Gamblers league teams instead of generic "Team N"
+  // placeholders, and to key each bot's historical position-draft tendency
+  // (see computeTeamPositionAffinity below).
+  const GAMBLERS_TEAM_NAMES = [
+    'Cardinals', 'Hoofers', 'ChronicMasterdeflatr', 'Elite', 'Greendawgs',
+    'Just Bout Dat Action', "Let's Ride", 'Redskins', 'Sportos', 'Wildcard',
+  ];
   const INJURY_GAMES_MISSED = DATA_BY_VIEW.injury_games_missed || {};
   // Untouched snapshot of the baked-in config, taken before any user edits --
   // "Reset to Defaults" in League Details re-applies this.
@@ -2951,6 +2962,60 @@
     return lo.fraction + t * (hi.fraction - lo.fraction);
   }
 
+  // Per-team positional "personality" -- how much more/less often this
+  // SPECIFIC real Gamblers team drafted each position, historically, versus
+  // the league-wide average at the same real picks (2026-07-29, added so
+  // bots aren't just 9 copies of the same generic model once they're
+  // labeled with real team names -- see GAMBLERS_TEAM_NAMES). Pooled across
+  // every real {year}_fantasy_draft_results.csv on disk (2024 + 2025) that
+  // team appears in. `affinity[team][pos] > 1` means that team leans INTO
+  // that position more than the league average; `< 1` means they lean away.
+  // Small per-team samples (a team that's only drafted once or twice) are
+  // damped toward 1.0 (no bias) by `sampleWeight` rather than trusted at
+  // full strength -- full confidence only kicks in around 20 real picks
+  // (roughly 1.5 real drafts' worth), and the raw ratio is clamped to
+  // [0.6, 1.6] so one fluky real pick can't send a rank wildly off.
+  let _teamPositionAffinityCache = null;
+  function computeTeamPositionAffinity() {
+    if (_teamPositionAffinityCache) return _teamPositionAffinityCache;
+    const countsByTeam = {};
+    const leagueCounts = {};
+    let leagueTotal = 0;
+    Object.keys(FANTASY_DRAFT_RESULTS).forEach(year => {
+      const picks = FANTASY_DRAFT_RESULTS[year] || [];
+      if (picks.length === 0) return;
+      const board = rescoreBoard(DATA_BY_VIEW[year], false);
+      const byName = new Map(board.map(p => [p.name.toLowerCase(), p]));
+      picks.forEach(e => {
+        if (!e.resolved) return;
+        const p = byName.get(e.player.toLowerCase());
+        if (!p) return;
+        countsByTeam[e.team] = countsByTeam[e.team] || {};
+        countsByTeam[e.team][p.position] = (countsByTeam[e.team][p.position] || 0) + 1;
+        leagueCounts[p.position] = (leagueCounts[p.position] || 0) + 1;
+        leagueTotal += 1;
+      });
+    });
+    const leagueRate = {};
+    Object.keys(leagueCounts).forEach(pos => { leagueRate[pos] = leagueCounts[pos] / leagueTotal; });
+
+    const affinity = {};
+    Object.keys(countsByTeam).forEach(team => {
+      const teamCounts = countsByTeam[team];
+      const teamTotal = Object.values(teamCounts).reduce((a, b) => a + b, 0);
+      const sampleWeight = Math.min(1, teamTotal / 20);
+      affinity[team] = {};
+      Object.keys(leagueRate).forEach(pos => {
+        const teamRate = (teamCounts[pos] || 0) / teamTotal;
+        const raw = leagueRate[pos] > 0 ? teamRate / leagueRate[pos] : 1;
+        const clamped = Math.max(0.6, Math.min(1.6, raw));
+        affinity[team][pos] = 1 + (clamped - 1) * sampleWeight;
+      });
+    });
+    _teamPositionAffinityCache = affinity;
+    return affinity;
+  }
+
   // Bots draft off a 50/50 blend of our own VOR rank and a real-world
   // "market" rank (not pure VOR) -- the human's own recommendations
   // (topRecommendation/renderMockDraft's pool) stay pure VOR, that's the
@@ -2983,7 +3048,15 @@
   // itself is untouched everywhere else on the site (Rankings' ADP column,
   // Value vs ADP, Draft Value Edges) -- this only changes what bots draft
   // off of.
-  function computeBlendedBotRank(players) {
+  //
+  // `teamLabel`, when it's a real Gamblers team name, layers that specific
+  // team's own historical position affinity on top of the shared blend
+  // above (dividing botBlendScore by the multiplier -- affinity > 1 makes a
+  // favored position's players rank BETTER/earlier for that team specifically,
+  // < 1 makes them rank worse) -- every bot still runs the same underlying
+  // model, this only nudges which of two similarly-ranked players a given
+  // team reaches for first, same spirit as a real GM's tendencies.
+  function computeBlendedBotRank(players, teamLabel) {
     const byVor = [...players].sort((a, b) => b.vor - a.vor);
     const vorRank = new Map(byVor.map((p, i) => [p.name, i + 1]));
 
@@ -3007,10 +3080,14 @@
     const byHistorical = [...players].sort((a, b) => historicalPickEstimate.get(a.name) - historicalPickEstimate.get(b.name));
     const historicalRank = new Map(byHistorical.map((p, i) => [p.name, i + 1]));
 
+    const teamAffinity = (teamLabel && computeTeamPositionAffinity()[teamLabel]) || null;
+
     return players
       .map(p => {
         const marketRank = Math.min(adpRank.get(p.name), historicalRank.get(p.name));
-        return { ...p, botBlendScore: 0.5 * vorRank.get(p.name) + 0.5 * marketRank };
+        const base = 0.5 * vorRank.get(p.name) + 0.5 * marketRank;
+        const mult = teamAffinity ? (teamAffinity[p.position] || 1) : 1;
+        return { ...p, botBlendScore: base / mult };
       })
       .sort((a, b) => a.botBlendScore - b.botBlendScore);
   }
@@ -3504,13 +3581,40 @@
     });
   }
 
+  function shuffled(arr) {
+    const out = [...arr];
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  }
+
+  // Bot opponents are labeled with real Gamblers league teams (excluding
+  // Cardinals, the user's own team -- always shown as 'Me') instead of
+  // generic "Team N" placeholders, randomly assigned to draft slots each
+  // time a mock draft starts (2026's real draft order isn't set yet, so
+  // there's no "correct" slot for any team). Falls back to "Team N" for any
+  // slot beyond the real roster of 9 opponents, in case num_teams is ever
+  // edited above 10 in League Details.
+  function mockBotTeamNames(numTeams) {
+    const realOpponents = shuffled(GAMBLERS_TEAM_NAMES.filter(n => n !== 'Cardinals'));
+    const names = [];
+    for (let i = 0; i < numTeams - 1; i++) {
+      names.push(i < realOpponents.length ? realOpponents[i] : `Team ${i + 2}`);
+    }
+    return names;
+  }
+
   function startMockDraft() {
     const yourSlot = parseInt(document.getElementById('mockSlotInput').value, 10) || 1;
     const numTeams = LEAGUE_META.num_teams;
     const rosterSlots = LEAGUE_META.roster_slots;
     const order = buildSnakeOrder(numTeams, totalRoundsFor(rosterSlots));
+    const botNames = mockBotTeamNames(numTeams);
     const teamLabels = [];
-    for (let i = 0; i < numTeams; i++) teamLabels.push((i + 1) === yourSlot ? 'Me' : `Team ${i + 1}`);
+    let botIdx = 0;
+    for (let i = 0; i < numTeams; i++) teamLabels.push((i + 1) === yourSlot ? 'Me' : botNames[botIdx++]);
 
     mockDraft = {
       teamLabels,
@@ -3554,7 +3658,7 @@
       const available = getMockAvailable();
       if (available.length === 0) break;
       const ranked = computeVOR(available, numTeams, rosterSlots);
-      const botRanked = computeBlendedBotRank(ranked);
+      const botRanked = computeBlendedBotRank(ranked, teamLabel);
       const pick = pickForBot(botRanked, mockDraft.rosters[teamLabel], rosterSlots);
       recordMockPick(pick, teamLabel);
     }
