@@ -2475,9 +2475,18 @@
       const trigger = e.target.closest('[data-trend-name], [data-player-name]');
       if (trigger) openPlayerModal(trigger.dataset.trendName || trigger.dataset.playerName, DATA);
     });
-    // Mock Draft: always the 2026 pool, rescored fresh so it reflects any
-    // live league-setting edits, same as the pick panel itself.
-    document.getElementById('mockPickPanel').addEventListener('click', (e) => {
+    // Mock Draft: one delegated listener on the whole board wrapper covers
+    // every player name inside it -- the pick panel, My Roster, the draft
+    // board grid, the post-draft grade report, and the Draft Log -- always
+    // against the 2026 pool, rescored fresh so it reflects any live
+    // league-setting edits.
+    document.getElementById('mockDraftBoard').addEventListener('click', (e) => {
+      const trigger = e.target.closest('[data-player-name]');
+      if (trigger) openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW['2026']));
+    });
+    // Team Roster modal (opened from a draft-board column header) is a
+    // separate overlay outside #mockDraftBoard, so it needs its own.
+    document.getElementById('teamRosterModalOverlay').addEventListener('click', (e) => {
       const trigger = e.target.closest('[data-player-name]');
       if (trigger) openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW['2026']));
     });
@@ -3496,7 +3505,7 @@
       <tr>
         <td>${r.pick}</td>
         <td>${r.round}</td>
-        <td><span class="player-name">${r.name}</span></td>
+        <td><span class="player-name player-name-link" data-player-name="${r.name}">${r.name}</span></td>
         <td class="num">${r.vor.toFixed(1)}</td>
         <td><span class="verdict-tag verdict-${r.verdict.tag}">${r.verdict.label}</span></td>
         <td style="font-size:13px; color:var(--ink-muted);">${r.reason}</td>
@@ -3567,7 +3576,7 @@
 
     const body = document.getElementById('myRosterBody');
     body.innerHTML = assignments.length
-      ? assignments.map(a => `<tr><td>${playerImageHtml(a.name, a.team)}${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
+      ? assignments.map(a => `<tr><td>${playerImageHtml(a.name, a.team)}<span class="player-name player-name-link" data-player-name="${a.name}">${a.name}</span>${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
       : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
   }
 
@@ -3584,7 +3593,7 @@
       return `<div class="roster-slot-cell${fullClass}"><span class="rs-pos">${pos}</span><span class="rs-count">${filled}/${total}</span></div>`;
     }).join('');
     const rowsHtml = assignments.length
-      ? assignments.map(a => `<tr><td>${playerImageHtml(a.name, a.team)}${a.name}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
+      ? assignments.map(a => `<tr><td>${playerImageHtml(a.name, a.team)}<span class="player-name player-name-link" data-player-name="${a.name}">${a.name}</span>${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
       : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
     document.getElementById('teamRosterModalContent').innerHTML = `
       <h2 class="subhead">${teamLabel}${teamLabel === 'Me' ? ' (You)' : ''}</h2>
@@ -4001,7 +4010,7 @@
           html += `<div class="draft-board-cell filled pos-${entry.position}${isJustPicked ? ' just-picked' : ''}" title="${entry.name} (${entry.position}) -- Rd ${entry.round}, ${entry.team}">
             <button class="draft-board-edit-btn" data-edit-pick="${entry.pick}" title="Edit this pick" aria-label="Edit ${entry.team}'s Round ${entry.round} pick">✎</button>
             ${playerImageHtml(entry.name, entry.nflTeam, 'draft-board-avatar')}
-            <span class="draft-board-name">${entry.name}</span>
+            <span class="draft-board-name player-name-link" data-player-name="${entry.name}">${entry.name}</span>
           </div>`;
         } else {
           html += `<div class="draft-board-cell empty${isOnClock ? ' on-clock' : ''}">${isOnClock ? '<span class="draft-board-onclock-dot">●</span>' : ''}</div>`;
@@ -4317,7 +4326,7 @@
 
     const logBody = document.getElementById('mockLogBody');
     logBody.innerHTML = mockDraft.picksLog.map(r =>
-      `<tr><td>${r.pick}</td><td>${r.round}</td><td>${r.team}</td><td>${playerImageHtml(r.name, r.nflTeam)}${r.name}</td><td>${r.position}</td><td class="num">${r.vor.toFixed(1)}</td></tr>`
+      `<tr><td>${r.pick}</td><td>${r.round}</td><td>${r.team}</td><td>${playerImageHtml(r.name, r.nflTeam)}<span class="player-name player-name-link" data-player-name="${r.name}">${r.name}</span></td><td>${r.position}</td><td class="num">${r.vor.toFixed(1)}</td></tr>`
     ).join('');
 
     // Built from mockDraft.teamLabels/rosters directly (not picksLog), so
@@ -4521,7 +4530,7 @@
     const pickRows = matched.map(r => `
       <tr>
         <td>${r.round}</td>
-        <td><span class="player-name">${r.player}</span>${teamBadgeHtml(r.team)}${injuryGamesMissedBadgeHtml(r.player, year)}</td>
+        <td><span class="player-name player-name-link" data-player-name="${r.player}">${r.player}</span>${teamBadgeHtml(r.team)}${injuryGamesMissedBadgeHtml(r.player, year)}</td>
         <td><span class="pos-chip">${r.position}</span></td>
         <td class="num">#${r.actualRank}</td>
         <td class="num">${r.vor.toFixed(1)}</td>
@@ -4531,7 +4540,7 @@
 
     const missRows = misses.map(p => `
       <tr>
-        <td><span class="player-name">${p.name}</span>${teamBadgeHtml(p.team)}</td>
+        <td><span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>${teamBadgeHtml(p.team)}</td>
         <td><span class="pos-chip">${p.position}</span></td>
         <td class="num">#${p.overall_rank}</td>
         <td class="num">${p.vor.toFixed(1)}</td>
@@ -4684,7 +4693,7 @@
       <tr>
         <td class="num">#${r.overallPick}</td>
         <td>${r.round}.${r.pickInRound}</td>
-        <td><span class="player-name">${r.player}</span>${teamBadgeHtml(r.team)}${injuryGamesMissedBadgeHtml(r.player, year)}</td>
+        <td><span class="player-name player-name-link" data-player-name="${r.player}">${r.player}</span>${teamBadgeHtml(r.team)}${injuryGamesMissedBadgeHtml(r.player, year)}</td>
         <td><span class="pos-chip">${r.position}</span></td>
         <td class="num">#${r.actualRank}</td>
         <td class="num">${r.vor.toFixed(1)}</td>
@@ -4703,7 +4712,7 @@
 
     const missRows = misses.map(p => `
       <tr>
-        <td><span class="player-name">${p.name}</span>${teamBadgeHtml(p.team)}</td>
+        <td><span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>${teamBadgeHtml(p.team)}</td>
         <td><span class="pos-chip">${p.position}</span></td>
         <td class="num">#${p.overall_rank}</td>
         <td class="num">${p.vor.toFixed(1)}</td>
@@ -4751,6 +4760,18 @@
 
     document.getElementById('histTeamSelect').addEventListener('change', () => {
       renderFullDraftReview(document.getElementById('histYearSelect').value, document.getElementById('histTeamSelect').value);
+    });
+
+    // Player names throughout Historical Review's results (both the
+    // manual-entry and full-league-draft views) open the same player
+    // detail modal as everywhere else -- against THAT year's own board,
+    // since a player's stats/VOR here reflect the season being graded,
+    // not the live 2026 board.
+    document.getElementById('histResults').addEventListener('click', (e) => {
+      const trigger = e.target.closest('[data-player-name]');
+      if (!trigger) return;
+      const year = document.getElementById('histYearSelect').value;
+      openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW[year], false));
     });
 
     const entryEl = document.getElementById('histPicksEntry');
