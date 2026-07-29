@@ -1345,7 +1345,7 @@
 
   <section id="section-mockdraft" class="app-section" hidden>
     <div id="mockDraftSetup">
-      <p class="section-intro">Bot opponents draft by real market consensus (ADP, see League Details for the source) + roster need in snake order -- a more realistic stand-in for what your actual 9 opponents will do, since they aren't using this league's custom VOR model. You draft using our own VOR/ADP-value recommendations, same as always. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
+      <p class="section-intro">Bot opponents draft by this league's own VOR ranking + roster need in snake order, with some pick-to-pick variance so drafts don't play out identically every time. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
       <label class="field-label" for="mockSlotInput">Your draft slot (1–<span id="mockNumTeams"></span>)</label>
       <div class="mock-setup-row">
         <input type="number" id="mockSlotInput" min="1" value="1" />
@@ -2666,21 +2666,6 @@
     return Object.values(rosterSlots).reduce((a, b) => a + b, 0);
   }
 
-  // Real-world opponents don't know (or use) our custom VOR model -- they
-  // draft off real market consensus, so bot picks are ranked by real ADP
-  // ascending (lower ADP = drafted sooner) instead of our own VOR, for a
-  // more realistic practice-draft flow. Falls back to our own VOR, sorted
-  // descending, for the part of the pool ADP doesn't cover -- mostly deep
-  // bench and rookie-model players (see scripts/fetch_adp.py's real-draft-
-  // sample coverage note) -- so the bot pool is never left unranked. Only
-  // reorders the array; each player's already-fresh .vor (from computeVOR,
-  // called by the caller first) and .adp are untouched.
-  function rankPlayersForBotDraft(players) {
-    const withAdp = players.filter(p => p.adp != null).sort((a, b) => a.adp - b.adp);
-    const withoutAdp = players.filter(p => p.adp == null).sort((a, b) => b.vor - a.vor);
-    return [...withAdp, ...withoutAdp];
-  }
-
   // Positions where this roster still has an open STARTING slot (excludes
   // BN, which can hold any position) -- shared by pickForBot (bots) and the
   // human-facing recommendation ordering/auto-navigation in renderMockDraft.
@@ -2693,14 +2678,16 @@
   }
 
   // Weighted-random pick among the top `topN` of an already-ranked list --
-  // rank 1 is still the most likely outcome, but not guaranteed, so real
-  // opponents' picks (and therefore Sim Draft, which uses this same
-  // function) actually vary run to run instead of being fully deterministic.
-  // Weights decay linearly by rank within the slice (topN, topN-1, ..., 1).
+  // the #1-ranked player is still the clear favorite (60% here) so a real
+  // standout (e.g. the top-ranked QB after the scarcity boost) goes at that
+  // slot most of the time, not exactly always -- real opponents' picks (and
+  // therefore Sim Draft, which uses this same function) still vary run to
+  // run instead of being fully deterministic, just not wildly so.
+  const WEIGHTED_PICK_WEIGHTS = [0.60, 0.25, 0.15];
   function weightedPickFromTop(rankedList, topN = 3) {
     const pool = rankedList.slice(0, Math.min(topN, rankedList.length));
     if (pool.length <= 1) return pool[0];
-    const weights = pool.map((_, i) => pool.length - i);
+    const weights = WEIGHTED_PICK_WEIGHTS.slice(0, pool.length);
     const total = weights.reduce((a, b) => a + b, 0);
     let r = Math.random() * total;
     for (let i = 0; i < pool.length; i++) {
@@ -3184,7 +3171,15 @@
 
   // Advances through bot turns only, stopping the instant it's "Me"'s turn
   // or the draft ends -- no rendering, so Sim Draft can call this in its own
-  // loop without a wasted re-render after every single pick.
+  // loop without a wasted re-render after every single pick. Bots draft off
+  // our OWN VOR ranking (computeVOR's native sort, same scarcity-boosted
+  // ranking the human sees), not real-world market ADP -- confirmed by the
+  // user (2026-07-28) after noticing bots weren't taking any QB in round 1
+  // despite the top 3 VOR-ranked players all being QBs post-scarcity-boost;
+  // real external ADP doesn't carry that boost (it's real market data, not
+  // something this model computes), so ADP-driven bots were drafting QBs
+  // far too late relative to what this league's own model says they're
+  // worth. weightedPickFromTop still adds real pick-to-pick variance on top.
   function runBotPicksUntilMe() {
     const numTeams = LEAGUE_META.num_teams;
     const rosterSlots = LEAGUE_META.roster_slots;
@@ -3194,8 +3189,7 @@
       const available = getMockAvailable();
       if (available.length === 0) break;
       const ranked = computeVOR(available, numTeams, rosterSlots);
-      const botRanked = rankPlayersForBotDraft(ranked);
-      const pick = pickForBot(botRanked, mockDraft.rosters[teamLabel], rosterSlots);
+      const pick = pickForBot(ranked, mockDraft.rosters[teamLabel], rosterSlots);
       recordMockPick(pick, teamLabel);
     }
   }
@@ -3249,11 +3243,8 @@
 
   // Auto-completes every remaining pick -- the human's own turns via the
   // top recommendation (same logic Sim Pick uses), bots via their existing
-  // normal logic -- rendering once at the end, not after every pick.
-  // NOTE: bot picking (pickForBot/rankPlayersForBotDraft) is fully
-  // deterministic today, so re-running this from a fresh draft currently
-  // produces identical results every time -- flagged, not silently changed,
-  // since adding intentional bot-pick variance is a separate, undecided ask.
+  // normal logic (VOR-ranked, weightedPickFromTop for variance) -- rendering
+  // once at the end, not after every pick.
   function simDraft() {
     if (!mockDraft) return;
     while (mockDraft.pickIdx < mockDraft.order.length) {
