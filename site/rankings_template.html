@@ -4924,14 +4924,31 @@
 
   // Grades every real waiver/trade this team made, same spirit as the draft
   // grade (verdict tag + a plain-English reason) but comparing the added
-  // player's full-season VOR against the dropped player's -- deliberately
-  // simple (a season-total swing, not a precise "value from that exact
-  // date forward", which would need weekly stat granularity this project
-  // doesn't have yet). Commissioner moves ARE shown (they're real events a
-  // team should be able to see on their timeline) but never get a verdict,
-  // matching the "not a real owner decision" framing used elsewhere.
+  // player's VOR against the dropped player's -- WEIGHTED by how much
+  // season was actually left when the move was made (see
+  // weeksRemainingFraction below), not the raw season-total swing. Still a
+  // real simplification (weeks are assumed roughly even week-to-week,
+  // since this project has no weekly stat breakdown to know a player's
+  // ACTUAL post-move production specifically -- see the per-game-stats
+  // roadmap item), but a meaningfully better proxy than ignoring timing
+  // entirely: a huge swing found in Week 2 should count for much more than
+  // the identical swing found in Week 17, since Week 2's version actually
+  // had a season left to matter. Commissioner moves ARE shown (real events
+  // a team should be able to see on their timeline) but never get a
+  // verdict, matching the "not a real owner decision" framing used
+  // elsewhere.
+  const FANTASY_SEASON_WEEKS = 18;
   const TXN_GREAT_VOR = 15;
   const TXN_BAD_VOR = -5;
+  // How much of a player's full-season VOR to credit toward a move made in
+  // a given week -- 1.0 for a preseason move (the whole season is still
+  // ahead), tapering toward (but never quite reaching) 0 for a move made
+  // in the season's final week, since even the last week still counts for
+  // something.
+  function weeksRemainingFraction(week) {
+    const remaining = Math.max(1, FANTASY_SEASON_WEEKS - (week || 0));
+    return remaining / FANTASY_SEASON_WEEKS;
+  }
   function computeTransactionGrades(year, team) {
     const pool = rescoreBoard(DATA_BY_VIEW[year], false);
     const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
@@ -4946,36 +4963,41 @@
         // counterparty's own leg at the same timestamp, same lookup
         // computeTeamRosterAtWeek uses for roster reconstruction.
         let dropped = t.player_dropped_resolved ? byName.get(t.player_dropped_resolved.toLowerCase()) : null;
-        let tradedAwayName = null;
         if (t.type === 'trade' && !dropped) {
           const counterpartyLeg = yearTxns.find(
             o => o.type === 'trade' && o.team === t.counterparty_team && o.timestamp === t.timestamp
           );
           if (counterpartyLeg && counterpartyLeg.player_added_resolved) {
-            tradedAwayName = counterpartyLeg.player_added_resolved;
-            dropped = byName.get(tradedAwayName.toLowerCase());
+            dropped = byName.get(counterpartyLeg.player_added_resolved.toLowerCase());
           }
         }
         const isCommissioner = t.type === 'commissioner_add' || t.type === 'commissioner_drop';
         const isTrade = t.type === 'trade';
+        const fraction = weeksRemainingFraction(t.week);
+        const weeksLeft = FANTASY_SEASON_WEEKS - t.week;
+        const weekPhrase = t.week === 0 ? 'made preseason' : `made in Week ${t.week}, ${weeksLeft} week${weeksLeft === 1 ? '' : 's'} left`;
         let verdict = null;
         let reason = '';
         if (isCommissioner) {
           reason = 'A commissioner action, not a real roster decision by this team.';
         } else if (added && dropped) {
-          const netVor = added.vor - dropped.vor;
+          const addedWeighted = added.vor * fraction;
+          const droppedWeighted = dropped.vor * fraction;
+          const netVor = addedWeighted - droppedWeighted;
           if (netVor >= TXN_GREAT_VOR) verdict = { tag: 'great_value', label: 'Great Pickup' };
           else if (netVor >= TXN_BAD_VOR) verdict = { tag: 'solid', label: 'Fair Swap' };
           else verdict = { tag: 'reach', label: 'Bad Swap' };
-          const verb = isTrade ? 'traded for' : 'added';
-          const gaveUp = isTrade ? `traded away ${dropped.name}` : `dropped ${dropped.name}`;
-          reason = `${verb === 'traded for' ? 'Traded for' : 'Added'} ${added.name} (${added.vor.toFixed(1)} VOR that season), ${gaveUp} (${dropped.vor.toFixed(1)} VOR) -- a ${netVor >= 0 ? '+' : ''}${netVor.toFixed(1)} swing.`;
+          const gotVerb = isTrade ? 'Traded for' : 'Added';
+          const gaveVerb = isTrade ? 'traded away' : 'dropped';
+          reason = `${gotVerb} ${added.name} (${added.vor.toFixed(1)} season VOR), ${gaveVerb} ${dropped.name} (${dropped.vor.toFixed(1)}) -- ${weekPhrase}, weighted that's a ${netVor >= 0 ? '+' : ''}${netVor.toFixed(1)} swing.`;
         } else if (added) {
+          const addedWeighted = added.vor * fraction;
           reason = isTrade
-            ? `Traded for ${added.name} -- finished with ${added.vor.toFixed(1)} VOR that season (couldn't match what was given up).`
-            : `Picked up for free -- finished with ${added.vor.toFixed(1)} VOR that season.`;
+            ? `Traded for ${added.name} -- ${added.vor.toFixed(1)} season VOR, worth an estimated ${addedWeighted.toFixed(1)} ${weekPhrase} (couldn't match what was given up).`
+            : `Picked up for free -- ${added.vor.toFixed(1)} season VOR, worth an estimated ${addedWeighted.toFixed(1)} ${weekPhrase}.`;
         } else if (dropped) {
-          reason = `Dropped -- finished with ${dropped.vor.toFixed(1)} VOR that season (elsewhere, or unclaimed).`;
+          const droppedWeighted = dropped.vor * fraction;
+          reason = `Dropped -- ${dropped.vor.toFixed(1)} season VOR they gave up (${droppedWeighted.toFixed(1)} estimated ${weekPhrase}), elsewhere or unclaimed since.`;
         } else {
           reason = "Couldn't match this player to that season's stats (real data gap, not a typo).";
         }
