@@ -338,8 +338,44 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
     return rows
 
 
+def _week_boundaries(year: str) -> tuple[str, list[tuple[int, str]]] | None:
+    """(week1_start_gameday, [(week_num, week_end_gameday), ...]) from
+    data/historical/{year}_schedule.csv (scripts/fetch_schedule.py), sorted
+    by week. None if that year has no schedule fetched yet."""
+    path = DATA_DIR / f"{year}_schedule.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path)
+    week1_start = df[df["week"] == df["week"].min()]["gameday"].min()
+    ends = df.groupby("week")["gameday"].max().reset_index().sort_values("week")
+    return week1_start, list(ends.itertuples(index=False, name=None))
+
+
+def _week_for_timestamp(timestamp: str, boundaries: tuple[str, list[tuple[int, str]]] | None) -> int | None:
+    """Maps a transaction's ISO timestamp to the real NFL week it affects --
+    a transaction made after week N's last game (Monday night, typically)
+    but before week N+1's first game is a week-N+1 roster move (week N's
+    lineups are already locked), matching the real fantasy-waiver
+    convention. Week 0 = before the season's own Week 1 games start (real
+    preseason/initial-roster activity, several of these exist in the actual
+    2025 data -- late August entries). Plain ISO-date string comparison
+    works correctly here since every date is the same YYYY-MM-DD format.
+    None if no schedule data exists for this year at all (not every
+    historical year will have one fetched)."""
+    if boundaries is None:
+        return None
+    week1_start, week_ends = boundaries
+    d = timestamp[:10]
+    if d < week1_start:
+        return 0
+    for week_num, end in week_ends:
+        if d <= end:
+            return int(week_num)
+    return int(week_ends[-1][0])  # after the last known game -- clamp to the final week
+
+
 def load_transactions() -> dict[str, list[dict]]:
-    """{year: [{timestamp, date_raw, team, type, player_added_resolved,
+    """{year: [{timestamp, date_raw, team, type, week, player_added_resolved,
     player_added_nfl_team, player_added_pos, player_dropped_resolved,
     player_dropped_nfl_team, player_dropped_pos, counterparty_team}]}
     for every data/historical/{year}_transactions.csv on disk (Historical
@@ -348,6 +384,10 @@ def load_transactions() -> dict[str, list[dict]]:
     are real rows but league-admin corrections, not owner decisions; kept in
     so a consumer CAN filter, but any behavioral-signal use (e.g. Mock
     Draft's team position affinity) must exclude them, per the project spec.
+    `week` (real NFL week, 0 = preseason, see _week_for_timestamp) is null
+    if that year has no {year}_schedule.csv fetched -- powers the
+    Historical Review week-by-week roster feature, degrades to "no week
+    data" rather than a wrong guess when schedule data isn't available.
     Drops raw_line/player_*_raw (parser-internal, not needed client-side)."""
     results: dict[str, list[dict]] = {}
     keep_cols = [
@@ -359,7 +399,11 @@ def load_transactions() -> dict[str, list[dict]]:
     for path in sorted(DATA_DIR.glob("*_transactions.csv")):
         year = path.stem.split("_")[0]
         df = pd.read_csv(path, keep_default_na=False)
-        results[year] = df[keep_cols].to_dict("records")
+        boundaries = _week_boundaries(year)
+        rows = df[keep_cols].to_dict("records")
+        for row, timestamp in zip(rows, df["timestamp"]):
+            row["week"] = _week_for_timestamp(timestamp, boundaries)
+        results[year] = rows
     return results
 
 

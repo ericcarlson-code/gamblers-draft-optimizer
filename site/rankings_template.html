@@ -920,6 +920,26 @@
     color: var(--ink);
   }
   .hist-note { font-size: 12.5px; color: var(--ink-muted); margin: 10px 0 20px; }
+  .hist-week-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .hist-week-slider-row input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 6px;
+    cursor: pointer;
+  }
+  .hist-week-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 90px;
+    text-align: right;
+    color: var(--accent);
+  }
   .hist-picks-entry {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -1478,6 +1498,18 @@
       <div id="histPicksEntry" class="hist-picks-entry"></div>
     </div>
     <div id="histResults"></div>
+    <div id="histTransactions" hidden>
+      <h3 class="subhead" id="histTransactionsTitle"></h3>
+      <p class="section-intro">Drag the slider to see this team's real roster at any point in the season, built from the actual draft plus every real waiver claim and trade on record.</p>
+      <div class="hist-week-slider-row">
+        <input type="range" id="histWeekSlider" min="0" max="0" value="0" />
+        <span id="histWeekLabel" class="hist-week-label"></span>
+      </div>
+      <div id="histWeekRoster"></div>
+      <h3 class="subhead">Every Waiver Claim &amp; Trade, Graded</h3>
+      <p class="section-intro">Same idea as the draft grade above -- what this team added vs. what they gave up, judged by how each player actually performed that season.</p>
+      <div id="histTxnGrades"></div>
+    </div>
   </section>
 
   <footer>
@@ -4837,6 +4869,183 @@
     `;
   }
 
+  // ===========================================================================
+  // Season Timeline -- Historical Data Phase 1's transaction log applied to
+  // Historical Review, same "grade it against what actually happened"
+  // pattern as the draft review above, plus a week-by-week roster
+  // reconstruction. Only rendered for years with real TRANSACTIONS data
+  // (currently 2025 only) -- hidden entirely otherwise, no faked/partial
+  // data for years that don't have it.
+  // ===========================================================================
+
+  // This team's real roster as of a given week, built by replaying the real
+  // draft + every real transaction (waiver/trade/commissioner, ALL types --
+  // unlike computeTeamPositionAffinity's behavioral-signal use, roster
+  // reconstruction needs to include commissioner moves too, since those are
+  // real roster changes even if not a real owner decision) in timestamp
+  // order up through that week. A trade's OWN row only records what this
+  // team RECEIVED (see parse_transactions_paste.py) -- what they gave up is
+  // recovered by finding the counterparty's own leg at the same timestamp.
+  function computeTeamRosterAtWeek(year, team, week) {
+    const pool = rescoreBoard(DATA_BY_VIEW[year], false);
+    const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
+    const roster = new Map();
+
+    (FANTASY_DRAFT_RESULTS[year] || [])
+      .filter(e => e.team === team && e.resolved)
+      .forEach(e => {
+        const p = byName.get(e.player.toLowerCase());
+        if (p) roster.set(p.name.toLowerCase(), p);
+      });
+
+    const yearTxns = TRANSACTIONS[year] || [];
+    const txns = yearTxns
+      .filter(t => t.team === team && t.week != null && t.week <= week)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+    txns.forEach(t => {
+      if (t.player_dropped_resolved) roster.delete(t.player_dropped_resolved.toLowerCase());
+      if (t.type === 'trade') {
+        const counterpartyLeg = yearTxns.find(
+          o => o.type === 'trade' && o.team === t.counterparty_team && o.timestamp === t.timestamp
+        );
+        if (counterpartyLeg && counterpartyLeg.player_added_resolved) {
+          roster.delete(counterpartyLeg.player_added_resolved.toLowerCase());
+        }
+      }
+      if (t.player_added_resolved) {
+        const p = byName.get(t.player_added_resolved.toLowerCase());
+        if (p) roster.set(p.name.toLowerCase(), p);
+      }
+    });
+
+    return [...roster.values()].sort((a, b) => b.vor - a.vor);
+  }
+
+  // Grades every real waiver/trade this team made, same spirit as the draft
+  // grade (verdict tag + a plain-English reason) but comparing the added
+  // player's full-season VOR against the dropped player's -- deliberately
+  // simple (a season-total swing, not a precise "value from that exact
+  // date forward", which would need weekly stat granularity this project
+  // doesn't have yet). Commissioner moves ARE shown (they're real events a
+  // team should be able to see on their timeline) but never get a verdict,
+  // matching the "not a real owner decision" framing used elsewhere.
+  const TXN_GREAT_VOR = 15;
+  const TXN_BAD_VOR = -5;
+  function computeTransactionGrades(year, team) {
+    const pool = rescoreBoard(DATA_BY_VIEW[year], false);
+    const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
+    const yearTxns = TRANSACTIONS[year] || [];
+    const txns = yearTxns.filter(t => t.team === team);
+    return [...txns]
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+      .map(t => {
+        const added = t.player_added_resolved ? byName.get(t.player_added_resolved.toLowerCase()) : null;
+        // A trade's own row only records what THIS team received (see
+        // parse_transactions_paste.py) -- what they gave up is the
+        // counterparty's own leg at the same timestamp, same lookup
+        // computeTeamRosterAtWeek uses for roster reconstruction.
+        let dropped = t.player_dropped_resolved ? byName.get(t.player_dropped_resolved.toLowerCase()) : null;
+        let tradedAwayName = null;
+        if (t.type === 'trade' && !dropped) {
+          const counterpartyLeg = yearTxns.find(
+            o => o.type === 'trade' && o.team === t.counterparty_team && o.timestamp === t.timestamp
+          );
+          if (counterpartyLeg && counterpartyLeg.player_added_resolved) {
+            tradedAwayName = counterpartyLeg.player_added_resolved;
+            dropped = byName.get(tradedAwayName.toLowerCase());
+          }
+        }
+        const isCommissioner = t.type === 'commissioner_add' || t.type === 'commissioner_drop';
+        const isTrade = t.type === 'trade';
+        let verdict = null;
+        let reason = '';
+        if (isCommissioner) {
+          reason = 'A commissioner action, not a real roster decision by this team.';
+        } else if (added && dropped) {
+          const netVor = added.vor - dropped.vor;
+          if (netVor >= TXN_GREAT_VOR) verdict = { tag: 'great_value', label: 'Great Pickup' };
+          else if (netVor >= TXN_BAD_VOR) verdict = { tag: 'solid', label: 'Fair Swap' };
+          else verdict = { tag: 'reach', label: 'Bad Swap' };
+          const verb = isTrade ? 'traded for' : 'added';
+          const gaveUp = isTrade ? `traded away ${dropped.name}` : `dropped ${dropped.name}`;
+          reason = `${verb === 'traded for' ? 'Traded for' : 'Added'} ${added.name} (${added.vor.toFixed(1)} VOR that season), ${gaveUp} (${dropped.vor.toFixed(1)} VOR) -- a ${netVor >= 0 ? '+' : ''}${netVor.toFixed(1)} swing.`;
+        } else if (added) {
+          reason = isTrade
+            ? `Traded for ${added.name} -- finished with ${added.vor.toFixed(1)} VOR that season (couldn't match what was given up).`
+            : `Picked up for free -- finished with ${added.vor.toFixed(1)} VOR that season.`;
+        } else if (dropped) {
+          reason = `Dropped -- finished with ${dropped.vor.toFixed(1)} VOR that season (elsewhere, or unclaimed).`;
+        } else {
+          reason = "Couldn't match this player to that season's stats (real data gap, not a typo).";
+        }
+        return { ...t, addedPlayer: added, droppedPlayer: dropped, verdict, reason };
+      });
+  }
+
+  // Only updates the roster snapshot + week label, NOT the slider element
+  // itself -- called on every slider 'input' event (continuously while
+  // dragging), and regenerating the slider's own innerHTML mid-drag would
+  // fight the browser's pointer capture on it.
+  function renderHistWeekRoster(year, team, week) {
+    const roster = computeTeamRosterAtWeek(year, team, week);
+    const rows = roster.map(p => `
+      <tr>
+        <td>${playerImageHtml(p.name, p.team)}<span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>${teamBadgeHtml(p.team)}</td>
+        <td><span class="pos-chip">${p.position}</span></td>
+        <td class="num">${p.vor.toFixed(1)}</td>
+      </tr>`).join('');
+    document.getElementById('histWeekRoster').innerHTML = `
+      <div class="table-shell" style="margin-bottom:26px;"><div class="table-scroll"><table>
+        <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="3" class="trend-empty">No roster data for this week.</td></tr>'}</tbody>
+      </table></div></div>`;
+    document.getElementById('histWeekLabel').textContent = week === 0 ? 'Preseason' : `Week ${week}`;
+  }
+
+  function renderHistTransactions(year, team) {
+    const container = document.getElementById('histTransactions');
+    const yearTxns = TRANSACTIONS[year] || [];
+    if (yearTxns.length === 0) { container.hidden = true; return; }
+    container.hidden = false;
+    document.getElementById('histTransactionsTitle').textContent = `${team}'s ${year} Season Timeline`;
+
+    const weeks = yearTxns.map(t => t.week).filter(w => w != null);
+    const maxWeek = weeks.length ? Math.max(...weeks) : 0;
+    const slider = document.getElementById('histWeekSlider');
+    slider.min = 0;
+    slider.max = maxWeek;
+    slider.value = maxWeek;
+    renderHistWeekRoster(year, team, maxWeek);
+
+    const grades = computeTransactionGrades(year, team);
+    const gradeRows = grades.map(g => {
+      const addedHtml = g.addedPlayer
+        ? `<span class="player-name player-name-link" data-player-name="${g.addedPlayer.name}">${g.addedPlayer.name}</span>`
+        : '<span class="cell-muted">—</span>';
+      const droppedHtml = g.droppedPlayer
+        ? `<span class="player-name player-name-link" data-player-name="${g.droppedPlayer.name}">${g.droppedPlayer.name}</span>`
+        : '<span class="cell-muted">—</span>';
+      const verdictHtml = g.verdict
+        ? `<span class="verdict-tag verdict-${g.verdict.tag}">${g.verdict.label}</span>`
+        : '<span class="cell-muted">—</span>';
+      const weekLabel = g.week === 0 ? 'Preseason' : g.week != null ? `Wk ${g.week}` : '—';
+      return `
+        <tr>
+          <td>${weekLabel}</td>
+          <td>${addedHtml}</td>
+          <td>${droppedHtml}</td>
+          <td>${verdictHtml}</td>
+          <td style="font-size:13px; color:var(--ink-muted);">${g.reason}</td>
+        </tr>`;
+    }).join('');
+    document.getElementById('histTxnGrades').innerHTML = `
+      <div class="table-shell"><div class="table-scroll"><table>
+        <thead><tr><th>Week</th><th>Added</th><th>Dropped</th><th>Verdict</th><th>Notes</th></tr></thead>
+        <tbody>${gradeRows || '<tr><td colspan="5" class="trend-empty">No moves on record.</td></tr>'}</tbody>
+      </table></div></div>`;
+  }
+
   function renderHistorical() {
     const year = document.getElementById('histYearSelect').value;
     const hasFullDraft = !!(FANTASY_DRAFT_RESULTS[year] && FANTASY_DRAFT_RESULTS[year].length);
@@ -4848,10 +5057,13 @@
 
     if (hasFullDraft) {
       renderFullDraftTeamSelect(year);
-      renderFullDraftReview(year, document.getElementById('histTeamSelect').value);
+      const team = document.getElementById('histTeamSelect').value;
+      renderFullDraftReview(year, team);
+      renderHistTransactions(year, team);
     } else {
       renderHistPicksEntry();
       renderHistoricalReview();
+      document.getElementById('histTransactions').hidden = true;
     }
   }
 
@@ -4862,19 +5074,32 @@
     yearSelect.addEventListener('change', renderHistorical);
 
     document.getElementById('histTeamSelect').addEventListener('change', () => {
-      renderFullDraftReview(document.getElementById('histYearSelect').value, document.getElementById('histTeamSelect').value);
+      const year = document.getElementById('histYearSelect').value;
+      const team = document.getElementById('histTeamSelect').value;
+      renderFullDraftReview(year, team);
+      renderHistTransactions(year, team);
     });
 
-    // Player names throughout Historical Review's results (both the
-    // manual-entry and full-league-draft views) open the same player
-    // detail modal as everywhere else -- against THAT year's own board,
-    // since a player's stats/VOR here reflect the season being graded,
-    // not the live 2026 board.
-    document.getElementById('histResults').addEventListener('click', (e) => {
+    // Player names throughout Historical Review's results (manual-entry,
+    // full-league-draft, and the Season Timeline transaction grades) open
+    // the same player detail modal as everywhere else -- against THAT
+    // year's own board, since a player's stats/VOR here reflect the season
+    // being graded, not the live 2026 board.
+    const openHistPlayerModal = (e) => {
       const trigger = e.target.closest('[data-player-name]');
       if (!trigger) return;
       const year = document.getElementById('histYearSelect').value;
       openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW[year], false));
+    };
+    document.getElementById('histResults').addEventListener('click', openHistPlayerModal);
+    document.getElementById('histTransactions').addEventListener('click', openHistPlayerModal);
+
+    // Only the roster snapshot re-renders on drag (see renderHistWeekRoster's
+    // own comment) -- the slider element itself is never recreated mid-drag.
+    document.getElementById('histWeekSlider').addEventListener('input', (e) => {
+      const year = document.getElementById('histYearSelect').value;
+      const team = document.getElementById('histTeamSelect').value;
+      renderHistWeekRoster(year, team, parseInt(e.target.value, 10));
     });
 
     const entryEl = document.getElementById('histPicksEntry');
