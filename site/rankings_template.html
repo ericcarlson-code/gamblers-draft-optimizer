@@ -1581,6 +1581,13 @@
   // Review's full-league grade path (every team, true overall pick number)
   // instead of the single-team manual-entry fallback used for other years.
   const FANTASY_DRAFT_RESULTS = DATA_BY_VIEW.fantasy_draft_results || {};
+  // {year: [{timestamp, team, type, player_added_resolved, player_added_pos,
+  // player_dropped_resolved, player_dropped_pos, counterparty_team, ...}]}
+  // -- Historical Data Phase 1 (see scripts/parse_transactions_paste.py).
+  // `type` includes commissioner_add/commissioner_drop rows -- ALWAYS
+  // filter those out before treating a row as a real owner decision (see
+  // computeTeamPositionAffinity below, the one current consumer).
+  const TRANSACTIONS = DATA_BY_VIEW.transactions || {};
   // This real league's actual 10 team names (2025 season) -- Cardinals is
   // the user's own team, listed first so it lines up with the 'Me' slot
   // convention used elsewhere (see PRESET_ROSTERS_2025 further down, which
@@ -3157,24 +3164,37 @@
   }
 
   // Per-team positional "personality" -- how much more/less often this
-  // SPECIFIC real Gamblers team drafted each position, historically, versus
-  // the league-wide average at the same real picks (2026-07-29, added so
-  // bots aren't just 9 copies of the same generic model once they're
-  // labeled with real team names -- see GAMBLERS_TEAM_NAMES). Pooled across
-  // every real {year}_fantasy_draft_results.csv on disk (2024 + 2025) that
-  // team appears in. `affinity[team][pos] > 1` means that team leans INTO
-  // that position more than the league average; `< 1` means they lean away.
-  // Small per-team samples (a team that's only drafted once or twice) are
-  // damped toward 1.0 (no bias) by `sampleWeight` rather than trusted at
-  // full strength -- full confidence only kicks in around 20 real picks
-  // (roughly 1.5 real drafts' worth), and the raw ratio is clamped to
-  // [0.6, 1.6] so one fluky real pick can't send a rank wildly off.
+  // SPECIFIC real Gamblers team drafted (and, since session 12's Historical
+  // Data Phase 1, ACQUIRED VIA WAIVER/TRADE) each position, historically,
+  // versus the league-wide average. Added so bots aren't just 9 copies of
+  // the same generic model once they're labeled with real team names --
+  // see GAMBLERS_TEAM_NAMES. Pooled across every real
+  // {year}_fantasy_draft_results.csv AND {year}_transactions.csv on disk
+  // that team appears in -- a team's real in-season pickups are just as
+  // real a signal of "what this team goes after" as their draft picks, no
+  // reason to only use one source once both exist. Commissioner-action rows
+  // are explicitly excluded (league-admin corrections, not real owner
+  // decisions -- see TRANSACTIONS' own comment and the project spec).
+  // `affinity[team][pos] > 1` means that team leans INTO that position more
+  // than the league average; `< 1` means they lean away. Small per-team
+  // samples are damped toward 1.0 (no bias) by `sampleWeight` rather than
+  // trusted at full strength -- full confidence only kicks in around 20
+  // real events (draft picks + waiver/trade adds combined), and the raw
+  // ratio is clamped to [0.6, 1.6] so one fluky sample can't send a rank
+  // wildly off.
   let _teamPositionAffinityCache = null;
   function computeTeamPositionAffinity() {
     if (_teamPositionAffinityCache) return _teamPositionAffinityCache;
     const countsByTeam = {};
     const leagueCounts = {};
     let leagueTotal = 0;
+    const record = (team, pos) => {
+      if (!team || !pos) return;
+      countsByTeam[team] = countsByTeam[team] || {};
+      countsByTeam[team][pos] = (countsByTeam[team][pos] || 0) + 1;
+      leagueCounts[pos] = (leagueCounts[pos] || 0) + 1;
+      leagueTotal += 1;
+    };
     Object.keys(FANTASY_DRAFT_RESULTS).forEach(year => {
       const picks = FANTASY_DRAFT_RESULTS[year] || [];
       if (picks.length === 0) return;
@@ -3183,11 +3203,13 @@
       picks.forEach(e => {
         if (!e.resolved) return;
         const p = byName.get(e.player.toLowerCase());
-        if (!p) return;
-        countsByTeam[e.team] = countsByTeam[e.team] || {};
-        countsByTeam[e.team][p.position] = (countsByTeam[e.team][p.position] || 0) + 1;
-        leagueCounts[p.position] = (leagueCounts[p.position] || 0) + 1;
-        leagueTotal += 1;
+        if (p) record(e.team, p.position);
+      });
+    });
+    Object.keys(TRANSACTIONS).forEach(year => {
+      (TRANSACTIONS[year] || []).forEach(t => {
+        if (t.type !== 'waiver' && t.type !== 'trade') return; // no commissioner actions
+        if (t.player_added_resolved) record(t.team, t.player_added_pos);
       });
     });
     const leagueRate = {};

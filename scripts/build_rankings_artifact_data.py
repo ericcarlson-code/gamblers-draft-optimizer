@@ -338,6 +338,31 @@ def to_rows(board: pd.DataFrame) -> list[dict]:
     return rows
 
 
+def load_transactions() -> dict[str, list[dict]]:
+    """{year: [{timestamp, date_raw, team, type, player_added_resolved,
+    player_added_nfl_team, player_added_pos, player_dropped_resolved,
+    player_dropped_nfl_team, player_dropped_pos, counterparty_team}]}
+    for every data/historical/{year}_transactions.csv on disk (Historical
+    Data Phase 1 -- scripts/parse_transactions_paste.py). `type` is one of
+    waiver/trade/commissioner_add/commissioner_drop -- commissioner actions
+    are real rows but league-admin corrections, not owner decisions; kept in
+    so a consumer CAN filter, but any behavioral-signal use (e.g. Mock
+    Draft's team position affinity) must exclude them, per the project spec.
+    Drops raw_line/player_*_raw (parser-internal, not needed client-side)."""
+    results: dict[str, list[dict]] = {}
+    keep_cols = [
+        "timestamp", "date_raw", "team", "type",
+        "player_added_resolved", "player_added_nfl_team", "player_added_pos",
+        "player_dropped_resolved", "player_dropped_nfl_team", "player_dropped_pos",
+        "counterparty_team",
+    ]
+    for path in sorted(DATA_DIR.glob("*_transactions.csv")):
+        year = path.stem.split("_")[0]
+        df = pd.read_csv(path, keep_default_na=False)
+        results[year] = df[keep_cols].to_dict("records")
+    return results
+
+
 def load_fantasy_draft_results() -> dict[str, list[dict]]:
     """{year: [{overall_pick, round, pick_in_round, team, player, resolved}]}
     for every data/historical/{year}_fantasy_draft_results.csv on disk (this
@@ -452,6 +477,7 @@ def build_data_bundle(cfg: dict) -> dict:
         },
         "2026": projection_rows,
         "fantasy_draft_results": load_fantasy_draft_results(),
+        "transactions": load_transactions(),
         "schedule": load_schedule(),
         "injury_games_missed": load_injury_games_missed(),
     }
