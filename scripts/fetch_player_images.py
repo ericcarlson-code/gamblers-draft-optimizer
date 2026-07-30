@@ -179,12 +179,27 @@ def fetch_nflreadpy_headshots(season: int = NFLREADPY_HEADSHOT_SEASON) -> dict[t
     return out
 
 
-HISTORICAL_ACTUAL_STATS_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
+def historical_actual_stats_years() -> list[int]:
+    """Every year with a {year}_actual_stats.csv on disk, derived from the
+    files themselves rather than a hand-maintained list -- a hardcoded list
+    here silently went stale the first time a new year's board was added
+    (2015-2019 got fetched via fetch_actuals_nflreadpy.py, but this
+    function kept querying nflreadpy for 2020-2025 only until this was
+    caught), so every future year addition should need zero code changes
+    here, matching the same DATA_DIR.glob("*_actual_stats.csv") pattern
+    main() already uses to build the target name list below."""
+    years = []
+    for path in DATA_DIR.glob("*_actual_stats.csv"):
+        try:
+            years.append(int(path.stem.split("_")[0]))
+        except ValueError:
+            continue
+    return sorted(years)
 
 
 def fetch_historical_headshots() -> dict[str, str]:
     """name -> headshot URL for every real player across every
-    {year}_actual_stats.csv on disk (2020-2025), regardless of whether
+    {year}_actual_stats.csv on disk, regardless of whether
     they're still in the league -- fetch_veteran_headshots/
     fetch_nflreadpy_headshots above only ever look at the CURRENT (2025)
     season, so a player who left the league before 2025 (e.g. Drew Brees,
@@ -204,7 +219,7 @@ def fetch_historical_headshots() -> dict[str, str]:
     import nflreadpy as nfl
 
     out: dict[str, str] = {}
-    for year in HISTORICAL_ACTUAL_STATS_YEARS:
+    for year in historical_actual_stats_years():
         print(f"  querying nflreadpy for {year}...")
         df = nfl.load_player_stats(seasons=[year], summary_level="reg").to_pandas()
         for row in df.itertuples():
@@ -360,7 +375,9 @@ def main() -> None:
             for row in csv.DictReader(f):
                 if row.get("position") != "DEF" and row["name"] not in current_board_names:
                     historical_names.add(row["name"])
-    print(f"Fetching headshots for {len(historical_names)} historical-only players (2020-2025 actual stats, not on the 2026 board)...")
+    years_covered = historical_actual_stats_years()
+    year_range = f"{years_covered[0]}-{years_covered[-1]}" if years_covered else "no years"
+    print(f"Fetching headshots for {len(historical_names)} historical-only players ({year_range} actual stats, not on the 2026 board)...")
     historical_urls = fetch_historical_headshots()
     hist_matched = 0
     for i, name in enumerate(sorted(historical_names), 1):

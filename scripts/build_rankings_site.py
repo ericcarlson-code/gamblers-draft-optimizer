@@ -23,6 +23,19 @@ from optimizer.config import load_config
 from scripts.build_rankings_artifact_data import HISTORY_YEARS, build_data_bundle
 from scripts.fetch_player_images import slugify
 
+# Embedding a headshot for every player across every HISTORY_YEARS board
+# (now back to 2015) pushed the built site to 23MB -- Artifact's hard limit
+# is 16MB, confirmed by a real rejected publish attempt, not just the
+# ~16MB figure noted from session 5's testing. Capping historical headshot
+# embedding to this year and later keeps the site at the already-verified-
+# safe ~15.75MB (the exact configuration published successfully before this
+# expansion) -- players ONLY in 2015-2019 fall back to their team logo
+# instead of a photo, the same graceful degradation already used for any
+# player missing a headshot match. The underlying STATS DATA for 2015-2019
+# is NOT affected by this constant -- Rankings/Historical Review still work
+# fully for those years, this only trims which years' PHOTOS get embedded.
+IMAGE_HISTORY_MIN_YEAR = 2025
+
 SITE_DIR = Path(__file__).resolve().parent.parent / "site"
 TEMPLATE_PATH = SITE_DIR / "rankings_template.html"
 INJURY_STATUS_PATH = Path(__file__).resolve().parent.parent / "data" / "injury_status.json"
@@ -87,8 +100,8 @@ def main() -> None:
     injury_status = json.loads(INJURY_STATUS_PATH.read_text(encoding="utf-8")) if INJURY_STATUS_PATH.exists() else {}
     html = html.replace("__INJURY_STATUS_JSON__", json.dumps(injury_status))
 
-    board_keys = ["2026"] + [str(y) for y in HISTORY_YEARS]
-    all_player_names = {p["name"] for key in board_keys for p in bundle[key]}
+    image_board_keys = ["2026"] + [str(y) for y in HISTORY_YEARS if y >= IMAGE_HISTORY_MIN_YEAR]
+    all_player_names = {p["name"] for key in image_board_keys for p in bundle[key]}
     player_images, team_logos = build_image_lookups(all_player_names)
     html = html.replace("__PLAYER_IMAGES_JSON__", json.dumps(player_images))
     html = html.replace("__TEAM_LOGOS_JSON__", json.dumps(team_logos))
