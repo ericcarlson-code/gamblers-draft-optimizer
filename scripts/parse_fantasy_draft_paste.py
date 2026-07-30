@@ -50,16 +50,25 @@ ROUND_HEADER = re.compile(r"^Round\s+(\d+)$", re.IGNORECASE)
 PICK_LINE = re.compile(r"^(\d+)\.\t(.+?)\t(.+)$")
 
 # Team D/ST picks are sometimes pasted as a bare city/mascot nickname
-# instead of the board's full team name. Mirror any additions here in
-# site/rankings_template.html's DST_NICKNAME_TO_FULL_NAME too.
+# instead of the board's full team name. All 32 real NFL teams (expanded
+# from an original 18-team list that only covered whichever mascots
+# happened to come up in the first draft paste this was built for --
+# session 12's transaction-log parsing needed the other 14, e.g. Saints/
+# Patriots/Panthers/Browns, that a draft paste alone never exercised).
+# Mirror any additions here in site/rankings_template.html's
+# DST_NICKNAME_TO_FULL_NAME too.
 DST_NICKNAME_TO_FULL_NAME = {
-    "Vikings": "Minnesota Vikings", "Steelers": "Pittsburgh Steelers", "Texans": "Houston Texans",
-    "Packers": "Green Bay Packers", "Broncos": "Denver Broncos", "Seahawks": "Seattle Seahawks",
-    "Rams": "Los Angeles Rams", "Chiefs": "Kansas City Chiefs", "Jaguars": "Jacksonville Jaguars",
-    "Bills": "Buffalo Bills", "Eagles": "Philadelphia Eagles", "Ravens": "Baltimore Ravens",
-    "Chargers": "Los Angeles Chargers", "Lions": "Detroit Lions",
-    "Cowboys": "Dallas Cowboys", "Jets": "New York Jets", "49ers": "San Francisco 49ers",
-    "Bengals": "Cincinnati Bengals",
+    "Cardinals": "Arizona Cardinals", "Falcons": "Atlanta Falcons", "Ravens": "Baltimore Ravens",
+    "Bills": "Buffalo Bills", "Panthers": "Carolina Panthers", "Bears": "Chicago Bears",
+    "Bengals": "Cincinnati Bengals", "Browns": "Cleveland Browns", "Cowboys": "Dallas Cowboys",
+    "Broncos": "Denver Broncos", "Lions": "Detroit Lions", "Packers": "Green Bay Packers",
+    "Texans": "Houston Texans", "Colts": "Indianapolis Colts", "Jaguars": "Jacksonville Jaguars",
+    "Chiefs": "Kansas City Chiefs", "Raiders": "Las Vegas Raiders", "Chargers": "Los Angeles Chargers",
+    "Rams": "Los Angeles Rams", "Dolphins": "Miami Dolphins", "Vikings": "Minnesota Vikings",
+    "Patriots": "New England Patriots", "Saints": "New Orleans Saints", "Giants": "New York Giants",
+    "Jets": "New York Jets", "Eagles": "Philadelphia Eagles", "Steelers": "Pittsburgh Steelers",
+    "49ers": "San Francisco 49ers", "Seahawks": "Seattle Seahawks", "Buccaneers": "Tampa Bay Buccaneers",
+    "Titans": "Tennessee Titans", "Commanders": "Washington Commanders",
 }
 
 
