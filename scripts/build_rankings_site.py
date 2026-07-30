@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from optimizer.config import load_config
-from scripts.build_rankings_artifact_data import build_data_bundle
+from scripts.build_rankings_artifact_data import HISTORY_YEARS, build_data_bundle
 from scripts.fetch_player_images import slugify
 
 SITE_DIR = Path(__file__).resolve().parent.parent / "site"
@@ -38,13 +38,18 @@ def _data_uri(path: Path) -> str:
     return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
 
 
-def build_image_lookups(players_2026: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
+def build_image_lookups(all_player_names: set[str]) -> tuple[dict[str, str], dict[str, str]]:
     """Embeds cached images (see scripts/fetch_player_images.py) as base64
     data URIs, keyed by player name / team abbreviation for direct JS lookup
     at render time -- the on-disk slugified filenames are an internal detail
     of the fetch/cache step, not exposed here. Silently skips anything not
     in the cache (missing images just fall back client-side to the team
-    logo, or no image at all -- see rankings_template.html's playerImageHtml)."""
+    logo, or no image at all -- see rankings_template.html's playerImageHtml).
+    `all_player_names` covers every year's board, not just 2026 -- historical-
+    only players (real, on a past season's board, but not the current 2026
+    one) have their own cached headshots too now (fetch_player_images.py's
+    fetch_historical_headshots), which a 2026-only name list would silently
+    never embed even though they're sitting right there on disk."""
     headshots_dir = IMAGE_CACHE_DIR / "headshots"
     logos_dir = IMAGE_CACHE_DIR / "logos"
 
@@ -55,10 +60,10 @@ def build_image_lookups(players_2026: list[dict]) -> tuple[dict[str, str], dict[
 
     player_images: dict[str, str] = {}
     if headshots_dir.exists():
-        for p in players_2026:
-            path = headshots_dir / f"{slugify(p['name'])}.png"
+        for name in all_player_names:
+            path = headshots_dir / f"{slugify(name)}.png"
             if path.exists():
-                player_images[p["name"]] = _data_uri(path)
+                player_images[name] = _data_uri(path)
 
     return player_images, team_logos
 
@@ -82,7 +87,9 @@ def main() -> None:
     injury_status = json.loads(INJURY_STATUS_PATH.read_text(encoding="utf-8")) if INJURY_STATUS_PATH.exists() else {}
     html = html.replace("__INJURY_STATUS_JSON__", json.dumps(injury_status))
 
-    player_images, team_logos = build_image_lookups(bundle["2026"])
+    board_keys = ["2026"] + [str(y) for y in HISTORY_YEARS]
+    all_player_names = {p["name"] for key in board_keys for p in bundle[key]}
+    player_images, team_logos = build_image_lookups(all_player_names)
     html = html.replace("__PLAYER_IMAGES_JSON__", json.dumps(player_images))
     html = html.replace("__TEAM_LOGOS_JSON__", json.dumps(team_logos))
     print(f"  Embedded {len(player_images)} player headshots + {len(team_logos)} team logos")

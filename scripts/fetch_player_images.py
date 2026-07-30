@@ -179,6 +179,42 @@ def fetch_nflreadpy_headshots(season: int = NFLREADPY_HEADSHOT_SEASON) -> dict[t
     return out
 
 
+HISTORICAL_ACTUAL_STATS_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
+
+
+def fetch_historical_headshots() -> dict[str, str]:
+    """name -> headshot URL for every real player across every
+    {year}_actual_stats.csv on disk (2020-2025), regardless of whether
+    they're still in the league -- fetch_veteran_headshots/
+    fetch_nflreadpy_headshots above only ever look at the CURRENT (2025)
+    season, so a player who left the league before 2025 (e.g. Drew Brees,
+    Cam Newton) was never even attempted, not just unmatched; every past
+    season's board was full of these, silently falling back to a bare team
+    logo. nflreadpy's load_player_stats() DOES carry a real headshot_url for
+    departed players when queried at their own season (confirmed: season=
+    2020 still returns Drew Brees' real photo) -- but it's the player's
+    single CURRENT/most-recent NFL.com photo, not a season-specific jersey
+    shot (confirmed: DeAndre Hopkins' headshot_url is byte-identical whether
+    queried at season=2020/2023/2025 despite his real team changing each
+    time). Good enough to replace a bare logo with a real photo; does NOT
+    solve "which jersey should this player be wearing in a 2020 view" -- a
+    harder, separate, still-unsolved problem (year-correct historical
+    imagery), not attempted here.
+    Lazily imports nflreadpy, same reasoning as fetch_nflreadpy_headshots."""
+    import nflreadpy as nfl
+
+    out: dict[str, str] = {}
+    for year in HISTORICAL_ACTUAL_STATS_YEARS:
+        print(f"  querying nflreadpy for {year}...")
+        df = nfl.load_player_stats(seasons=[year], summary_level="reg").to_pandas()
+        for row in df.itertuples():
+            name = row.player_display_name
+            url = row.headshot_url
+            if name and name not in out and isinstance(url, str) and url:
+                out[name] = url
+    return out
+
+
 def nflcdn_resized_url(original_url: str, size: str) -> str:
     """nflreadpy's headshot_url points at NFL.com's Cloudinary-backed CDN
     (static.www.nfl.com/image/upload/f_auto,q_auto/... OR .../image/private/
@@ -311,6 +347,30 @@ def main() -> None:
             print(f"  ...{i}/{len(players)} processed")
 
     print(f"Matched {matched}/{len(players)} players to a headshot ({len(players) - matched} will fall back to their team logo)")
+
+    # Historical-only players (real, on some past season's actual_stats.csv,
+    # but not on the current 2026 board -- retired, cut, out of the league)
+    # previously had no headshot fetch attempted for them at all, always
+    # falling straight back to a bare team logo. See fetch_historical_headshots'
+    # own docstring for what this does and doesn't fix.
+    current_board_names = {p["name"] for p in players}
+    historical_names: set[str] = set()
+    for csv_path in DATA_DIR.glob("*_actual_stats.csv"):
+        with open(csv_path, encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if row.get("position") != "DEF" and row["name"] not in current_board_names:
+                    historical_names.add(row["name"])
+    print(f"Fetching headshots for {len(historical_names)} historical-only players (2020-2025 actual stats, not on the 2026 board)...")
+    historical_urls = fetch_historical_headshots()
+    hist_matched = 0
+    for i, name in enumerate(sorted(historical_names), 1):
+        url = historical_urls.get(name)
+        if url:
+            hist_matched += 1
+            download(nflcdn_resized_url(url, HEADSHOT_SIZE), headshots_dir / f"{slugify(name)}.png")
+        if i % 100 == 0:
+            print(f"  ...{i}/{len(historical_names)} processed")
+    print(f"Matched {hist_matched}/{len(historical_names)} historical-only players to a real headshot")
     print(f"Cache: {CACHE_DIR}")
 
 
