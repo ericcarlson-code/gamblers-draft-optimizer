@@ -26,7 +26,7 @@ from optimizer.tiers import assign_tiers
 from optimizer.vor import compute_vor
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
-HISTORY_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
+HISTORY_YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
 
 # ESPN's team abbreviations disagree with nflreadpy's (our board's own
 # convention since the Phase 3 pipeline swap) for the Rams ("LAR" vs "LA")
