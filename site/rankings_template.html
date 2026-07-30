@@ -796,6 +796,33 @@
 
   .trade-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 780px) { .trade-columns { grid-template-columns: 1fr; } }
+  .trade-side {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .trade-side-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .trade-side-head .subhead { margin: 0; }
+  .trade-winning-badge {
+    display: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent);
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+  .trade-side.winning {
+    border-color: var(--accent);
+    box-shadow: var(--shadow), 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .trade-side.winning .trade-winning-badge { display: inline-block; }
   .trade-search {
     font-family: 'Public Sans', sans-serif;
     font-size: 14px;
@@ -808,7 +835,7 @@
     margin-bottom: 8px;
   }
   .trade-picklist {
-    max-height: 160px;
+    max-height: 220px;
     overflow-y: auto;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -816,46 +843,86 @@
   }
   .trade-picklist-item {
     display: flex;
-    justify-content: space-between;
-    padding: 7px 12px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
     font-size: 13.5px;
     cursor: pointer;
     border-bottom: 1px solid var(--line);
   }
   .trade-picklist-item:last-child { border-bottom: none; }
   .trade-picklist-item:hover { background: var(--surface-2); }
-  .trade-picklist-item .vor-val { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; }
-  .trade-selected { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 20px; }
-  .trade-chip {
-    display: inline-flex;
+  .trade-picklist-avatar { width: 26px; height: 26px; margin: 0; flex-shrink: 0; }
+  .trade-picklist-item .trade-picklist-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trade-picklist-item .vor-val { color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+  .trade-selected {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+    min-height: 0;
+  }
+  .trade-player-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    font-size: 12.5px;
-    padding: 4px 6px 4px 10px;
-    border-radius: 999px;
+    gap: 4px;
+    text-align: center;
     background: var(--surface-2);
     border: 1px solid var(--line);
+    border-top: 3px solid var(--pos-accent, var(--line));
+    border-radius: 8px;
+    padding: 10px 8px 8px;
   }
-  .trade-chip button {
+  .trade-player-card .player-avatar { width: 40px; height: 40px; margin: 0; }
+  .trade-player-card .player-name { font-weight: 700; font-size: 12.5px; line-height: 1.25; }
+  .trade-player-card .trade-player-vor { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-muted); }
+  .trade-player-remove {
     all: unset;
+    position: absolute;
+    top: 4px;
+    right: 6px;
     cursor: pointer;
     color: var(--ink-muted);
     font-weight: 700;
-    padding: 0 4px;
+    line-height: 1;
+    padding: 2px;
   }
-  .trade-chip button:hover { color: var(--accent-2); }
+  .trade-player-remove:hover { color: var(--danger); }
   .trade-result {
     margin-top: 22px;
-    padding: 16px 18px;
+    padding: 20px 24px;
     border-radius: var(--radius);
     border: 1px solid var(--line);
     background: var(--surface);
     box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
   }
-  .trade-result-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 8px; }
-  .trade-result-stat .value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 20px; }
+  .trade-result-empty { color: var(--ink-muted); }
+  .trade-swing-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    line-height: 1;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--accent-ink);
+    background: var(--accent);
+  }
+  .trade-swing-badge.trade-swing-even { background: var(--ink-muted); }
+  .trade-result-body { flex: 1; min-width: 200px; }
+  .trade-verdict { font-weight: 700; font-size: 17px; margin: 0 0 4px; }
+  .trade-result-row { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 10px; }
+  .trade-result-stat .value { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 18px; }
   .trade-result-stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); }
-  .trade-verdict { font-weight: 700; }
 
 
   .rankings-body { display: flex; align-items: flex-start; gap: 16px; }
@@ -1402,7 +1469,7 @@
                 <th class="num" data-key="adp" title="For 2026: standard/non-PPR consensus ADP averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC. For historical years: real 2-QB-format ADP from Fantasy Football Calculator, where archived (2020-2024). Not shown for 2025 (no historical data source for that season).">ADP</th>
                 <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
                 <th class="num" data-key="consensus_overall_rank" title="The standard/non-PPR consensus ADP's own overall rank (averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC) -- a reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to the consensus's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ enough to matter -- since this league's non-PPR/2-QB scoring differs from most opponents' generic cheat sheets, a big gap is often a real draft-day edge (see the Draft Value Edges panel above), not just a data error to double-check.">Consensus</th>
-                <th class="num trend-cell" title="Solid line = actual VOR, 2020–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
+                <th class="num trend-cell" title="Solid line = actual VOR, 2015–2025. Dashed line + hollow dot = the 2026 projection.">Trend</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -1463,14 +1530,20 @@
   <section id="section-trade" class="app-section" hidden>
     <p class="section-intro">Pick players for each side of a trade to compare net VOR swing under current league scoring. Uses the 2026 Projections values.</p>
     <div class="trade-columns">
-      <div class="trade-side">
-        <h3 class="subhead">Side A gives up</h3>
+      <div class="trade-side" id="tradeSideA">
+        <div class="trade-side-head">
+          <h3 class="subhead">Side A gives up</h3>
+          <span class="trade-winning-badge">Winning Side</span>
+        </div>
         <input type="text" class="trade-search" id="tradeSearchA" placeholder="Search players to add…" />
         <div class="trade-picklist" id="tradePicklistA"></div>
         <div class="trade-selected" id="tradeSelectedA"></div>
       </div>
-      <div class="trade-side">
-        <h3 class="subhead">Side B gives up</h3>
+      <div class="trade-side" id="tradeSideB">
+        <div class="trade-side-head">
+          <h3 class="subhead">Side B gives up</h3>
+          <span class="trade-winning-badge">Winning Side</span>
+        </div>
         <input type="text" class="trade-search" id="tradeSearchB" placeholder="Search players to add…" />
         <div class="trade-picklist" id="tradePicklistB"></div>
         <div class="trade-selected" id="tradeSelectedB"></div>
@@ -1513,7 +1586,7 @@
   </section>
 
   <footer>
-    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). In the Trend column, the solid line is actual results (2020–2025); the dashed segment and hollow dot are the 2026 projection, not an observed result. Mock Draft and Trade Calculator both run entirely in your browser from the 2026 Projections dataset — nothing is sent anywhere. This is a static snapshot; open the live app for real-time draft tracking against your actual draft.
+    Points and VOR reflect the league's current custom scoring config at time of generation. Tier = statistically significant value drop-off within a position (lower is better). In the Trend column, the solid line is actual results (2015–2025); the dashed segment and hollow dot are the 2026 projection, not an observed result. Mock Draft and Trade Calculator both run entirely in your browser from the 2026 Projections dataset — nothing is sent anywhere. This is a static snapshot; open the live app for real-time draft tracking against your actual draft.
   </footer>
 </div>
 
@@ -1692,6 +1765,11 @@
     { key: "2022", label: "2022" },
     { key: "2021", label: "2021" },
     { key: "2020", label: "2020" },
+    { key: "2019", label: "2019" },
+    { key: "2018", label: "2018" },
+    { key: "2017", label: "2017" },
+    { key: "2016", label: "2016" },
+    { key: "2015", label: "2015" },
   ];
   const POSITIONS = ["All", "QB", "RB", "WR", "TE", "K", "DEF"];
 
@@ -4521,8 +4599,12 @@
       if (!q) { listEl.innerHTML = ''; listEl.style.display = 'none'; return; }
       listEl.style.display = 'block';
       const matches = currentPool().filter(p => p.name.toLowerCase().includes(q) && !state[side].includes(p.name)).slice(0, 8);
-      listEl.innerHTML = matches.map(p =>
-        `<div class="trade-picklist-item" data-name="${p.name}"><span>${p.name} (${p.position}, ${p.team})</span><span class="vor-val">${p.vor.toFixed(1)}</span></div>`
+      listEl.innerHTML = matches.map(p => `
+        <div class="trade-picklist-item" data-name="${p.name}">
+          ${playerImageHtml(p.name, p.team, 'trade-picklist-avatar')}
+          <span class="trade-picklist-name">${p.name} <span class="pos-chip">${p.position}</span> ${p.team}</span>
+          <span class="vor-val">${p.vor.toFixed(1)}</span>
+        </div>`
       ).join('');
       listEl.querySelectorAll('.trade-picklist-item').forEach(el => {
         el.addEventListener('click', () => {
@@ -4537,11 +4619,22 @@
 
     function renderSelected(side) {
       const el = document.getElementById(`tradeSelected${side}`);
-      el.innerHTML = state[side].map(name =>
-        `<span class="trade-chip">${name} <button data-name="${name}" data-side="${side}">×</button></span>`
-      ).join('');
-      el.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
+      const pool = currentPool();
+      el.innerHTML = state[side].map(name => {
+        const p = pool.find(pl => pl.name === name);
+        if (!p) return '';
+        return `
+          <div class="trade-player-card pos-${p.position}">
+            <button class="trade-player-remove" data-name="${name}" data-side="${side}" aria-label="Remove ${name}">×</button>
+            ${playerImageHtml(p.name, p.team, 'player-avatar')}
+            <span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>
+            <span class="pos-chip">${p.position}</span>
+            <span class="trade-player-vor">${p.vor.toFixed(1)} VOR</span>
+          </div>`;
+      }).join('');
+      el.querySelectorAll('.trade-player-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
           const s = btn.dataset.side;
           state[s] = state[s].filter(n => n !== btn.dataset.name);
           renderSelected(s);
@@ -4552,28 +4645,49 @@
 
     function renderTradeResult() {
       const resultEl = document.getElementById('tradeResult');
+      const sideAEl = document.getElementById('tradeSideA');
+      const sideBEl = document.getElementById('tradeSideB');
       if (state.A.length === 0 && state.B.length === 0) {
-        resultEl.innerHTML = '<span class="section-intro" style="margin:0;">Pick at least one player on either side to evaluate.</span>';
+        resultEl.innerHTML = '<span class="trade-result-empty">Pick at least one player on either side to evaluate.</span>';
+        sideAEl.classList.remove('winning');
+        sideBEl.classList.remove('winning');
         return;
       }
       const pool = currentPool();
       const vorA = state.A.reduce((sum, name) => sum + (pool.find(p => p.name === name)?.vor || 0), 0);
       const vorB = state.B.reduce((sum, name) => sum + (pool.find(p => p.name === name)?.vor || 0), 0);
       const netForA = vorB - vorA;
-      let verdict = 'Even trade';
-      if (Math.abs(netForA) >= 1e-6) verdict = netForA > 0 ? 'Favors Side A' : 'Favors Side B';
+      const isEven = Math.abs(netForA) < 1e-6;
+      const verdict = isEven ? 'Even trade' : netForA > 0 ? 'Favors Side A' : 'Favors Side B';
+      sideAEl.classList.toggle('winning', !isEven && netForA > 0);
+      sideBEl.classList.toggle('winning', !isEven && netForA < 0);
+      const badgeValue = isEven ? '=' : `${netForA > 0 ? '+' : ''}${Math.abs(netForA) >= 100 ? Math.round(netForA) : netForA.toFixed(1)}`;
       resultEl.innerHTML = `
-        <div class="trade-result-row">
-          <div class="trade-result-stat"><div class="value">${vorA.toFixed(1)}</div><div class="label">Side A VOR Given Up</div></div>
-          <div class="trade-result-stat"><div class="value">${vorB.toFixed(1)}</div><div class="label">Side B VOR Given Up</div></div>
-          <div class="trade-result-stat"><div class="value trade-verdict">${verdict}</div><div class="label">Verdict</div></div>
+        <div class="trade-swing-badge${isEven ? ' trade-swing-even' : ''}">${badgeValue}</div>
+        <div class="trade-result-body">
+          <p class="trade-verdict">${verdict}</p>
+          <div class="trade-result-row">
+            <div class="trade-result-stat"><div class="value">${vorA.toFixed(1)}</div><div class="label">Side A VOR Given Up</div></div>
+            <div class="trade-result-stat"><div class="value">${vorB.toFixed(1)}</div><div class="label">Side B VOR Given Up</div></div>
+            <div class="trade-result-stat"><div class="value">${netForA >= 0 ? '+' : ''}${netForA.toFixed(1)}</div><div class="label">Net Swing (Side A)</div></div>
+          </div>
         </div>
-        <div class="section-intro" style="margin:0;">Net VOR swing — Side A: ${netForA >= 0 ? '+' : ''}${netForA.toFixed(1)} · Side B: ${(-netForA) >= 0 ? '+' : ''}${(-netForA).toFixed(1)} (positive means that side comes out ahead)</div>
       `;
     }
 
     document.getElementById('tradeSearchA').addEventListener('input', () => renderPicklist('A'));
     document.getElementById('tradeSearchB').addEventListener('input', () => renderPicklist('B'));
+    // Player names inside the selected trade-player-cards open the same
+    // player detail modal as everywhere else -- one delegated listener on
+    // each side's container, same pattern as Mock Draft's roster cards.
+    document.getElementById('tradeSelectedA').addEventListener('click', (e) => {
+      const trigger = e.target.closest('[data-player-name]');
+      if (trigger) openPlayerModal(trigger.dataset.playerName, currentPool());
+    });
+    document.getElementById('tradeSelectedB').addEventListener('click', (e) => {
+      const trigger = e.target.closest('[data-player-name]');
+      if (trigger) openPlayerModal(trigger.dataset.playerName, currentPool());
+    });
     renderTradeResult();
   }
 
@@ -5091,7 +5205,7 @@
 
   function initHistoricalReview() {
     const yearSelect = document.getElementById('histYearSelect');
-    const years = [2025, 2024, 2023, 2022, 2021, 2020];
+    const years = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
     yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
     yearSelect.addEventListener('change', renderHistorical);
 
