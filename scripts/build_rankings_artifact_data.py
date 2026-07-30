@@ -28,6 +28,17 @@ from optimizer.vor import compute_vor
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 HISTORY_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 
+# ESPN's team abbreviations disagree with nflreadpy's (our board's own
+# convention since the Phase 3 pipeline swap) for the Rams ("LAR" vs "LA")
+# and Washington ("WSH" vs "WAS") -- same fixup duplicated in fetch_actuals.py/
+# fetch_draft_results.py/fetch_player_images.py, applied there to NEW ESPN
+# fetches. The 2020-2023 actual_stats CSVs were fetched before that fixup
+# existed and still have the raw "LAR"/"WSH" codes baked in on disk (2024/2025
+# are already normalized) -- normalizing here, at read time, fixes every
+# consumer (team logos, team pages, badges) without needing to re-fetch or
+# hand-edit four years of cached CSVs.
+ESPN_TEAM_ABBR_FIXUPS = {"LAR": "LA", "WSH": "WAS"}
+
 
 def td_points(stats: dict, cfg: dict) -> float:
     """Isolates just the touchdown-value portion of a player's score (mirrors
@@ -265,6 +276,7 @@ def score_file(
     mapping = {f: f for f in ALL_CANONICAL_FIELDS if f in raw.columns}
     df = apply_mapping(raw, mapping)
     board = df[["name", "position", "team"]].copy()
+    board["team"] = board["team"].replace(ESPN_TEAM_ABBR_FIXUPS)
     # Carried through for the player detail page (full stat line, not just
     # derived points/vor) -- must be added here, before compute_vor/
     # assign_tiers/sort_values, so the values stay aligned to the right
