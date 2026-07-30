@@ -1378,6 +1378,7 @@
                 <th class="num" data-key="proj_pass_td" title="Projected passing touchdowns (QBs only).">Pass TD</th>
                 <th class="num" data-key="proj_rush_td" title="Projected rushing touchdowns (defense/special-teams return TDs bucketed in here too, closest fit for a non-scrimmage running play).">Rush TD</th>
                 <th class="num" data-key="proj_rec_td" title="Projected receiving touchdowns.">Rec TD</th>
+                <th class="num" data-key="drafted_pick" title="This league's own real draft pick number for that season -- hover a value to see who drafted them and in what round. Only available for seasons with a full real draft on record (currently 2024 and 2025).">Drafted</th>
                 <th class="num" data-key="adp" title="For 2026: standard/non-PPR consensus ADP averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC. For historical years: real 2-QB-format ADP from Fantasy Football Calculator, where archived (2020-2024). Not shown for 2025 (no historical data source for that season).">ADP</th>
                 <th class="num" data-key="value_vs_adp" title="This player's VOR compared to the VOR of whoever our own model ranks at their ADP slot. Positive = our model likes them more than the market does (a value); negative = the market is drafting them ahead of where our model would.">Value vs ADP</th>
                 <th class="num" data-key="consensus_overall_rank" title="The standard/non-PPR consensus ADP's own overall rank (averaged across Flock/Sleeper/ESPN/Yahoo/Underdog/CBS/FFPC) -- a reference/cross-check only, never blended into our own VOR or rankings. Shows overall rank in the All view; filter to a position (QB/RB/etc.) and it switches to the consensus's position rank (e.g. 'QB3') compared against our own model's position rank. A flagged (⚠) row means the two differ enough to matter -- since this league's non-PPR/2-QB scoring differs from most opponents' generic cheat sheets, a big gap is often a real draft-day edge (see the Draft Value Edges panel above), not just a data error to double-check.">Consensus</th>
@@ -1835,6 +1836,15 @@
   function adpHtml(adp) {
     return adp == null ? '<span class="cell-muted">—</span>' : adp.toFixed(1);
   }
+
+  // Real draft-pick number for this league's own real draft that season --
+  // see attachDraftedPickInfo(). Only populated for years with a full real
+  // draft on record (FANTASY_DRAFT_RESULTS, currently 2024/2025); every
+  // other year/player shows the same muted dash as a missing ADP.
+  function draftedPickHtml(p) {
+    if (p.drafted_pick == null) return '<span class="cell-muted">—</span>';
+    return `<span title="Round ${p.drafted_round}, drafted by ${p.drafted_by}">#${p.drafted_pick}</span>`;
+  }
   function valueVsAdpHtml(value) {
     if (value == null) return '<span class="cell-muted">—</span>';
     const cls = value > 0 ? 'value-positive' : value < 0 ? 'value-negative' : '';
@@ -1943,7 +1953,8 @@
   }
 
   let activeView = "2026";
-  let DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
+  let DATA;
+  refreshRankingsData();
   // Empty set = "All" (no filter); otherwise holds selected position codes,
   // e.g. {'QB','RB'} shows both -- same multi-select semantics as Mock
   // Draft's mockPositionFilters.
@@ -1984,7 +1995,7 @@
       btn.setAttribute('aria-pressed', v.key === activeView ? 'true' : 'false');
       btn.addEventListener('click', () => {
         activeView = v.key;
-        DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
+        refreshRankingsData();
         renderViewPills();
         renderProjectionModePills();
         updateSubtitle();
@@ -2002,7 +2013,7 @@
   function switchProjectionMode(mode) {
     projectionMode = mode;
     renderProjectionModePills();
-    DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
+    refreshRankingsData();
     renderStats();
     renderTable();
   }
@@ -2702,7 +2713,7 @@
       if (showTierBands && prevTier !== null && d.tier !== prevTier) {
         const bandRow = document.createElement('tr');
         bandRow.className = 'tier-band-row';
-        bandRow.innerHTML = `<td colspan="14"><div class="tier-band" style="background:${tierColor(d.tier)}; color:${tierTextColor(d.tier)}">Tier ${d.tier}</div></td>`;
+        bandRow.innerHTML = `<td colspan="15"><div class="tier-band" style="background:${tierColor(d.tier)}; color:${tierTextColor(d.tier)}">Tier ${d.tier}</div></td>`;
         tbody.appendChild(bandRow);
       }
       prevTier = d.tier;
@@ -2726,6 +2737,7 @@
         <td class="num">${(d.proj_pass_td ?? 0).toFixed(1)}</td>
         <td class="num">${(d.proj_rush_td ?? 0).toFixed(1)}</td>
         <td class="num">${(d.proj_rec_td ?? 0).toFixed(1)}</td>
+        <td class="num">${draftedPickHtml(d)}</td>
         <td class="num">${adpHtml(d.adp)}</td>
         <td class="num">${valueVsAdpHtml(d.value_vs_adp)}</td>
         <td class="num">${consensusCellHtml(d, posRank)}</td>
@@ -2768,7 +2780,7 @@
   });
 
   // Restore header labels (set once, not overwritten by click handler reassigning innerHTML each time)
-  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_td: 'Rush TD', proj_rec_td: 'Rec TD', adp: 'ADP', value_vs_adp: 'Value vs ADP', consensus_overall_rank: 'Consensus' };
+  const HEADER_LABELS = { overall_rank: 'Rank', name: 'Player', position: 'Pos', points: 'Pts', vor: 'VOR', tier: 'Tier', td_dependency_pct: 'TD%', proj_pass_td: 'Pass TD', proj_rush_td: 'Rush TD', proj_rec_td: 'Rec TD', drafted_pick: 'Drafted', adp: 'ADP', value_vs_adp: 'Value vs ADP', consensus_overall_rank: 'Consensus' };
   document.querySelectorAll('thead th[data-key]').forEach(th => { th.dataset.label = HEADER_LABELS[th.dataset.key]; });
 
   // ===========================================================================
@@ -2867,6 +2879,35 @@
     const withTiers = assignTiers(scored, LEAGUE_META.gap_threshold_stdevs);
     withTiers.forEach((p, i) => { p.overall_rank = i + 1; });
     return attachAdpValue(withTiers);
+  }
+
+  // This league's own real draft-pick number for a given past season --
+  // separate from ADP (a generic external market average). Only meaningful
+  // for years with a full real draft on record in FANTASY_DRAFT_RESULTS
+  // (currently 2024/2025); every other year/player gets nulls, which
+  // draftedPickHtml() renders as the same muted dash used for missing ADP.
+  // Rankings-specific (not folded into rescoreBoard itself, which Mock
+  // Draft/Trade Calculator/Team Pages also call for the current 2026 pool,
+  // where this concept doesn't apply).
+  function attachDraftedPickInfo(rows, year) {
+    const picks = FANTASY_DRAFT_RESULTS[year];
+    const byName = picks ? new Map(picks.map(p => [p.player, p])) : null;
+    rows.forEach(p => {
+      const pick = byName ? byName.get(p.name) : null;
+      p.drafted_pick = pick ? pick.overall_pick : null;
+      p.drafted_round = pick ? pick.round : null;
+      p.drafted_by = pick ? pick.team : null;
+    });
+    return rows;
+  }
+
+  // Single source of truth for refreshing the Rankings tab's DATA snapshot
+  // (view change, projection-mode change, league-settings save, current-week
+  // save) -- was five separate copies of the same two-line expression before
+  // this, easy to have one drift from the others.
+  function refreshRankingsData() {
+    DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
+    attachDraftedPickInfo(DATA, activeView);
   }
 
   // ===========================================================================
@@ -5054,7 +5095,7 @@
     // DATA is a cached scored snapshot for activeView (only otherwise
     // refreshed on a view-pill click) -- refresh it here too, or a save
     // while already sitting on a view would keep showing stale VOR/tiers.
-    DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
+    refreshRankingsData();
     renderStats();
     renderTable();
     renderLeagueDetails();
@@ -5092,7 +5133,7 @@
       currentWeek = Number.isFinite(raw) ? Math.max(1, Math.min(raw, gamesPerSeason)) : currentWeek;
       saveCurrentWeek(currentWeek);
       document.getElementById('currentWeekInput').value = currentWeek;
-      DATA = rescoreBoard(applyProjectionMode(DATA_BY_VIEW[activeView]), activeView === '2026');
+      refreshRankingsData();
       renderProjectionModePills();
       renderStats();
       renderTable();
