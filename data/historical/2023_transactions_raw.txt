@@ -89,6 +89,9 @@ Ka'imi Fairbairn Hou-K (FA)/Younghoe Koo NYG-K (TFA) — Greendawgs — Oct 4
 Commanders Was-DEF (FA)/Browns Cle-DEF (TFA) — Greendawgs — Oct 4
 Drake London Atl-WR (FA)/Zack Moss Cin-RB (TFA) — Sportos — Oct 11
 Joshua Palmer Buf-WR (FA)/Christian Watson GB-WR (TFA) — Sportos — Oct 11
+K.J. Osborn Ten-WR (FA)/Joshua Palmer Buf-WR (TFA) — Sportos — Oct 11
+Cameron Dicker LAC-K (FA)/Matt Prater Buf-K (TFA) — Sportos — Oct 11
+Raiders LV-DEF (FA)/Saints NO-DEF (TFA) — Hoofers — Oct 11
 Daniel Carlson LV-K (FA)/Chris Boswell Pit-K (TFA) — Redskins — Oct 11
 Dak Prescott Dal-QB (FA)/Anthony Richardson Sr. Ind-QB (TFA) — Redskins — Oct 11
 Dolphins Mia-DEF (FA)/Lions Det-DEF (TFA) — Let's Ride — Oct 11
@@ -112,8 +115,6 @@ Greg Zuerlein NYJ-K (FA)/Daniel Carlson LV-K (TFA) — Hoofers — Oct 18
 Younghoe Koo NYG-K (FA)/Dustin Hopkins Cle-K (TFA) — Hoofers — Oct 18
 Javonte Williams Dal-RB (FA)/Dak Prescott Dal-QB (TFA) — Sportos — Oct 18
 Christian Watson GB-WR (FA)/Jordan Addison Min-WR (TFA) — Sportos — Oct 18
-K.J. Osborn Ten-WR (FA)/Joshua Palmer Buf-WR (TFA) — Sportos — Oct 18
-Raiders LV-DEF (FA)/Saints NO-DEF (TFA) — Hoofers — Oct 18
 Dustin Hopkins Cle-K (FA)/Greg Zuerlein NYJ-K (TFA) — Hoofers — Oct 18
 Jerick McKinnon KC-RB (FA)/Kyren Williams LAR-RB (TFA) — Hoofers — Oct 18
 Commanders Was-DEF (FA)/Dolphins Mia-DEF (TFA) — Let's Ride — Oct 18
