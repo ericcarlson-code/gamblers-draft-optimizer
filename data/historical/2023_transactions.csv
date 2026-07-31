@@ -334,7 +334,18 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-12-27T00:00:07,Dec 27,Ryan's Remarkable Team,waiver,Drake London,Drake London,ATL,WR,C.J. Stroud,C.J. Stroud,HOU,QB,,Drake London Atl-WR (FA)/C.J. Stroud Hou-QB (TFA) — Ryan's Remarkable Team — Dec 27
 2023-12-27T00:00:08,Dec 27,Ryan's Remarkable Team,waiver,D'Andre Swift,D'Andre Swift,CHI,RB,Zach Charbonnet,Zach Charbonnet,SEA,RB,,D'Andre Swift Chi-RB (FA)/Zach Charbonnet Sea-RB (TFA) — Ryan's Remarkable Team — Dec 27
 2023-12-27T00:00:09,Dec 27,Ryan's Remarkable Team,waiver,Rashid Shaheed,Rashid Shaheed,SEA,WR,Jayden Reed,Jayden Reed,GB,WR,,Rashid Shaheed Sea-WR (FA)/Jayden Reed GB-WR (TFA) — Ryan's Remarkable Team — Dec 27
-2023-12-27T00:00:10,Dec 27,JBDA,waiver,Christian Kirk,Christian Kirk,SF,WR,Diontae Johnson,Diontae Johnson,CLE,WR,,Christian Kirk SF-WR (FA)/Diontae Johnson Cle-WR (TFA) — JBDA — Dec 27
+2023-12-27T00:00:10,Dec 27,JBDA,waiver,Diontae Johnson,Diontae Johnson,CLE,WR,Jordan Addison,Jordan Addison,MIN,WR,,Diontae Johnson Cle-WR (FA)/Jordan Addison Min-WR (TFA) — JBDA — Dec 27
+2023-12-27T00:00:11,Dec 27,JBDA,waiver,DJ Chark,DJ Chark,ATL,WR,Jaxon Smith-Njigba,Jaxon Smith-Njigba,SEA,WR,,DJ Chark Atl-WR (FA)/Jaxon Smith-Njigba Sea-WR (TFA) — JBDA — Dec 27
+2023-12-27T00:00:12,Dec 27,JBDA,waiver,Kareem Hunt,Kareem Hunt,KC,RB,Aaron Jones Sr.,Aaron Jones Sr.,MIN,RB,,Kareem Hunt KC-RB (FA)/Aaron Jones Sr. Min-RB (TFA) — JBDA — Dec 27
+2023-12-27T00:00:13,Dec 27,ChronicMasterdeflatr,waiver,James Conner,James Conner,ARI,RB,Brian Robinson,Brian Robinson Jr.,ATL,RB,,James Conner Ari-RB (FA)/Brian Robinson Atl-RB (TFA) — ChronicMasterdeflatr — Dec 27
+2023-12-27T00:00:14,Dec 27,ChronicMasterdeflatr,waiver,Chase McLaughlin,Chase McLaughlin,TB,K,Wil Lutz,Wil Lutz,DEN,K,,Chase McLaughlin TB-K (FA)/Wil Lutz Den-K (TFA) — ChronicMasterdeflatr — Dec 27
+2023-12-27T00:00:15,Dec 27,Elite,waiver,Tyler Boyd,Tyler Boyd,TEN,WR,DeAndre Hopkins,DeAndre Hopkins,BAL,WR,,Tyler Boyd Ten-WR (FA)/DeAndre Hopkins Bal-WR (TFA) — Elite — Dec 27
+2023-12-27T00:00:16,Dec 27,Elite,waiver,Aaron Jones Sr.,Aaron Jones Sr.,MIN,RB,Alexander Mattison,Alexander Mattison,MIA,RB,,Aaron Jones Sr. Min-RB (FA)/Alexander Mattison Mia-RB (TFA) — Elite — Dec 27
+2023-12-27T00:00:17,Dec 27,Hoofers,waiver,Cairo Santos,Cairo Santos,CHI,K,Dustin Hopkins,Dustin Hopkins,CLE,K,,Cairo Santos Chi-K (FA)/Dustin Hopkins Cle-K (TFA) — Hoofers — Dec 27
+2023-12-27T00:00:18,Dec 27,Hoofers,waiver,Wil Lutz,Wil Lutz,DEN,K,Greg Zuerlein,Greg Zuerlein,NYJ,K,,Wil Lutz Den-K (FA)/Greg Zuerlein NYJ-K (TFA) — Hoofers — Dec 27
+2023-12-27T00:00:19,Dec 27,Sportos,waiver,C.J. Stroud,C.J. Stroud,HOU,QB,Russell Wilson,Russell Wilson,NYG,QB,,C.J. Stroud Hou-QB (FA)/Russell Wilson NYG-QB (TFA) — Sportos — Dec 27
+2023-12-27T00:00:20,Dec 27,Sportos,waiver,Las Vegas Raiders,Las Vegas Raiders,LV,DEF,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,,Raiders LV-DEF (FA)/Chiefs KC-DEF (TFA) — Sportos — Dec 27
+2023-12-27T00:00:21,Dec 27,JBDA,waiver,Christian Kirk,Christian Kirk,SF,WR,Diontae Johnson,Diontae Johnson,CLE,WR,,Christian Kirk SF-WR (FA)/Diontae Johnson Cle-WR (TFA) — JBDA — Dec 27
 2024-01-05T00:00:00,Jan 5,Hoofers,waiver,Christian Kirk,Christian Kirk,SF,WR,Alvin Kamara,Alvin Kamara,NO,RB,,Christian Kirk SF-WR (FA)/Alvin Kamara NO-RB (TFA) — Hoofers — Jan 5
 2024-01-05T00:00:01,Jan 5,Hoofers,waiver,Green Bay Packers,Green Bay Packers,GB,DEF,Cleveland Browns,Cleveland Browns,CLE,DEF,,Packers GB-DEF (FA)/Browns Cle-DEF (TFA) — Hoofers — Jan 5
 2024-01-05T00:00:02,Jan 5,Hoofers,waiver,Cameron Dicker,Cameron Dicker,LAC,K,Wil Lutz,Wil Lutz,DEN,K,,Cameron Dicker LAC-K (FA)/Wil Lutz Den-K (TFA) — Hoofers — Jan 5
