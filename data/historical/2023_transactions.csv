@@ -22,35 +22,43 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-09-13T00:00:11,Sep 13,Hoofers,waiver,New York Giants,New York Giants,NYG,DEF,Baltimore Ravens,Baltimore Ravens,BAL,DEF,,Giants NYG-DEF (FA)/Ravens Bal-DEF (TFA) — Hoofers — Sep 13
 2023-09-13T00:00:12,Sep 13,Let's Ride,waiver,Pittsburgh Steelers,Pittsburgh Steelers,PIT,DEF,Washington Commanders,Washington Commanders,WAS,DEF,,Steelers Pit-DEF (FA)/Commanders Was-DEF (TFA) — Let's Ride — Sep 13
 2023-09-13T00:00:13,Sep 13,Let's Ride,waiver,Luke Musgrave,Luke Musgrave,GB,TE,Dallas Goedert,Dallas Goedert,PHI,TE,,Luke Musgrave GB-TE (FA)/Dallas Goedert Phi-TE (TFA) — Let's Ride — Sep 13
-2023-09-19T00:00:00,Sep 19,Hoofers,waiver,Justin Tucker,,BAL,K,,,,,,Justin Tucker Bal-K (FA) — Hoofers — Sep 19
-2023-09-19T00:00:01,Sep 19,Ryan's Remarkable Team,waiver,Justin Tucker,,BAL,K,Greg Zuerlein,Greg Zuerlein,NYJ,K,,Justin Tucker Bal-K (FA)/Greg Zuerlein NYJ-K (TFA) — Ryan's Remarkable Team — Sep 19
-2023-09-19T00:00:02,Sep 19,Hoofers,waiver,Stefon Diggs,Stefon Diggs,NE,WR,Michael Thomas,Michael Thomas,NO,WR,,Stefon Diggs NE-WR (FA)/Michael Thomas NO-WR (TFA) — Hoofers — Sep 19
-2023-09-19T00:00:03,Sep 19,Hoofers,waiver,Nate McCrary,,GB,RB,Rhamondre Stevenson,Rhamondre Stevenson,NE,RB,,Nate McCrary GB-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — Hoofers — Sep 19
-2023-09-19T00:00:04,Sep 19,Ryan's Remarkable Team,waiver,Michael Thomas,Michael Thomas,NO,WR,,,,,,Michael Thomas NO-WR (FA) — Ryan's Remarkable Team — Sep 19
+2023-09-19T00:00:00,Sep 19,Hoofers,waiver,,,,,Justin Tucker,,BAL,K,,Justin Tucker Bal-K (TFA) — Hoofers — Sep 19
+2023-09-19T00:00:01,Sep 19,Ryan's Remarkable Team,waiver,,,,,Stefon Diggs,Stefon Diggs,NE,WR,,Stefon Diggs NE-WR (TFA) — Ryan's Remarkable Team — Sep 19
+2023-09-19T00:00:02,Sep 19,Ryan's Remarkable Team,waiver,Justin Tucker,,BAL,K,Greg Zuerlein,Greg Zuerlein,NYJ,K,,Justin Tucker Bal-K (FA)/Greg Zuerlein NYJ-K (TFA) — Ryan's Remarkable Team — Sep 19
+2023-09-19T00:00:03,Sep 19,Hoofers,waiver,Stefon Diggs,Stefon Diggs,NE,WR,Michael Thomas,Michael Thomas,NO,WR,,Stefon Diggs NE-WR (FA)/Michael Thomas NO-WR (TFA) — Hoofers — Sep 19
+2023-09-19T00:00:04,Sep 19,Hoofers,waiver,Nate McCrary,,GB,RB,Rhamondre Stevenson,Rhamondre Stevenson,NE,RB,,Nate McCrary GB-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — Hoofers — Sep 19
 2023-09-19T00:00:05,Sep 19,Ryan's Remarkable Team,waiver,Rhamondre Stevenson,Rhamondre Stevenson,NE,RB,David Montgomery,David Montgomery,HOU,RB,,Rhamondre Stevenson NE-RB (FA)/David Montgomery Hou-RB (TFA) — Ryan's Remarkable Team — Sep 19
-2023-09-20T00:00:00,Sep 20,Hoofers,waiver,George Kittle,George Kittle,SF,TE,Raheem Mostert,Raheem Mostert,LV,RB,,George Kittle SF-TE (FA)/Raheem Mostert LV-RB (TFA) — Hoofers — Sep 20
-2023-09-20T00:00:01,Sep 20,Redskins,waiver,Raheem Mostert,Raheem Mostert,LV,RB,,,,,,Raheem Mostert LV-RB (FA) — Redskins — Sep 20
-2023-09-20T00:00:02,Sep 20,Redskins,waiver,George Kittle,George Kittle,SF,TE,,,,,,George Kittle SF-TE (FA) — Redskins — Sep 20
-2023-09-20T00:00:03,Sep 20,Hoofers,waiver,Matthew Stafford,Matthew Stafford,LA,QB,Dalton Kincaid,Dalton Kincaid,BUF,TE,,Matthew Stafford LAR-QB (FA)/Dalton Kincaid Buf-TE (TFA) — Hoofers — Sep 20
-2023-09-20T00:00:04,Sep 20,Hoofers,waiver,Kyren Williams,Kyren Williams,LA,RB,Nate McCrary,,GB,RB,,Kyren Williams LAR-RB (FA)/Nate McCrary GB-RB (TFA) — Hoofers — Sep 20
-2023-09-20T00:00:05,Sep 20,Elite,commissioner_add,Odell Beckham Jr.,Odell Beckham Jr.,NYG,WR,,,,,,Odell Beckham Jr. NYG-WR — Added by Commissioner — Elite — Sep 20
-2023-09-20T00:00:06,Sep 20,Elite,waiver,Skyy Moore,Skyy Moore,GB,WR,,,,,,Skyy Moore GB-WR (FA) — Elite — Sep 20
-2023-09-20T00:00:07,Sep 20,Elite,waiver,,,,,Odell Beckham Jr.,Odell Beckham Jr.,NYG,WR,,Odell Beckham Jr. NYG-WR (TFA) — Elite — Sep 20
-2023-09-20T00:00:08,Sep 20,Elite,waiver,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,Denver Broncos,Denver Broncos,DEN,DEF,,Chiefs KC-DEF (FA)/Broncos Den-DEF (TFA) — Elite — Sep 20
-2023-09-20T00:00:09,Sep 20,Elite,waiver,Jerome Ford,Jerome Ford,WAS,RB,Cooper Kupp,Cooper Kupp,SEA,WR,,Jerome Ford Was-RB (FA)/Cooper Kupp Sea-WR (TFA) — Elite — Sep 20
-2023-09-20T00:00:10,Sep 20,Elite,waiver,,,,,Cooper Kupp,Cooper Kupp,SEA,WR,,Cooper Kupp Sea-WR (TFA) — Elite — Sep 20
-2023-09-20T00:00:11,Sep 20,Greendawgs,waiver,New England Patriots,New England Patriots,NE,DEF,Tampa Bay Buccaneers,Tampa Bay Buccaneers,TB,DEF,,Patriots NE-DEF (FA)/Buccaneers TB-DEF (TFA) — Greendawgs — Sep 20
-2023-09-20T00:00:12,Sep 20,Greendawgs,waiver,Cooper Kupp,Cooper Kupp,SEA,WR,DeAndre Hopkins,DeAndre Hopkins,BAL,WR,,Cooper Kupp Sea-WR (FA)/DeAndre Hopkins Bal-WR (TFA) — Greendawgs — Sep 20
-2023-09-20T00:00:13,Sep 20/21,Greendawgs,waiver,Joshua Kelley,Joshua Kelley,TEN,RB,Tyler Allgeier,Tyler Allgeier,ARI,RB,,Joshua Kelley Ten-RB (FA)/Tyler Allgeier Ari-RB (TFA) — Greendawgs — Sep 20/21
-2023-09-20T00:00:14,Sep 20,Greendawgs,waiver,Jamaal Williams,Jamaal Williams,NO,RB,,,,,,Jamaal Williams NO-RB (FA) — Greendawgs — Sep 20
-2023-09-20T00:00:15,Sep 20,Let's Ride,waiver,D'Andre Swift,D'Andre Swift,CHI,RB,Khalil Herbert,Khalil Herbert,NYJ,RB,,D'Andre Swift Chi-RB (FA)/Khalil Herbert NYJ-RB (TFA) — Let's Ride — Sep 20
-2023-09-20T00:00:16,Sep 20,JBDA,waiver,Kareem Hunt,Kareem Hunt,KC,RB,Marquise Brown,Hollywood Brown,PHI,WR,,Kareem Hunt KC-RB (FA)/Hollywood Brown Phi-WR (TFA) — JBDA — Sep 20
-2023-09-20T00:00:17,Sep 20,JBDA,waiver,Nico Collins,Nico Collins,HOU,WR,Zay Flowers,Zay Flowers,BAL,WR,,Nico Collins Hou-WR (FA)/Zay Flowers Bal-WR (TFA) — JBDA — Sep 20
-2023-09-20T00:00:18,Sep 20,Redskins,waiver,Josh Reynolds,Josh Reynolds,NYJ,WR,Miles Sanders,Miles Sanders,DAL,RB,,Josh Reynolds NYJ-WR (FA)/Miles Sanders Dal-RB (TFA) — Redskins — Sep 20
-2023-09-20T00:00:19,Sep 20,Sportos,waiver,Kadarius Toney,Kadarius Toney,CLE,WR,Jahan Dotson,Jahan Dotson,ATL,WR,,Kadarius Toney Cle-WR (FA)/Jahan Dotson Atl-WR (TFA) — Sportos — Sep 20
-2023-09-20T00:00:20,Sep 20,ChronicMasterdeflatr,waiver,Brett Maher,Brett Maher,LA,K,Chad Ryland,Chad Ryland,ARI,K,,Brett Maher LAR-K (FA)/Chad Ryland Ari-K (TFA) — ChronicMasterdeflatr — Sep 20
-2023-09-20T00:00:21,Sep 20,ChronicMasterdeflatr,waiver,James Conner,James Conner,ARI,RB,Cam Akers,Cam Akers,SEA,RB,,James Conner Ari-RB (FA)/Cam Akers Sea-RB (TFA) — ChronicMasterdeflatr — Sep 20
-2023-09-20T00:00:22,Sep 20,ChronicMasterdeflatr,waiver,Brian Robinson,Brian Robinson Jr.,ATL,RB,Nick Chubb,Nick Chubb,HOU,RB,,Brian Robinson Atl-RB (FA)/Nick Chubb Hou-RB (TFA) — ChronicMasterdeflatr — Sep 20
+2023-09-19T00:00:06,Sep 19,Ryan's Remarkable Team,waiver,Michael Thomas,Michael Thomas,NO,WR,,,,,,Michael Thomas NO-WR (FA) — Ryan's Remarkable Team — Sep 19
+2023-09-20T00:00:00,Sep 20,Redskins,waiver,,,,,George Kittle,George Kittle,SF,TE,,George Kittle SF-TE (TFA) — Redskins — Sep 20
+2023-09-20T00:00:01,Sep 20,Hoofers,waiver,George Kittle,George Kittle,SF,TE,Raheem Mostert,Raheem Mostert,LV,RB,,George Kittle SF-TE (FA)/Raheem Mostert LV-RB (TFA) — Hoofers — Sep 20
+2023-09-20T00:00:02,Sep 20,Redskins,waiver,Raheem Mostert,Raheem Mostert,LV,RB,,,,,,Raheem Mostert LV-RB (FA) — Redskins — Sep 20
+2023-09-20T00:00:03,Sep 20,Elite,waiver,,,,,Odell Beckham Jr.,Odell Beckham Jr.,NYG,WR,,Odell Beckham Jr. NYG-WR (TFA) — Elite — Sep 20
+2023-09-20T00:00:04,Sep 20,Elite,waiver,Skyy Moore,Skyy Moore,GB,WR,,,,,,Skyy Moore GB-WR (FA) — Elite — Sep 20
+2023-09-20T00:00:05,Sep 20,Elite,waiver,,,,,Skyy Moore,Skyy Moore,GB,WR,,Skyy Moore GB-WR (TFA) — Elite — Sep 20
+2023-09-20T00:00:06,Sep 20,Elite,commissioner_add,Odell Beckham Jr.,Odell Beckham Jr.,NYG,WR,,,,,,Odell Beckham Jr. NYG-WR — Added by Commissioner — Elite — Sep 20
+2023-09-20T00:00:07,Sep 20,Hoofers,waiver,Baltimore Ravens,Baltimore Ravens,BAL,DEF,New York Giants,New York Giants,NYG,DEF,,Ravens Bal-DEF (FA)/Giants NYG-DEF (TFA) — Hoofers — Sep 20
+2023-09-20T00:00:08,Sep 20,Hoofers,waiver,Greg Joseph,Greg Joseph,LV,K,,,,,,Greg Joseph LV-K (FA) — Hoofers — Sep 20
+2023-09-20T00:00:09,Sep 20,Hoofers,waiver,Matthew Stafford,Matthew Stafford,LA,QB,Dalton Kincaid,Dalton Kincaid,BUF,TE,,Matthew Stafford LAR-QB (FA)/Dalton Kincaid Buf-TE (TFA) — Hoofers — Sep 20
+2023-09-20T00:00:10,Sep 20,Hoofers,waiver,Kyren Williams,Kyren Williams,LA,RB,Nate McCrary,,GB,RB,,Kyren Williams LAR-RB (FA)/Nate McCrary GB-RB (TFA) — Hoofers — Sep 20
+2023-09-20T00:00:11,Sep 20,Elite,waiver,,,,,Odell Beckham Jr.,Odell Beckham Jr.,NYG,WR,,Odell Beckham Jr. NYG-WR (TFA) — Elite — Sep 20
+2023-09-20T00:00:12,Sep 20,Elite,waiver,Skyy Moore,Skyy Moore,GB,WR,,,,,,Skyy Moore GB-WR (FA) — Elite — Sep 20
+2023-09-20T00:00:13,Sep 20,Elite,waiver,,,,,Cooper Kupp,Cooper Kupp,SEA,WR,,Cooper Kupp Sea-WR (TFA) — Elite — Sep 20
+2023-09-20T00:00:14,Sep 20,Elite,waiver,Jerome Ford,Jerome Ford,WAS,RB,,,,,,Jerome Ford Was-RB (FA) — Elite — Sep 20
+2023-09-20T00:00:15,Sep 20,Elite,waiver,,,,,Denver Broncos,Denver Broncos,DEN,DEF,,Broncos Den-DEF (TFA) — Elite — Sep 20
+2023-09-20T00:00:16,Sep 20,Elite,waiver,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,,,,,,Chiefs KC-DEF (FA) — Elite — Sep 20
+2023-09-20T00:00:17,Sep 20,Greendawgs,waiver,New England Patriots,New England Patriots,NE,DEF,Tampa Bay Buccaneers,Tampa Bay Buccaneers,TB,DEF,,Patriots NE-DEF (FA)/Buccaneers TB-DEF (TFA) — Greendawgs — Sep 20
+2023-09-20T00:00:18,Sep 20,Greendawgs,waiver,Cooper Kupp,Cooper Kupp,SEA,WR,DeAndre Hopkins,DeAndre Hopkins,BAL,WR,,Cooper Kupp Sea-WR (FA)/DeAndre Hopkins Bal-WR (TFA) — Greendawgs — Sep 20
+2023-09-20T00:00:19,Sep 20,Greendawgs,waiver,,,,,Jamaal Williams,Jamaal Williams,NO,RB,,Jamaal Williams NO-RB (TFA) — Greendawgs — Sep 20
+2023-09-20T00:00:20,Sep 20,Greendawgs,waiver,Tyler Allgeier,Tyler Allgeier,ARI,RB,,,,,,Tyler Allgeier Ari-RB (FA) — Greendawgs — Sep 20
+2023-09-20T00:00:21,Sep 20,Let's Ride,waiver,D'Andre Swift,D'Andre Swift,CHI,RB,Khalil Herbert,Khalil Herbert,NYJ,RB,,D'Andre Swift Chi-RB (FA)/Khalil Herbert NYJ-RB (TFA) — Let's Ride — Sep 20
+2023-09-20T00:00:22,Sep 20,JBDA,waiver,Kareem Hunt,Kareem Hunt,KC,RB,Marquise Brown,Hollywood Brown,PHI,WR,,Kareem Hunt KC-RB (FA)/Hollywood Brown Phi-WR (TFA) — JBDA — Sep 20
+2023-09-20T00:00:23,Sep 20,JBDA,waiver,Nico Collins,Nico Collins,HOU,WR,Zay Flowers,Zay Flowers,BAL,WR,,Nico Collins Hou-WR (FA)/Zay Flowers Bal-WR (TFA) — JBDA — Sep 20
+2023-09-20T00:00:24,Sep 20,Redskins,waiver,Josh Reynolds,Josh Reynolds,NYJ,WR,Miles Sanders,Miles Sanders,DAL,RB,,Josh Reynolds NYJ-WR (FA)/Miles Sanders Dal-RB (TFA) — Redskins — Sep 20
+2023-09-20T00:00:25,Sep 20,Sportos,waiver,Kadarius Toney,Kadarius Toney,CLE,WR,Jahan Dotson,Jahan Dotson,ATL,WR,,Kadarius Toney Cle-WR (FA)/Jahan Dotson Atl-WR (TFA) — Sportos — Sep 20
+2023-09-20T00:00:26,Sep 20,ChronicMasterdeflatr,waiver,Brett Maher,Brett Maher,LA,K,Chad Ryland,Chad Ryland,ARI,K,,Brett Maher LAR-K (FA)/Chad Ryland Ari-K (TFA) — ChronicMasterdeflatr — Sep 20
+2023-09-20T00:00:27,Sep 20,ChronicMasterdeflatr,waiver,James Conner,James Conner,ARI,RB,Cam Akers,Cam Akers,SEA,RB,,James Conner Ari-RB (FA)/Cam Akers Sea-RB (TFA) — ChronicMasterdeflatr — Sep 20
+2023-09-20T00:00:28,Sep 20,ChronicMasterdeflatr,waiver,Brian Robinson,Brian Robinson Jr.,ATL,RB,Nick Chubb,Nick Chubb,HOU,RB,,Brian Robinson Atl-RB (FA)/Nick Chubb Hou-RB (TFA) — ChronicMasterdeflatr — Sep 20
+2023-09-21T00:00:00,Sep 21,Greendawgs,waiver,Joshua Kelley,Joshua Kelley,TEN,RB,Tyler Allgeier,Tyler Allgeier,ARI,RB,,Joshua Kelley Ten-RB (FA)/Tyler Allgeier Ari-RB (TFA) — Greendawgs — Sep 21
 2023-09-26T00:00:00,Sep 26/27,Hoofers,waiver,New Orleans Saints,New Orleans Saints,NO,DEF,Baltimore Ravens,Baltimore Ravens,BAL,DEF,,Saints NO-DEF (FA)/Ravens Bal-DEF (TFA) — Hoofers — Sep 26/27
 2023-09-26T00:00:01,Sep 26,Hoofers,waiver,Dustin Hopkins,Dustin Hopkins,CLE,K,Greg Joseph,Greg Joseph,LV,K,,Dustin Hopkins Cle-K (FA)/Greg Joseph LV-K (TFA) — Hoofers — Sep 26
 2023-09-26T00:00:02,Sep 26,Hoofers,waiver,De'Von Achane,De'Von Achane,MIA,RB,Matthew Stafford,Matthew Stafford,LA,QB,,De'Von Achane Mia-RB (FA)/Matthew Stafford LAR-QB (TFA) — Hoofers — Sep 26
@@ -89,8 +97,8 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-10-11T00:00:04,Oct 11,Let's Ride,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,Detroit Lions,Detroit Lions,DET,DEF,,Dolphins Mia-DEF (FA)/Lions Det-DEF (TFA) — Let's Ride — Oct 11
 2023-10-11T00:00:05,Oct 11,Sportos,trade,Isiah Pacheco,Isiah Pacheco,DET,RB,Garrett Wilson,Garrett Wilson,NYJ,WR,Let's Ride,TRADE: Isiah Pacheco Det-RB → Sportos | Garrett Wilson NYJ-WR → Let's Ride — Oct 11
 2023-10-11T00:00:06,Oct 11,Let's Ride,trade,Garrett Wilson,Garrett Wilson,NYJ,WR,Isiah Pacheco,Isiah Pacheco,DET,RB,Sportos,TRADE: Isiah Pacheco Det-RB → Sportos | Garrett Wilson NYJ-WR → Let's Ride — Oct 11
-2023-10-11T00:00:07,Oct 11,Greendawgs,waiver,AJ Dillon,AJ Dillon,CAR,RB,Emari Demercado,Emari Demercado,KC,RB,,AJ Dillon Car-RB (FA)/Emari Demercado KC-RB (TFA) — Greendawgs — Oct 11
-2023-10-11T00:00:08,Oct 11,Greendawgs,waiver,Emari Demercado,Emari Demercado,KC,RB,Romeo Doubs,Romeo Doubs,NE,WR,,Emari Demercado KC-RB (FA)/Romeo Doubs NE-WR (TFA) — Greendawgs — Oct 11
+2023-10-11T00:00:07,Oct 11,Greendawgs,waiver,Emari Demercado,Emari Demercado,KC,RB,Romeo Doubs,Romeo Doubs,NE,WR,,Emari Demercado KC-RB (FA)/Romeo Doubs NE-WR (TFA) — Greendawgs — Oct 11
+2023-10-11T00:00:08,Oct 11,Greendawgs,waiver,AJ Dillon,AJ Dillon,CAR,RB,Emari Demercado,Emari Demercado,KC,RB,,AJ Dillon Car-RB (FA)/Emari Demercado KC-RB (TFA) — Greendawgs — Oct 11
 2023-10-11T00:00:09,Oct 11,Greendawgs,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Washington Commanders,Washington Commanders,WAS,DEF,,Rams LAR-DEF (FA)/Commanders Was-DEF (TFA) — Greendawgs — Oct 11
 2023-10-11T00:00:10,Oct 11,Ryan's Remarkable Team,waiver,Chris Godwin Jr.,Chris Godwin Jr.,TB,WR,Tank Dell,Tank Dell,HOU,WR,,Chris Godwin Jr. TB-WR (FA)/Tank Dell Hou-WR (TFA) — Ryan's Remarkable Team — Oct 11
 2023-10-11T00:00:11,Oct 11,Elite,waiver,Zay Flowers,Zay Flowers,BAL,WR,,,,,,Zay Flowers Bal-WR (FA) — Elite — Oct 11
@@ -174,7 +182,7 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-11-01T00:00:17,Nov 1,Elite,waiver,Dalton Kincaid,Dalton Kincaid,BUF,TE,Kyle Pitts Sr.,Kyle Pitts Sr.,ATL,TE,,Dalton Kincaid Buf-TE (FA)/Kyle Pitts Sr. Atl-TE (TFA) — Elite — Nov 1
 2023-11-01T00:00:18,Nov 1/8,JBDA,waiver,Joshua Palmer,Joshua Palmer,BUF,WR,Deebo Samuel,Deebo Samuel,WAS,WR,,Joshua Palmer Buf-WR (FA)/Deebo Samuel Was-WR (TFA) — JBDA — Nov 1/8
 2023-11-01T00:00:19,Nov 1/8,JBDA,waiver,Greg Zuerlein,Greg Zuerlein,NYJ,K,Jake Moody,Jake Moody,WAS,K,,Greg Zuerlein NYJ-K (FA)/Jake Moody Was-K (TFA) — JBDA — Nov 1/8
-2023-11-08T00:00:00,Nov 8,Redskins,waiver,Marquise Brown,Hollywood Brown,PHI,WR,James Conner,James Conner,ARI,RB,,Hollywood Brown Phi-WR (FA)/James Conner Ari-RB (TFA) — Redskins — Nov 8
+2023-11-08T00:00:00,Nov 8,Redskins,waiver,Marquise Brown,Hollywood Brown,PHI,WR,Brandin Cooks,Brandin Cooks,NO,WR,,Hollywood Brown Phi-WR (FA)/Brandin Cooks NO-WR (TFA) — Redskins — Nov 8
 2023-11-08T00:00:01,Nov 8,Redskins,waiver,Deebo Samuel,Deebo Samuel,WAS,WR,DeMario Douglas,DeMario Douglas,NE,WR,,Deebo Samuel Was-WR (FA)/DeMario Douglas NE-WR (TFA) — Redskins — Nov 8
 2023-11-08T00:00:02,Nov 8,Hoofers,waiver,Pittsburgh Steelers,Pittsburgh Steelers,PIT,DEF,Atlanta Falcons,Atlanta Falcons,ATL,DEF,,Steelers Pit-DEF (FA)/Falcons Atl-DEF (TFA) — Hoofers — Nov 8
 2023-11-08T00:00:03,Nov 8,Hoofers,waiver,Russell Wilson,Russell Wilson,NYG,QB,AJ Dillon,AJ Dillon,CAR,RB,,Russell Wilson NYG-QB (FA)/AJ Dillon Car-RB (TFA) — Hoofers — Nov 8
@@ -189,7 +197,7 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-11-08T00:00:12,Nov 8,Greendawgs,waiver,,,,,David Njoku,David Njoku,LAC,TE,,David Njoku LAC-TE (TFA) — Greendawgs — Nov 8
 2023-11-08T00:00:13,Nov 8,Elite,waiver,Nick Folk,Nick Folk,ATL,K,Harrison Butker,Harrison Butker,KC,K,,Nick Folk Atl-K (FA)/Harrison Butker KC-K (TFA) — Elite — Nov 8
 2023-11-08T00:00:14,Nov 8,Redskins,waiver,James Conner,James Conner,ARI,RB,Marquise Brown,Hollywood Brown,PHI,WR,,James Conner Ari-RB (FA)/Hollywood Brown Phi-WR (TFA) — Redskins — Nov 8
-2023-11-08T00:00:15,Nov 8,Redskins,waiver,Marquise Brown,Hollywood Brown,PHI,WR,Brandin Cooks,Brandin Cooks,NO,WR,,Hollywood Brown Phi-WR (FA)/Brandin Cooks NO-WR (TFA) — Redskins — Nov 8
+2023-11-08T00:00:15,Nov 8,Redskins,waiver,Marquise Brown,Hollywood Brown,PHI,WR,James Conner,James Conner,ARI,RB,,Hollywood Brown Phi-WR (FA)/James Conner Ari-RB (TFA) — Redskins — Nov 8
 2023-11-08T00:00:16,Nov 8,Redskins,waiver,Kyler Murray,Kyler Murray,MIN,QB,Mac Jones,Mac Jones,SF,QB,,Kyler Murray Min-QB (FA)/Mac Jones SF-QB (TFA) — Redskins — Nov 8
 2023-11-08T00:00:17,Nov 8,Redskins,waiver,Joshua Dobbs,Joshua Dobbs,NE,QB,Zach Wilson,Zach Wilson,NO,QB,,Joshua Dobbs NE-QB (FA)/Zach Wilson NO-QB (TFA) — Redskins — Nov 8
 2023-11-09T00:00:00,Nov 9,Elite,waiver,Jason Myers,Jason Myers,SEA,K,,,,,,Jason Myers Sea-K (FA) — Elite — Nov 9
@@ -199,19 +207,30 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-11-15T00:00:00,Nov 15,Greendawgs,waiver,D'Andre Swift,D'Andre Swift,CHI,RB,Rhamondre Stevenson,Rhamondre Stevenson,NE,RB,,D'Andre Swift Chi-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — Greendawgs — Nov 15
 2023-11-15T00:00:01,Nov 15,Greendawgs,waiver,DK Metcalf,DK Metcalf,PIT,WR,Michael Pittman Jr.,Michael Pittman Jr.,PIT,WR,,DK Metcalf Pit-WR (FA)/Michael Pittman Jr. Pit-WR (TFA) — Greendawgs — Nov 15
 2023-11-15T00:00:02,Nov 15,Greendawgs,waiver,Justin Fields,Justin Fields,KC,QB,Bryce Young,Bryce Young,CAR,QB,,Justin Fields KC-QB (FA)/Bryce Young Car-QB (TFA) — Greendawgs — Nov 15
-2023-11-15T00:00:03,Nov 15,Let's Ride,waiver,Jaylen Waddle,Jaylen Waddle,DEN,WR,DK Metcalf,DK Metcalf,PIT,WR,,Jaylen Waddle Den-WR (FA)/DK Metcalf Pit-WR (TFA) — Let's Ride — Nov 15
-2023-11-15T00:00:04,Nov 15,Let's Ride,waiver,Dalton Schultz,Dalton Schultz,HOU,TE,Taysom Hill,Taysom Hill,NO,TE,,Dalton Schultz Hou-TE (FA)/Taysom Hill NO-TE (TFA) — Let's Ride — Nov 15
-2023-11-15T00:00:05,Nov 15,Let's Ride,waiver,Rachaad White,Rachaad White,WAS,RB,Jaleel McLaughlin,Jaleel McLaughlin,DEN,RB,,Rachaad White Was-RB (FA)/Jaleel McLaughlin Den-RB (TFA) — Let's Ride — Nov 15
-2023-11-15T00:00:06,Nov 15,ChronicMasterdeflatr,waiver,Wil Lutz,Wil Lutz,DEN,K,,,,,,Wil Lutz Den-K (FA) — ChronicMasterdeflatr — Nov 15
-2023-11-15T00:00:07,Nov 15,ChronicMasterdeflatr,waiver,Geno Smith,Geno Smith,NYJ,QB,,,,,,Geno Smith NYJ-QB (FA) — ChronicMasterdeflatr — Nov 15
-2023-11-15T00:00:08,Nov 15,ChronicMasterdeflatr,waiver,Saquon Barkley,Saquon Barkley,PHI,RB,Alexander Mattison,Alexander Mattison,MIA,RB,,Saquon Barkley Phi-RB (FA)/Alexander Mattison Mia-RB (TFA) — ChronicMasterdeflatr — Nov 15
-2023-11-15T00:00:09,Nov 15,ChronicMasterdeflatr,waiver,Jake Moody,Jake Moody,WAS,K,Blake Grupe,Blake Grupe,IND,K,,Jake Moody Was-K (FA)/Blake Grupe Ind-K (TFA) — ChronicMasterdeflatr — Nov 15
-2023-11-15T00:00:10,Nov 15,Sportos,waiver,Tyler Boyd,Tyler Boyd,TEN,WR,George Pickens,George Pickens,DAL,WR,,Tyler Boyd Ten-WR (FA)/George Pickens Dal-WR (TFA) — Sportos — Nov 15
-2023-11-15T00:00:11,Nov 15,Sportos,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,Baltimore Ravens,Baltimore Ravens,BAL,DEF,,Dolphins Mia-DEF (FA)/Ravens Bal-DEF (TFA) — Sportos — Nov 15
-2023-11-15T00:00:12,Nov 15,Ryan's Remarkable Team,waiver,Minnesota Vikings,Minnesota Vikings,MIN,DEF,Tampa Bay Buccaneers,Tampa Bay Buccaneers,TB,DEF,,Vikings Min-DEF (FA)/Buccaneers TB-DEF (TFA) — Ryan's Remarkable Team — Nov 15
-2023-11-15T00:00:13,Nov 15,Ryan's Remarkable Team,waiver,Romeo Doubs,Romeo Doubs,NE,WR,Will Levis,Will Levis,TEN,QB,,Romeo Doubs NE-WR (FA)/Will Levis Ten-QB (TFA) — Ryan's Remarkable Team — Nov 15
-2023-11-15T00:00:14,Nov 15,JBDA,waiver,Detroit Lions,Detroit Lions,DET,DEF,New Orleans Saints,New Orleans Saints,NO,DEF,,Lions Det-DEF (FA)/Saints NO-DEF (TFA) — JBDA — Nov 15
-2023-11-15T00:00:15,Nov 15,JBDA,waiver,Rashee Rice,Rashee Rice,KC,WR,Tee Higgins,Tee Higgins,CIN,WR,,Rashee Rice KC-WR (FA)/Tee Higgins Cin-WR (TFA) — JBDA — Nov 15
+2023-11-15T00:00:03,Nov 15,Greendawgs,waiver,Cleveland Browns,Cleveland Browns,CLE,DEF,Buffalo Bills,Buffalo Bills,BUF,DEF,,Browns Cle-DEF (FA)/Bills Buf-DEF (TFA) — Greendawgs — Nov 15
+2023-11-15T00:00:04,Nov 15,Greendawgs,waiver,Harrison Butker,Harrison Butker,KC,K,Cameron Dicker,Cameron Dicker,LAC,K,,Harrison Butker KC-K (FA)/Cameron Dicker LAC-K (TFA) — Greendawgs — Nov 15
+2023-11-15T00:00:05,Nov 15,Greendawgs,waiver,Tank Dell,Tank Dell,HOU,WR,Derek Carr,Derek Carr,NO,QB,,Tank Dell Hou-WR (FA)/Derek Carr NO-QB (TFA) — Greendawgs — Nov 15
+2023-11-15T00:00:06,Nov 15,Hoofers,waiver,Kyren Williams,Kyren Williams,LA,RB,Russell Wilson,Russell Wilson,NYG,QB,,Kyren Williams LAR-RB (FA)/Russell Wilson NYG-QB (TFA) — Hoofers — Nov 15
+2023-11-15T00:00:07,Nov 15,Hoofers,waiver,Washington Commanders,Washington Commanders,WAS,DEF,Pittsburgh Steelers,Pittsburgh Steelers,PIT,DEF,,Commanders Was-DEF (FA)/Steelers Pit-DEF (TFA) — Hoofers — Nov 15
+2023-11-15T00:00:08,Nov 15,Elite,waiver,,,,,Las Vegas Raiders,Las Vegas Raiders,LV,DEF,,Raiders LV-DEF (TFA) — Elite — Nov 15
+2023-11-15T00:00:09,Nov 15,Elite,waiver,Buffalo Bills,Buffalo Bills,BUF,DEF,,,,,,Bills Buf-DEF (FA) — Elite — Nov 15
+2023-11-15T00:00:10,Nov 15,Elite,waiver,Jaleel McLaughlin,Jaleel McLaughlin,DEN,RB,Saquon Barkley,Saquon Barkley,PHI,RB,,Jaleel McLaughlin Den-RB (FA)/Saquon Barkley Phi-RB (TFA) — Elite — Nov 15
+2023-11-15T00:00:11,Nov 15,Elite,waiver,Devin Singletary,Devin Singletary,NYG,RB,,,,,,Devin Singletary NYG-RB (FA) — Elite — Nov 15
+2023-11-15T00:00:12,Nov 15,Elite,waiver,,,,,Jaleel McLaughlin,Jaleel McLaughlin,DEN,RB,,Jaleel McLaughlin Den-RB (TFA) — Elite — Nov 15
+2023-11-15T00:00:13,Nov 15,Elite,waiver,Jason Sanders,Jason Sanders,NYJ,K,Nick Folk,Nick Folk,ATL,K,,Jason Sanders NYJ-K (FA)/Nick Folk Atl-K (TFA) — Elite — Nov 15
+2023-11-15T00:00:14,Nov 15,Let's Ride,waiver,Jaylen Waddle,Jaylen Waddle,DEN,WR,DK Metcalf,DK Metcalf,PIT,WR,,Jaylen Waddle Den-WR (FA)/DK Metcalf Pit-WR (TFA) — Let's Ride — Nov 15
+2023-11-15T00:00:15,Nov 15,Let's Ride,waiver,Dalton Schultz,Dalton Schultz,HOU,TE,Taysom Hill,Taysom Hill,NO,TE,,Dalton Schultz Hou-TE (FA)/Taysom Hill NO-TE (TFA) — Let's Ride — Nov 15
+2023-11-15T00:00:16,Nov 15,Let's Ride,waiver,Rachaad White,Rachaad White,WAS,RB,Jaleel McLaughlin,Jaleel McLaughlin,DEN,RB,,Rachaad White Was-RB (FA)/Jaleel McLaughlin Den-RB (TFA) — Let's Ride — Nov 15
+2023-11-15T00:00:17,Nov 15,ChronicMasterdeflatr,waiver,Wil Lutz,Wil Lutz,DEN,K,,,,,,Wil Lutz Den-K (FA) — ChronicMasterdeflatr — Nov 15
+2023-11-15T00:00:18,Nov 15,ChronicMasterdeflatr,waiver,,,,,Geno Smith,Geno Smith,NYJ,QB,,Geno Smith NYJ-QB (TFA) — ChronicMasterdeflatr — Nov 15
+2023-11-15T00:00:19,Nov 15,ChronicMasterdeflatr,waiver,Saquon Barkley,Saquon Barkley,PHI,RB,Alexander Mattison,Alexander Mattison,MIA,RB,,Saquon Barkley Phi-RB (FA)/Alexander Mattison Mia-RB (TFA) — ChronicMasterdeflatr — Nov 15
+2023-11-15T00:00:20,Nov 15,ChronicMasterdeflatr,waiver,Jake Moody,Jake Moody,WAS,K,Blake Grupe,Blake Grupe,IND,K,,Jake Moody Was-K (FA)/Blake Grupe Ind-K (TFA) — ChronicMasterdeflatr — Nov 15
+2023-11-15T00:00:21,Nov 15,Sportos,waiver,Tyler Boyd,Tyler Boyd,TEN,WR,George Pickens,George Pickens,DAL,WR,,Tyler Boyd Ten-WR (FA)/George Pickens Dal-WR (TFA) — Sportos — Nov 15
+2023-11-15T00:00:22,Nov 15,Sportos,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,Baltimore Ravens,Baltimore Ravens,BAL,DEF,,Dolphins Mia-DEF (FA)/Ravens Bal-DEF (TFA) — Sportos — Nov 15
+2023-11-15T00:00:23,Nov 15,Ryan's Remarkable Team,waiver,Minnesota Vikings,Minnesota Vikings,MIN,DEF,Tampa Bay Buccaneers,Tampa Bay Buccaneers,TB,DEF,,Vikings Min-DEF (FA)/Buccaneers TB-DEF (TFA) — Ryan's Remarkable Team — Nov 15
+2023-11-15T00:00:24,Nov 15,Ryan's Remarkable Team,waiver,Romeo Doubs,Romeo Doubs,NE,WR,Will Levis,Will Levis,TEN,QB,,Romeo Doubs NE-WR (FA)/Will Levis Ten-QB (TFA) — Ryan's Remarkable Team — Nov 15
+2023-11-15T00:00:25,Nov 15,JBDA,waiver,Detroit Lions,Detroit Lions,DET,DEF,New Orleans Saints,New Orleans Saints,NO,DEF,,Lions Det-DEF (FA)/Saints NO-DEF (TFA) — JBDA — Nov 15
+2023-11-15T00:00:26,Nov 15,JBDA,waiver,Rashee Rice,Rashee Rice,KC,WR,Tee Higgins,Tee Higgins,CIN,WR,,Rashee Rice KC-WR (FA)/Tee Higgins Cin-WR (TFA) — JBDA — Nov 15
 2023-11-21T00:00:00,Nov 21,JBDA,waiver,Rhamondre Stevenson,Rhamondre Stevenson,NE,RB,Kenneth Walker III,Kenneth Walker III,KC,RB,,Rhamondre Stevenson NE-RB (FA)/Kenneth Walker III KC-RB (TFA) — JBDA — Nov 21
 2023-11-21T00:00:01,Nov 21,JBDA,waiver,Brandin Cooks,Brandin Cooks,NO,WR,Jaxon Smith-Njigba,Jaxon Smith-Njigba,SEA,WR,,Brandin Cooks NO-WR (FA)/Jaxon Smith-Njigba Sea-WR (TFA) — JBDA — Nov 21
 2023-11-21T00:00:02,Nov 21,JBDA,waiver,Michael Pittman Jr.,Michael Pittman Jr.,PIT,WR,Rashee Rice,Rashee Rice,KC,WR,,Michael Pittman Jr. Pit-WR (FA)/Rashee Rice KC-WR (TFA) — JBDA — Nov 21
@@ -221,8 +240,8 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-11-22T00:00:03,Nov 22,Ryan's Remarkable Team,waiver,Jayden Reed,Jayden Reed,GB,WR,Michael Thomas,Michael Thomas,NO,WR,,Jayden Reed GB-WR (FA)/Michael Thomas NO-WR (TFA) — Ryan's Remarkable Team — Nov 22
 2023-11-22T00:00:04,Nov 22,Ryan's Remarkable Team,waiver,Alexander Mattison,Alexander Mattison,MIA,RB,Aaron Jones Sr.,Aaron Jones Sr.,MIN,RB,,Alexander Mattison Mia-RB (FA)/Aaron Jones Sr. Min-RB (TFA) — Ryan's Remarkable Team — Nov 22
 2023-11-22T00:00:05,Nov 22,Sportos,waiver,Rashid Shaheed,Rashid Shaheed,SEA,WR,Tyler Boyd,Tyler Boyd,TEN,WR,,Rashid Shaheed Sea-WR (FA)/Tyler Boyd Ten-WR (TFA) — Sportos — Nov 22
-2023-11-22T00:00:06,Nov 22,Sportos,waiver,Russell Wilson,Russell Wilson,NYG,QB,Jake Browning,Jake Browning,TB,QB,,Russell Wilson NYG-QB (FA)/Jake Browning TB-QB (TFA) — Sportos — Nov 22
-2023-11-22T00:00:07,Nov 22,Sportos,waiver,Jake Browning,Jake Browning,TB,QB,Joe Burrow,Joe Burrow,CIN,QB,,Jake Browning TB-QB (FA)/Joe Burrow Cin-QB (TFA) — Sportos — Nov 22
+2023-11-22T00:00:06,Nov 22,Sportos,waiver,Jake Browning,Jake Browning,TB,QB,Joe Burrow,Joe Burrow,CIN,QB,,Jake Browning TB-QB (FA)/Joe Burrow Cin-QB (TFA) — Sportos — Nov 22
+2023-11-22T00:00:07,Nov 22,Sportos,waiver,Russell Wilson,Russell Wilson,NYG,QB,Jake Browning,Jake Browning,TB,QB,,Russell Wilson NYG-QB (FA)/Jake Browning TB-QB (TFA) — Sportos — Nov 22
 2023-11-22T00:00:08,Nov 22,Hoofers,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Washington Commanders,Washington Commanders,WAS,DEF,,Rams LAR-DEF (FA)/Commanders Was-DEF (TFA) — Hoofers — Nov 22
 2023-11-29T00:00:00,Nov 29,Sportos,waiver,Diontae Johnson,Diontae Johnson,CLE,WR,Rashid Shaheed,Rashid Shaheed,SEA,WR,,Diontae Johnson Cle-WR (FA)/Rashid Shaheed Sea-WR (TFA) — Sportos — Nov 29
 2023-11-29T00:00:01,Nov 29,Sportos,waiver,Chase McLaughlin,Chase McLaughlin,TB,K,Tyler Bass,Tyler Bass,BUF,K,,Chase McLaughlin TB-K (FA)/Tyler Bass Buf-K (TFA) — Sportos — Nov 29
@@ -240,6 +259,14 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-11-29T00:00:13,Nov 29,Ryan's Remarkable Team,waiver,Jake Moody,Jake Moody,WAS,K,Jakobi Meyers,Jakobi Meyers,JAX,WR,,Jake Moody Was-K (FA)/Jakobi Meyers Jax-WR (TFA) — Ryan's Remarkable Team — Nov 29
 2023-11-29T00:00:14,Nov 29,Ryan's Remarkable Team,waiver,Zach Charbonnet,Zach Charbonnet,SEA,RB,Alexander Mattison,Alexander Mattison,MIA,RB,,Zach Charbonnet Sea-RB (FA)/Alexander Mattison Mia-RB (TFA) — Ryan's Remarkable Team — Nov 29
 2023-11-29T00:00:15,Nov 29,Ryan's Remarkable Team,waiver,Tampa Bay Buccaneers,Tampa Bay Buccaneers,TB,DEF,Minnesota Vikings,Minnesota Vikings,MIN,DEF,,Buccaneers TB-DEF (FA)/Vikings Min-DEF (TFA) — Ryan's Remarkable Team — Nov 29
+2023-11-29T00:00:16,Nov 29,Elite,waiver,,,,,Dalton Kincaid,Dalton Kincaid,BUF,TE,,Dalton Kincaid Buf-TE (TFA) — Elite — Nov 29
+2023-11-29T00:00:17,Nov 29,Elite,waiver,Najee Harris,Najee Harris,LAC,RB,,,,,,Najee Harris LAC-RB (FA) — Elite — Nov 29
+2023-11-29T00:00:18,Nov 29,Elite,waiver,,,,,Gus Edwards,Gus Edwards,LAC,RB,,Gus Edwards LAC-RB (TFA) — Elite — Nov 29
+2023-11-29T00:00:19,Nov 29,Elite,waiver,Evan Engram,Evan Engram,DEN,TE,,,,,,Evan Engram Den-TE (FA) — Elite — Nov 29
+2023-11-29T00:00:20,Nov 29,Elite,waiver,,,,,Gabe Davis,Gabe Davis,BUF,WR,,Gabe Davis Buf-WR (TFA) — Elite — Nov 29
+2023-11-29T00:00:21,Nov 29,Elite,waiver,Derek Carr,Derek Carr,NO,QB,,,,,,Derek Carr NO-QB (FA) — Elite — Nov 29
+2023-11-29T00:00:22,Nov 29,Elite,waiver,,,,,Zay Flowers,Zay Flowers,BAL,WR,,Zay Flowers Bal-WR (TFA) — Elite — Nov 29
+2023-11-29T00:00:23,Nov 29,Elite,waiver,Chris Godwin Jr.,Chris Godwin Jr.,TB,WR,,,,,,Chris Godwin Jr. TB-WR (FA) — Elite — Nov 29
 2023-12-06T00:00:00,Dec 6,Greendawgs,waiver,Jerry Jeudy,Jerry Jeudy,CLE,WR,Tank Dell,Tank Dell,HOU,WR,,Jerry Jeudy Cle-WR (FA)/Tank Dell Hou-WR (TFA) — Greendawgs — Dec 6
 2023-12-06T00:00:01,Dec 6,Greendawgs,waiver,New England Patriots,New England Patriots,NE,DEF,Los Angeles Chargers,Los Angeles Chargers,LAC,DEF,,Patriots NE-DEF (FA)/Chargers LAC-DEF (TFA) — Greendawgs — Dec 6
 2023-12-06T00:00:02,Dec 6,Sportos,waiver,Cairo Santos,Cairo Santos,CHI,K,Chase McLaughlin,Chase McLaughlin,TB,K,,Cairo Santos Chi-K (FA)/Chase McLaughlin TB-K (TFA) — Sportos — Dec 6
@@ -262,14 +289,14 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-12-06T00:00:19,Dec 6,JBDA,waiver,Gus Edwards,Gus Edwards,LAC,RB,Rhamondre Stevenson,Rhamondre Stevenson,NE,RB,,Gus Edwards LAC-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — JBDA — Dec 6
 2023-12-06T00:00:20,Dec 6,Elite,waiver,Tee Higgins,Tee Higgins,CIN,WR,Marquise Brown,Hollywood Brown,PHI,WR,,Tee Higgins Cin-WR (FA)/Hollywood Brown Phi-WR (TFA) — Elite — Dec 6
 2023-12-06T00:00:21,Dec 6,Elite,waiver,Baltimore Ravens,Baltimore Ravens,BAL,DEF,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,,Ravens Bal-DEF (FA)/Chiefs KC-DEF (TFA) — Elite — Dec 6
-2023-12-06T00:00:22,Dec 6,Elite,waiver,Derek Carr,Derek Carr,NO,QB,,,,,,Derek Carr NO-QB (FA) — Elite — Dec 6
+2023-12-06T00:00:22,Dec 6,Elite,waiver,,,,,Derek Carr,Derek Carr,NO,QB,,Derek Carr NO-QB (TFA) — Elite — Dec 6
 2023-12-12T00:00:00,Dec 12,ChronicMasterdeflatr,waiver,Trey McBride,Trey McBride,ARI,TE,Taysom Hill,Taysom Hill,NO,TE,,Trey McBride Ari-TE (FA)/Taysom Hill NO-TE (TFA) — ChronicMasterdeflatr — Dec 12
 2023-12-12T00:00:01,Dec 12,ChronicMasterdeflatr,waiver,Trevor Lawrence,Trevor Lawrence,JAX,QB,Justin Herbert,Justin Herbert,LAC,QB,,Trevor Lawrence Jax-QB (FA)/Justin Herbert LAC-QB (TFA) — ChronicMasterdeflatr — Dec 12
 2023-12-13T00:00:00,Dec 13,Hoofers,waiver,Washington Commanders,Washington Commanders,WAS,DEF,Tennessee Titans,Tennessee Titans,TEN,DEF,,Commanders Was-DEF (FA)/Titans Ten-DEF (TFA) — Hoofers — Dec 13
-2023-12-13T00:00:01,Dec 13,Greendawgs,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Miami Dolphins,Miami Dolphins,MIA,DEF,,Rams LAR-DEF (FA)/Dolphins Mia-DEF (TFA) — Greendawgs — Dec 13
+2023-12-13T00:00:01,Dec 13,Greendawgs,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,New England Patriots,New England Patriots,NE,DEF,,Dolphins Mia-DEF (FA)/Patriots NE-DEF (TFA) — Greendawgs — Dec 13
 2023-12-13T00:00:02,Dec 13,Greendawgs,waiver,Brandin Cooks,Brandin Cooks,NO,WR,Jerry Jeudy,Jerry Jeudy,CLE,WR,,Brandin Cooks NO-WR (FA)/Jerry Jeudy Cle-WR (TFA) — Greendawgs — Dec 13
 2023-12-13T00:00:03,Dec 13,Greendawgs,waiver,Ezekiel Elliott,Ezekiel Elliott,DAL,RB,D'Andre Swift,D'Andre Swift,CHI,RB,,Ezekiel Elliott Dal-RB (FA)/D'Andre Swift Chi-RB (TFA) — Greendawgs — Dec 13
-2023-12-13T00:00:04,Dec 13,Greendawgs,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,New England Patriots,New England Patriots,NE,DEF,,Dolphins Mia-DEF (FA)/Patriots NE-DEF (TFA) — Greendawgs — Dec 13
+2023-12-13T00:00:04,Dec 13,Greendawgs,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Miami Dolphins,Miami Dolphins,MIA,DEF,,Rams LAR-DEF (FA)/Dolphins Mia-DEF (TFA) — Greendawgs — Dec 13
 2023-12-13T00:00:05,Dec 13,Greendawgs,waiver,Adam Thielen,Adam Thielen,PIT,WR,Justin Fields,Justin Fields,KC,QB,,Adam Thielen Pit-WR (FA)/Justin Fields KC-QB (TFA) — Greendawgs — Dec 13
 2023-12-13T00:00:06,Dec 13,Redskins,waiver,Gardner Minshew II,Gardner Minshew II,ARI,QB,Geno Smith,Geno Smith,NYJ,QB,,Gardner Minshew II Ari-QB (FA)/Geno Smith NYJ-QB (TFA) — Redskins — Dec 13
 2023-12-13T00:00:07,Dec 13,Redskins,waiver,Desmond Ridder,Desmond Ridder,GB,QB,Joshua Dobbs,Joshua Dobbs,NE,QB,,Desmond Ridder GB-QB (FA)/Joshua Dobbs NE-QB (TFA) — Redskins — Dec 13
@@ -293,8 +320,8 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-12-20T00:00:06,Dec 20,Greendawgs,waiver,Philadelphia Eagles,Philadelphia Eagles,PHI,DEF,Los Angeles Rams,Los Angeles Rams,LA,DEF,,Eagles Phi-DEF (FA)/Rams LAR-DEF (TFA) — Greendawgs — Dec 20
 2023-12-20T00:00:07,Dec 20,Greendawgs,waiver,Lucas Havrisik,Lucas Havrisik,GB,K,Harrison Butker,Harrison Butker,KC,K,,Lucas Havrisik GB-K (FA)/Harrison Butker KC-K (TFA) — Greendawgs — Dec 20
 2023-12-20T00:00:08,Dec 20,Ryan's Remarkable Team,waiver,Green Bay Packers,Green Bay Packers,GB,DEF,Houston Texans,Houston Texans,HOU,DEF,,Packers GB-DEF (FA)/Texans Hou-DEF (TFA) — Ryan's Remarkable Team — Dec 20
-2023-12-20T00:00:09,Dec 20,Ryan's Remarkable Team,waiver,Derek Carr,Derek Carr,NO,QB,Nick Mullens,Nick Mullens,JAX,QB,,Derek Carr NO-QB (FA)/Nick Mullens Jax-QB (TFA) — Ryan's Remarkable Team — Dec 20
-2023-12-20T00:00:10,Dec 20,Ryan's Remarkable Team,waiver,Nick Mullens,Nick Mullens,JAX,QB,Jake Moody,Jake Moody,WAS,K,,Nick Mullens Jax-QB (FA)/Jake Moody Was-K (TFA) — Ryan's Remarkable Team — Dec 20
+2023-12-20T00:00:09,Dec 20,Ryan's Remarkable Team,waiver,Nick Mullens,Nick Mullens,JAX,QB,Jake Moody,Jake Moody,WAS,K,,Nick Mullens Jax-QB (FA)/Jake Moody Was-K (TFA) — Ryan's Remarkable Team — Dec 20
+2023-12-20T00:00:10,Dec 20,Ryan's Remarkable Team,waiver,Derek Carr,Derek Carr,NO,QB,Nick Mullens,Nick Mullens,JAX,QB,,Derek Carr NO-QB (FA)/Nick Mullens Jax-QB (TFA) — Ryan's Remarkable Team — Dec 20
 2023-12-20T00:00:11,Dec 20,Sportos,waiver,Harrison Butker,Harrison Butker,KC,K,Anders Carlson,Anders Carlson,SF,K,,Harrison Butker KC-K (FA)/Anders Carlson SF-K (TFA) — Sportos — Dec 20
 2023-12-20T00:00:12,Dec 20,Sportos,waiver,Jake Moody,Jake Moody,WAS,K,Cairo Santos,Cairo Santos,CHI,K,,Jake Moody Was-K (FA)/Cairo Santos Chi-K (TFA) — Sportos — Dec 20
 2023-12-27T00:00:00,Dec 27,JBDA,waiver,Jake Ferguson,Jake Ferguson,DAL,TE,T.J. Hockenson,T.J. Hockenson,MIN,TE,,Jake Ferguson Dal-TE (FA)/T.J. Hockenson Min-TE (TFA) — JBDA — Dec 27
@@ -316,8 +343,8 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2024-01-05T00:00:05,Jan 5,Hoofers,waiver,Jakobi Meyers,Jakobi Meyers,JAX,WR,Amari Cooper,Amari Cooper,BUF,WR,,Jakobi Meyers Jax-WR (FA)/Amari Cooper Buf-WR (TFA) — Hoofers — Jan 5
 2024-01-05T00:00:06,Jan 5,Hoofers,waiver,Aidan O'Connell,Aidan O'Connell,LV,QB,Joe Flacco,Joe Flacco,CIN,QB,,Aidan O'Connell LV-QB (FA)/Joe Flacco Cin-QB (TFA) — Hoofers — Jan 5
 2024-01-05T00:00:07,Jan 5,Hoofers,waiver,Taysom Hill,Taysom Hill,NO,TE,George Kittle,George Kittle,SF,TE,,Taysom Hill NO-TE (FA)/George Kittle SF-TE (TFA) — Hoofers — Jan 5
-2024-01-05T00:00:08,Jan 5,Sportos,waiver,Ronnie Rivers,Ronnie Rivers,LA,RB,Ezekiel Elliott,Ezekiel Elliott,DAL,RB,,Ronnie Rivers LAR-RB (FA)/Ezekiel Elliott Dal-RB (TFA) — Sportos — Jan 5
-2024-01-05T00:00:09,Jan 5,Sportos,waiver,Ezekiel Elliott,Ezekiel Elliott,DAL,RB,Javonte Williams,Javonte Williams,DAL,RB,,Ezekiel Elliott Dal-RB (FA)/Javonte Williams Dal-RB (TFA) — Sportos — Jan 5
+2024-01-05T00:00:08,Jan 5,Sportos,waiver,Ezekiel Elliott,Ezekiel Elliott,DAL,RB,Javonte Williams,Javonte Williams,DAL,RB,,Ezekiel Elliott Dal-RB (FA)/Javonte Williams Dal-RB (TFA) — Sportos — Jan 5
+2024-01-05T00:00:09,Jan 5,Sportos,waiver,Ronnie Rivers,Ronnie Rivers,LA,RB,Ezekiel Elliott,Ezekiel Elliott,DAL,RB,,Ronnie Rivers LAR-RB (FA)/Ezekiel Elliott Dal-RB (TFA) — Sportos — Jan 5
 2024-01-05T00:00:10,Jan 5,Sportos,waiver,Jacksonville Jaguars,Jacksonville Jaguars,JAX,DEF,Las Vegas Raiders,Las Vegas Raiders,LV,DEF,,Jaguars Jax-DEF (FA)/Raiders LV-DEF (TFA) — Sportos — Jan 5
 2024-01-05T00:00:11,Jan 5,Sportos,waiver,Juwan Johnson,Juwan Johnson,NO,TE,David Njoku,David Njoku,LAC,TE,,Juwan Johnson NO-TE (FA)/David Njoku LAC-TE (TFA) — Sportos — Jan 5
 2024-01-05T00:00:12,Jan 5,Sportos,waiver,Joshua Palmer,Joshua Palmer,BUF,WR,Brandon Aiyuk,Brandon Aiyuk,SF,WR,,Joshua Palmer Buf-WR (FA)/Brandon Aiyuk SF-WR (TFA) — Sportos — Jan 5
@@ -333,16 +360,17 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2024-01-05T00:00:22,Jan 5,ChronicMasterdeflatr,waiver,New York Jets,New York Jets,NYJ,DEF,San Francisco 49ers,San Francisco 49ers,SF,DEF,,Jets NYJ-DEF (FA)/49ers SF-DEF (TFA) — ChronicMasterdeflatr — Jan 5
 2024-01-05T00:00:23,Jan 5,ChronicMasterdeflatr,waiver,DeAndre Hopkins,DeAndre Hopkins,BAL,WR,Rashee Rice,Rashee Rice,KC,WR,,DeAndre Hopkins Bal-WR (FA)/Rashee Rice KC-WR (TFA) — ChronicMasterdeflatr — Jan 5
 2024-01-05T00:00:24,Jan 5,Greendawgs,waiver,New England Patriots,New England Patriots,NE,DEF,Philadelphia Eagles,Philadelphia Eagles,PHI,DEF,,Patriots NE-DEF (FA)/Eagles Phi-DEF (TFA) — Greendawgs — Jan 5
-2024-01-05T00:00:25,Jan 5,Greendawgs,waiver,Darius Slayton,Darius Slayton,NYG,WR,Cooper Kupp,Cooper Kupp,SEA,WR,,Darius Slayton NYG-WR (FA)/Cooper Kupp Sea-WR (TFA) — Greendawgs — Jan 5
-2024-01-05T00:00:26,Jan 5,Greendawgs,waiver,Gardner Minshew II,Gardner Minshew II,ARI,QB,Matthew Stafford,Matthew Stafford,LA,QB,,Gardner Minshew II Ari-QB (FA)/Matthew Stafford LAR-QB (TFA) — Greendawgs — Jan 5
-2024-01-05T00:00:27,Jan 5,Greendawgs,waiver,Tyrod Taylor,Tyrod Taylor,GB,QB,Patrick Mahomes,Patrick Mahomes,KC,QB,,Tyrod Taylor GB-QB (FA)/Patrick Mahomes KC-QB (TFA) — Greendawgs — Jan 5
-2024-01-05T00:00:28,Jan 5,Let's Ride,waiver,Brian Robinson,Brian Robinson Jr.,ATL,RB,Josh Jacobs,Josh Jacobs,GB,RB,,Brian Robinson Atl-RB (FA)/Josh Jacobs GB-RB (TFA) — Let's Ride — Jan 5
-2024-01-05T00:00:29,Jan 5,Redskins,waiver,Zamir White,Zamir White,LV,RB,Darius Slayton,Darius Slayton,NYG,WR,,Zamir White LV-RB (FA)/Darius Slayton NYG-WR (TFA) — Redskins — Jan 5
-2024-01-05T00:00:30,Jan 5,Redskins,waiver,Daniel Carlson,Daniel Carlson,LV,K,Nick Folk,Nick Folk,ATL,K,,Daniel Carlson LV-K (FA)/Nick Folk Atl-K (TFA) — Redskins — Jan 5
-2024-01-05T00:00:31,Jan 5,Redskins,waiver,Mike Badgley,Michael Badgley,IND,K,Eddy Pineiro,Eddy Pineiro,SF,K,,Michael Badgley Ind-K (FA)/Eddy Pineiro SF-K (TFA) — Redskins — Jan 5
-2024-01-05T00:00:32,Jan 5,Redskins,waiver,Darren Waller,Darren Waller,MIA,TE,Travis Kelce,Travis Kelce,KC,TE,,Darren Waller Mia-TE (FA)/Travis Kelce KC-TE (TFA) — Redskins — Jan 5
-2024-01-05T00:00:33,Jan 5,Redskins,waiver,Darius Slayton,Darius Slayton,NYG,WR,Deebo Samuel,Deebo Samuel,WAS,WR,,Darius Slayton NYG-WR (FA)/Deebo Samuel Was-WR (TFA) — Redskins — Jan 5
-2024-01-05T00:00:34,Jan 5,Redskins,waiver,Kyler Murray,Kyler Murray,MIN,QB,Gardner Minshew II,Gardner Minshew II,ARI,QB,,Kyler Murray Min-QB (FA)/Gardner Minshew II Ari-QB (TFA) — Redskins — Jan 5
-2024-01-05T00:00:35,Jan 5,Redskins,waiver,Carson Wentz,Carson Wentz,MIN,QB,Easton Stick,Easton Stick,IND,QB,,Carson Wentz Min-QB (FA)/Easton Stick Ind-QB (TFA) — Redskins — Jan 5
-2024-01-05T00:00:36,Jan 5,Ryan's Remarkable Team,waiver,Tampa Bay Buccaneers,Tampa Bay Buccaneers,TB,DEF,Los Angeles Rams,Los Angeles Rams,LA,DEF,,Buccaneers TB-DEF (FA)/Rams LAR-DEF (TFA) — Ryan's Remarkable Team — Jan 5
-2024-01-05T00:00:37,Jan 5,Ryan's Remarkable Team,waiver,Geno Smith,Geno Smith,NYJ,QB,Brock Purdy,Brock Purdy,SF,QB,,Geno Smith NYJ-QB (FA)/Brock Purdy SF-QB (TFA) — Ryan's Remarkable Team — Jan 5
+2024-01-05T00:00:25,Jan 5,Greendawgs,waiver,Ka'imi Fairbairn,Ka'imi Fairbairn,HOU,K,Anders Carlson,Anders Carlson,SF,K,,Ka'imi Fairbairn Hou-K (FA)/Anders Carlson SF-K (TFA) — Greendawgs — Jan 5
+2024-01-05T00:00:26,Jan 5,Greendawgs,waiver,Darius Slayton,Darius Slayton,NYG,WR,Cooper Kupp,Cooper Kupp,SEA,WR,,Darius Slayton NYG-WR (FA)/Cooper Kupp Sea-WR (TFA) — Greendawgs — Jan 5
+2024-01-05T00:00:27,Jan 5,Greendawgs,waiver,Gardner Minshew II,Gardner Minshew II,ARI,QB,Matthew Stafford,Matthew Stafford,LA,QB,,Gardner Minshew II Ari-QB (FA)/Matthew Stafford LAR-QB (TFA) — Greendawgs — Jan 5
+2024-01-05T00:00:28,Jan 5,Greendawgs,waiver,Tyrod Taylor,Tyrod Taylor,GB,QB,Patrick Mahomes,Patrick Mahomes,KC,QB,,Tyrod Taylor GB-QB (FA)/Patrick Mahomes KC-QB (TFA) — Greendawgs — Jan 5
+2024-01-05T00:00:29,Jan 5,Let's Ride,waiver,Brian Robinson,Brian Robinson Jr.,ATL,RB,Josh Jacobs,Josh Jacobs,GB,RB,,Brian Robinson Atl-RB (FA)/Josh Jacobs GB-RB (TFA) — Let's Ride — Jan 5
+2024-01-05T00:00:30,Jan 5,Redskins,waiver,Darius Slayton,Darius Slayton,NYG,WR,Deebo Samuel,Deebo Samuel,WAS,WR,,Darius Slayton NYG-WR (FA)/Deebo Samuel Was-WR (TFA) — Redskins — Jan 5
+2024-01-05T00:00:31,Jan 5,Redskins,waiver,Daniel Carlson,Daniel Carlson,LV,K,Nick Folk,Nick Folk,ATL,K,,Daniel Carlson LV-K (FA)/Nick Folk Atl-K (TFA) — Redskins — Jan 5
+2024-01-05T00:00:32,Jan 5,Redskins,waiver,Mike Badgley,Michael Badgley,IND,K,Eddy Pineiro,Eddy Pineiro,SF,K,,Michael Badgley Ind-K (FA)/Eddy Pineiro SF-K (TFA) — Redskins — Jan 5
+2024-01-05T00:00:33,Jan 5,Redskins,waiver,Darren Waller,Darren Waller,MIA,TE,Travis Kelce,Travis Kelce,KC,TE,,Darren Waller Mia-TE (FA)/Travis Kelce KC-TE (TFA) — Redskins — Jan 5
+2024-01-05T00:00:34,Jan 5,Redskins,waiver,Zamir White,Zamir White,LV,RB,Darius Slayton,Darius Slayton,NYG,WR,,Zamir White LV-RB (FA)/Darius Slayton NYG-WR (TFA) — Redskins — Jan 5
+2024-01-05T00:00:35,Jan 5,Redskins,waiver,Kyler Murray,Kyler Murray,MIN,QB,Gardner Minshew II,Gardner Minshew II,ARI,QB,,Kyler Murray Min-QB (FA)/Gardner Minshew II Ari-QB (TFA) — Redskins — Jan 5
+2024-01-05T00:00:36,Jan 5,Redskins,waiver,Carson Wentz,Carson Wentz,MIN,QB,Easton Stick,Easton Stick,IND,QB,,Carson Wentz Min-QB (FA)/Easton Stick Ind-QB (TFA) — Redskins — Jan 5
+2024-01-05T00:00:37,Jan 5,Ryan's Remarkable Team,waiver,Tampa Bay Buccaneers,Tampa Bay Buccaneers,TB,DEF,Los Angeles Rams,Los Angeles Rams,LA,DEF,,Buccaneers TB-DEF (FA)/Rams LAR-DEF (TFA) — Ryan's Remarkable Team — Jan 5
+2024-01-05T00:00:38,Jan 5,Ryan's Remarkable Team,waiver,Geno Smith,Geno Smith,NYJ,QB,Brock Purdy,Brock Purdy,SF,QB,,Geno Smith NYJ-QB (FA)/Brock Purdy SF-QB (TFA) — Ryan's Remarkable Team — Jan 5

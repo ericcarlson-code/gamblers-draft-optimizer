@@ -188,47 +188,39 @@ def parse_line(line: str) -> list[dict]:
 
 
 def dedupe_restatements(lines: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
-    """Collapses exact-description repeats (see module docstring) to their
-    earliest dated occurrence. Returns (kept_lines, dropped_as_(desc, date))."""
-    groups: dict[str, list[tuple[str, str]]] = defaultdict(list)  # desc -> [(date, full_line)]
-    order: list[str] = []
+    """Flags exact-description repeats (see module docstring) for manual
+    review WITHOUT reordering or removing anything. Returns (lines
+    unchanged, flagged_as_(desc, date) for every repeat past the first).
+
+    NOTE (2026-07-30, caught via real Yahoo history spot-checks on 2023):
+    an earlier version of this function both auto-removed every recurrence
+    past the first AND (even after that was fixed to stop removing things)
+    still grouped every occurrence of a repeated description together at
+    the position of its FIRST occurrence when re-emitting `kept` -- since
+    the site's roster reconstruction (site/rankings_template.html's
+    computeTeamRosterAtWeek) is order-sensitive (a Map keyed by player
+    name: dropping a player who isn't currently on the roster is a silent
+    no-op), reordering two genuinely separate same-day events (e.g. Elite
+    legitimately dropped Odell Beckham Jr. TWICE on Sep 20, with a
+    commissioner re-add in between) to sit adjacent to each other broke
+    the simulation -- the second drop landed right after the first with no
+    intervening re-add, so it silently failed to remove him, leaving a
+    phantom extra roster spot. Fixed by never touching line order at all;
+    flagging is now a pure side-channel report over the untouched list.
+    """
+    seen_desc_dates: dict[str, list[str]] = defaultdict(list)  # desc -> [dates seen, in file order]
+    flagged: list[tuple[str, str]] = []
     for raw_line in lines:
         line = re.sub(r"\s*\([^()]*\)\s*$", "", raw_line.strip()).strip()
-        if line.startswith("TRADE:"):
-            # Trades are rare (1-2 per season so far) and each one is
-            # already unique -- pass through ungrouped rather than trying
-            # to derive a dedup key from its own internal " | "/" — " shape.
-            order.append(line)
-            groups[line].append(("", line))
-            continue
+        if line.startswith("TRADE:") or line.count(" — ") + 1 < 3:
+            continue  # not enough structure to derive a dedup key; never flagged
         parts = [s.strip() for s in line.split(" — ")]
-        if len(parts) < 3:
-            order.append(line)
-            groups[line].append(("", line))
-            continue
         desc_key = " — ".join(parts[:-1])
         date = parts[-1]
-        if desc_key not in groups:
-            order.append(desc_key)
-        groups[desc_key].append((date, line))
-
-    def sort_key(date_str: str) -> tuple:
-        d = re.sub(r"\s*\(.*\)\s*$", "", date_str.split("/")[0]).strip()
-        try:
-            dt = datetime.strptime(d, "%b %d")
-            month_rank = 0 if dt.month != 1 else 1  # Jan sorts after Aug-Dec
-            return (month_rank, dt.month, dt.day)
-        except ValueError:
-            return (99, 99, 99)
-
-    kept, dropped = [], []
-    for key in order:
-        entries = groups[key]
-        entries_sorted = sorted(entries, key=lambda e: sort_key(e[0]))
-        kept.append(entries_sorted[0][1])
-        for date, full_line in entries_sorted[1:]:
-            dropped.append((key, date))
-    return kept, dropped
+        if seen_desc_dates[desc_key]:
+            flagged.append((desc_key, date))
+        seen_desc_dates[desc_key].append(date)
+    return lines, flagged
 
 
 # PLAYER_NAME_ALIASES (imported from parse_transactions_paste.py) was built
@@ -288,11 +280,11 @@ def main():
     season_year, path = int(sys.argv[1]), Path(sys.argv[2])
     raw_lines = [l for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
-    kept_lines, dropped = dedupe_restatements(raw_lines)
-    if dropped:
-        print(f"Deduped {len(dropped)} restated lines (same description, later date):")
-        for desc, date in dropped:
-            print(f"  {date!r} restates: {desc}")
+    kept_lines, flagged = dedupe_restatements(raw_lines)
+    if flagged:
+        print(f"POSSIBLE restatements ({len(flagged)}, same description recurs on a later date -- KEPT, not removed, verify against real history if in doubt):")
+        for desc, date in flagged:
+            print(f"  {date!r} recurs: {desc}")
         print()
 
     rows, unparsed = [], []

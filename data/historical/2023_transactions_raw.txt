@@ -21,27 +21,35 @@ Jonathan Taylor Ind-RB (FA)/Kadarius Toney Cle-WR (TFA) — Hoofers — Sep 13
 Giants NYG-DEF (FA)/Ravens Bal-DEF (TFA) — Hoofers — Sep 13
 Steelers Pit-DEF (FA)/Commanders Was-DEF (TFA) — Let's Ride — Sep 13
 Luke Musgrave GB-TE (FA)/Dallas Goedert Phi-TE (TFA) — Let's Ride — Sep 13
-Justin Tucker Bal-K (FA) — Hoofers — Sep 19
+Justin Tucker Bal-K (TFA) — Hoofers — Sep 19
+Stefon Diggs NE-WR (TFA) — Ryan's Remarkable Team — Sep 19
 Justin Tucker Bal-K (FA)/Greg Zuerlein NYJ-K (TFA) — Ryan's Remarkable Team — Sep 19
 Stefon Diggs NE-WR (FA)/Michael Thomas NO-WR (TFA) — Hoofers — Sep 19
 Nate McCrary GB-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — Hoofers — Sep 19
-Michael Thomas NO-WR (FA) — Ryan's Remarkable Team — Sep 19
 Rhamondre Stevenson NE-RB (FA)/David Montgomery Hou-RB (TFA) — Ryan's Remarkable Team — Sep 19
+Michael Thomas NO-WR (FA) — Ryan's Remarkable Team — Sep 19
+George Kittle SF-TE (TFA) — Redskins — Sep 20
 George Kittle SF-TE (FA)/Raheem Mostert LV-RB (TFA) — Hoofers — Sep 20
 Raheem Mostert LV-RB (FA) — Redskins — Sep 20
-George Kittle SF-TE (FA) — Redskins — Sep 20
+Odell Beckham Jr. NYG-WR (TFA) — Elite — Sep 20
+Skyy Moore GB-WR (FA) — Elite — Sep 20
+Skyy Moore GB-WR (TFA) — Elite — Sep 20
+Odell Beckham Jr. NYG-WR — Added by Commissioner — Elite — Sep 20
+Ravens Bal-DEF (FA)/Giants NYG-DEF (TFA) — Hoofers — Sep 20
+Greg Joseph LV-K (FA) — Hoofers — Sep 20
 Matthew Stafford LAR-QB (FA)/Dalton Kincaid Buf-TE (TFA) — Hoofers — Sep 20
 Kyren Williams LAR-RB (FA)/Nate McCrary GB-RB (TFA) — Hoofers — Sep 20
-Odell Beckham Jr. NYG-WR — Added by Commissioner — Elite — Sep 20
-Skyy Moore GB-WR (FA) — Elite — Sep 20
 Odell Beckham Jr. NYG-WR (TFA) — Elite — Sep 20
-Chiefs KC-DEF (FA)/Broncos Den-DEF (TFA) — Elite — Sep 20
-Jerome Ford Was-RB (FA)/Cooper Kupp Sea-WR (TFA) — Elite — Sep 20
+Skyy Moore GB-WR (FA) — Elite — Sep 20
 Cooper Kupp Sea-WR (TFA) — Elite — Sep 20
+Jerome Ford Was-RB (FA) — Elite — Sep 20
+Broncos Den-DEF (TFA) — Elite — Sep 20
+Chiefs KC-DEF (FA) — Elite — Sep 20
 Patriots NE-DEF (FA)/Buccaneers TB-DEF (TFA) — Greendawgs — Sep 20
 Cooper Kupp Sea-WR (FA)/DeAndre Hopkins Bal-WR (TFA) — Greendawgs — Sep 20
-Joshua Kelley Ten-RB (FA)/Tyler Allgeier Ari-RB (TFA) — Greendawgs — Sep 20/21
-Jamaal Williams NO-RB (FA) — Greendawgs — Sep 20
+Jamaal Williams NO-RB (TFA) — Greendawgs — Sep 20
+Tyler Allgeier Ari-RB (FA) — Greendawgs — Sep 20
+Joshua Kelley Ten-RB (FA)/Tyler Allgeier Ari-RB (TFA) — Greendawgs — Sep 21
 D'Andre Swift Chi-RB (FA)/Khalil Herbert NYJ-RB (TFA) — Let's Ride — Sep 20
 Kareem Hunt KC-RB (FA)/Hollywood Brown Phi-WR (TFA) — JBDA — Sep 20
 Nico Collins Hou-WR (FA)/Zay Flowers Bal-WR (TFA) — JBDA — Sep 20
@@ -85,8 +93,8 @@ Daniel Carlson LV-K (FA)/Chris Boswell Pit-K (TFA) — Redskins — Oct 11
 Dak Prescott Dal-QB (FA)/Anthony Richardson Sr. Ind-QB (TFA) — Redskins — Oct 11
 Dolphins Mia-DEF (FA)/Lions Det-DEF (TFA) — Let's Ride — Oct 11
 TRADE: Isiah Pacheco Det-RB → Sportos | Garrett Wilson NYJ-WR → Let's Ride — Oct 11
-AJ Dillon Car-RB (FA)/Emari Demercado KC-RB (TFA) — Greendawgs — Oct 11
 Emari Demercado KC-RB (FA)/Romeo Doubs NE-WR (TFA) — Greendawgs — Oct 11
+AJ Dillon Car-RB (FA)/Emari Demercado KC-RB (TFA) — Greendawgs — Oct 11
 Rams LAR-DEF (FA)/Commanders Was-DEF (TFA) — Greendawgs — Oct 11
 Chris Godwin Jr. TB-WR (FA)/Tank Dell Hou-WR (TFA) — Ryan's Remarkable Team — Oct 11
 Zay Flowers Bal-WR (FA) — Elite — Oct 11
@@ -172,7 +180,7 @@ Raiders LV-DEF (FA)/Chiefs KC-DEF (TFA) — Elite — Nov 1
 Dalton Kincaid Buf-TE (FA)/Kyle Pitts Sr. Atl-TE (TFA) — Elite — Nov 1
 Joshua Palmer Buf-WR (FA)/Deebo Samuel Was-WR (TFA) — JBDA — Nov 1/8
 Greg Zuerlein NYJ-K (FA)/Jake Moody Was-K (TFA) — JBDA — Nov 1/8
-Hollywood Brown Phi-WR (FA)/James Conner Ari-RB (TFA) — Redskins — Nov 8
+Hollywood Brown Phi-WR (FA)/Brandin Cooks NO-WR (TFA) — Redskins — Nov 8
 Deebo Samuel Was-WR (FA)/DeMario Douglas NE-WR (TFA) — Redskins — Nov 8
 Steelers Pit-DEF (FA)/Falcons Atl-DEF (TFA) — Hoofers — Nov 8
 Russell Wilson NYG-QB (FA)/AJ Dillon Car-RB (TFA) — Hoofers — Nov 8
@@ -184,6 +192,17 @@ Geno Smith NYJ-QB (FA)/Jordan Addison Min-WR (TFA) — ChronicMasterdeflatr — 
 D'Andre Swift Chi-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — Greendawgs — Nov 15
 DK Metcalf Pit-WR (FA)/Michael Pittman Jr. Pit-WR (TFA) — Greendawgs — Nov 15
 Justin Fields KC-QB (FA)/Bryce Young Car-QB (TFA) — Greendawgs — Nov 15
+Browns Cle-DEF (FA)/Bills Buf-DEF (TFA) — Greendawgs — Nov 15
+Harrison Butker KC-K (FA)/Cameron Dicker LAC-K (TFA) — Greendawgs — Nov 15
+Tank Dell Hou-WR (FA)/Derek Carr NO-QB (TFA) — Greendawgs — Nov 15
+Kyren Williams LAR-RB (FA)/Russell Wilson NYG-QB (TFA) — Hoofers — Nov 15
+Commanders Was-DEF (FA)/Steelers Pit-DEF (TFA) — Hoofers — Nov 15
+Raiders LV-DEF (TFA) — Elite — Nov 15
+Bills Buf-DEF (FA) — Elite — Nov 15
+Jaleel McLaughlin Den-RB (FA)/Saquon Barkley Phi-RB (TFA) — Elite — Nov 15
+Devin Singletary NYG-RB (FA) — Elite — Nov 15
+Jaleel McLaughlin Den-RB (TFA) — Elite — Nov 15
+Jason Sanders NYJ-K (FA)/Nick Folk Atl-K (TFA) — Elite — Nov 15
 Jaylen Waddle Den-WR (FA)/DK Metcalf Pit-WR (TFA) — Let's Ride — Nov 15
 Dalton Schultz Hou-TE (FA)/Taysom Hill NO-TE (TFA) — Let's Ride — Nov 15
 Rachaad White Was-RB (FA)/Jaleel McLaughlin Den-RB (TFA) — Let's Ride — Nov 15
@@ -197,7 +216,7 @@ Bryce Young Car-QB (FA) — Greendawgs — Nov 8
 David Njoku LAC-TE (TFA) — Greendawgs — Nov 8
 Nick Folk Atl-K (FA)/Harrison Butker KC-K (TFA) — Elite — Nov 8
 James Conner Ari-RB (FA)/Hollywood Brown Phi-WR (TFA) — Redskins — Nov 8
-Hollywood Brown Phi-WR (FA)/Brandin Cooks NO-WR (TFA) — Redskins — Nov 8
+Hollywood Brown Phi-WR (FA)/James Conner Ari-RB (TFA) — Redskins — Nov 8
 Kyler Murray Min-QB (FA)/Mac Jones SF-QB (TFA) — Redskins — Nov 8
 Joshua Dobbs NE-QB (FA)/Zach Wilson NO-QB (TFA) — Redskins — Nov 8
 Diontae Johnson Cle-WR (FA)/Rashid Shaheed Sea-WR (TFA) — Sportos — Nov 29
@@ -222,14 +241,14 @@ Chiefs KC-DEF (FA)/Bills Buf-DEF (TFA) — Elite — Nov 22
 Jayden Reed GB-WR (FA)/Michael Thomas NO-WR (TFA) — Ryan's Remarkable Team — Nov 22
 Alexander Mattison Mia-RB (FA)/Aaron Jones Sr. Min-RB (TFA) — Ryan's Remarkable Team — Nov 22
 Rashid Shaheed Sea-WR (FA)/Tyler Boyd Ten-WR (TFA) — Sportos — Nov 22
-Russell Wilson NYG-QB (FA)/Jake Browning TB-QB (TFA) — Sportos — Nov 22
 Jake Browning TB-QB (FA)/Joe Burrow Cin-QB (TFA) — Sportos — Nov 22
+Russell Wilson NYG-QB (FA)/Jake Browning TB-QB (TFA) — Sportos — Nov 22
 Rams LAR-DEF (FA)/Commanders Was-DEF (TFA) — Hoofers — Nov 22
 Rhamondre Stevenson NE-RB (FA)/Kenneth Walker III KC-RB (TFA) — JBDA — Nov 21
 Brandin Cooks NO-WR (FA)/Jaxon Smith-Njigba Sea-WR (TFA) — JBDA — Nov 21
 Michael Pittman Jr. Pit-WR (FA)/Rashee Rice KC-WR (TFA) — JBDA — Nov 21
 Wil Lutz Den-K (FA) — ChronicMasterdeflatr — Nov 15
-Geno Smith NYJ-QB (FA) — ChronicMasterdeflatr — Nov 15
+Geno Smith NYJ-QB (TFA) — ChronicMasterdeflatr — Nov 15
 Saquon Barkley Phi-RB (FA)/Alexander Mattison Mia-RB (TFA) — ChronicMasterdeflatr — Nov 15
 Jake Moody Was-K (FA)/Blake Grupe Ind-K (TFA) — ChronicMasterdeflatr — Nov 15
 Tyler Boyd Ten-WR (FA)/George Pickens Dal-WR (TFA) — Sportos — Nov 15
@@ -250,8 +269,8 @@ Michael Pittman Jr. Pit-WR (FA)/Brandin Cooks NO-WR (TFA) — Greendawgs — Dec
 Eagles Phi-DEF (FA)/Rams LAR-DEF (TFA) — Greendawgs — Dec 20
 Lucas Havrisik GB-K (FA)/Harrison Butker KC-K (TFA) — Greendawgs — Dec 20
 Packers GB-DEF (FA)/Texans Hou-DEF (TFA) — Ryan's Remarkable Team — Dec 20
-Derek Carr NO-QB (FA)/Nick Mullens Jax-QB (TFA) — Ryan's Remarkable Team — Dec 20
 Nick Mullens Jax-QB (FA)/Jake Moody Was-K (TFA) — Ryan's Remarkable Team — Dec 20
+Derek Carr NO-QB (FA)/Nick Mullens Jax-QB (TFA) — Ryan's Remarkable Team — Dec 20
 Harrison Butker KC-K (FA)/Anders Carlson SF-K (TFA) — Sportos — Dec 20
 Jake Moody Was-K (FA)/Cairo Santos Chi-K (TFA) — Sportos — Dec 20
 Jake Ferguson Dal-TE (FA)/T.J. Hockenson Min-TE (TFA) — JBDA — Dec 27
@@ -278,6 +297,14 @@ Texans Hou-DEF (FA)/Buccaneers TB-DEF (TFA) — Ryan's Remarkable Team — Dec 6
 Dallas Goedert Phi-TE (FA)/Trey McBride Ari-TE (TFA) — Ryan's Remarkable Team — Dec 6
 Christian Watson GB-WR (FA)/Christian Kirk SF-WR (TFA) — Let's Ride — Dec 6
 Broncos Den-DEF (FA)/Jets NYJ-DEF (TFA) — Let's Ride — Dec 6
+Dalton Kincaid Buf-TE (TFA) — Elite — Nov 29
+Najee Harris LAC-RB (FA) — Elite — Nov 29
+Gus Edwards LAC-RB (TFA) — Elite — Nov 29
+Evan Engram Den-TE (FA) — Elite — Nov 29
+Gabe Davis Buf-WR (TFA) — Elite — Nov 29
+Derek Carr NO-QB (FA) — Elite — Nov 29
+Zay Flowers Bal-WR (TFA) — Elite — Nov 29
+Chris Godwin Jr. TB-WR (FA) — Elite — Nov 29
 Alexander Mattison Mia-RB (FA) — Elite — Dec 6
 Chuba Hubbard Car-RB (FA)/Jaylen Warren Pit-RB (TFA) — ChronicMasterdeflatr — Dec 6
 Rashee Rice KC-WR (FA)/Terry McLaurin Was-WR (TFA) — ChronicMasterdeflatr — Dec 6
@@ -287,11 +314,11 @@ Jake Browning TB-QB (FA)/Bryce Young Car-QB (TFA) — JBDA — Dec 6
 Gus Edwards LAC-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — JBDA — Dec 6
 Tee Higgins Cin-WR (FA)/Hollywood Brown Phi-WR (TFA) — Elite — Dec 6
 Ravens Bal-DEF (FA)/Chiefs KC-DEF (TFA) — Elite — Dec 6
-Derek Carr NO-QB (FA) — Elite — Dec 6
-Rams LAR-DEF (FA)/Dolphins Mia-DEF (TFA) — Greendawgs — Dec 13
+Derek Carr NO-QB (TFA) — Elite — Dec 6
+Dolphins Mia-DEF (FA)/Patriots NE-DEF (TFA) — Greendawgs — Dec 13
 Brandin Cooks NO-WR (FA)/Jerry Jeudy Cle-WR (TFA) — Greendawgs — Dec 13
 Ezekiel Elliott Dal-RB (FA)/D'Andre Swift Chi-RB (TFA) — Greendawgs — Dec 13
-Dolphins Mia-DEF (FA)/Patriots NE-DEF (TFA) — Greendawgs — Dec 13
+Rams LAR-DEF (FA)/Dolphins Mia-DEF (TFA) — Greendawgs — Dec 13
 Adam Thielen Pit-WR (FA)/Justin Fields KC-QB (TFA) — Greendawgs — Dec 13
 Gardner Minshew II Ari-QB (FA)/Geno Smith NYJ-QB (TFA) — Redskins — Dec 13
 Desmond Ridder GB-QB (FA)/Joshua Dobbs NE-QB (TFA) — Redskins — Dec 13
@@ -314,8 +341,8 @@ Jamaal Williams NO-RB (FA)/Kyren Williams LAR-RB (TFA) — Hoofers — Jan 5
 Jakobi Meyers Jax-WR (FA)/Amari Cooper Buf-WR (TFA) — Hoofers — Jan 5
 Aidan O'Connell LV-QB (FA)/Joe Flacco Cin-QB (TFA) — Hoofers — Jan 5
 Taysom Hill NO-TE (FA)/George Kittle SF-TE (TFA) — Hoofers — Jan 5
-Ronnie Rivers LAR-RB (FA)/Ezekiel Elliott Dal-RB (TFA) — Sportos — Jan 5
 Ezekiel Elliott Dal-RB (FA)/Javonte Williams Dal-RB (TFA) — Sportos — Jan 5
+Ronnie Rivers LAR-RB (FA)/Ezekiel Elliott Dal-RB (TFA) — Sportos — Jan 5
 Jaguars Jax-DEF (FA)/Raiders LV-DEF (TFA) — Sportos — Jan 5
 Juwan Johnson NO-TE (FA)/David Njoku LAC-TE (TFA) — Sportos — Jan 5
 Joshua Palmer Buf-WR (FA)/Brandon Aiyuk SF-WR (TFA) — Sportos — Jan 5
@@ -336,11 +363,11 @@ Darius Slayton NYG-WR (FA)/Cooper Kupp Sea-WR (TFA) — Greendawgs — Jan 5
 Gardner Minshew II Ari-QB (FA)/Matthew Stafford LAR-QB (TFA) — Greendawgs — Jan 5
 Tyrod Taylor GB-QB (FA)/Patrick Mahomes KC-QB (TFA) — Greendawgs — Jan 5
 Brian Robinson Atl-RB (FA)/Josh Jacobs GB-RB (TFA) — Let's Ride — Jan 5
-Zamir White LV-RB (FA)/Darius Slayton NYG-WR (TFA) — Redskins — Jan 5
+Darius Slayton NYG-WR (FA)/Deebo Samuel Was-WR (TFA) — Redskins — Jan 5
 Daniel Carlson LV-K (FA)/Nick Folk Atl-K (TFA) — Redskins — Jan 5
 Michael Badgley Ind-K (FA)/Eddy Pineiro SF-K (TFA) — Redskins — Jan 5
 Darren Waller Mia-TE (FA)/Travis Kelce KC-TE (TFA) — Redskins — Jan 5
-Darius Slayton NYG-WR (FA)/Deebo Samuel Was-WR (TFA) — Redskins — Jan 5
+Zamir White LV-RB (FA)/Darius Slayton NYG-WR (TFA) — Redskins — Jan 5
 Kyler Murray Min-QB (FA)/Gardner Minshew II Ari-QB (TFA) — Redskins — Jan 5
 Carson Wentz Min-QB (FA)/Easton Stick Ind-QB (TFA) — Redskins — Jan 5
 Buccaneers TB-DEF (FA)/Rams LAR-DEF (TFA) — Ryan's Remarkable Team — Jan 5
