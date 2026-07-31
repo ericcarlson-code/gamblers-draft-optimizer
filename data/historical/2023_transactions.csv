@@ -87,8 +87,8 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-10-11T00:00:02,Oct 11,Redskins,waiver,Daniel Carlson,Daniel Carlson,LV,K,Chris Boswell,Chris Boswell,PIT,K,,Daniel Carlson LV-K (FA)/Chris Boswell Pit-K (TFA) — Redskins — Oct 11
 2023-10-11T00:00:03,Oct 11,Redskins,waiver,Dak Prescott,Dak Prescott,DAL,QB,Anthony Richardson Sr.,Anthony Richardson Sr.,IND,QB,,Dak Prescott Dal-QB (FA)/Anthony Richardson Sr. Ind-QB (TFA) — Redskins — Oct 11
 2023-10-11T00:00:04,Oct 11,Let's Ride,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,Detroit Lions,Detroit Lions,DET,DEF,,Dolphins Mia-DEF (FA)/Lions Det-DEF (TFA) — Let's Ride — Oct 11
-2023-10-11T00:00:05,Oct 11,Sportos,trade,Isiah Pacheco,Isiah Pacheco,DET,RB,,,,,Let's Ride,TRADE: Isiah Pacheco Det-RB → Sportos | Garrett Wilson NYJ-WR → Let's Ride — Oct 11
-2023-10-11T00:00:06,Oct 11,Let's Ride,trade,Garrett Wilson,Garrett Wilson,NYJ,WR,,,,,Sportos,TRADE: Isiah Pacheco Det-RB → Sportos | Garrett Wilson NYJ-WR → Let's Ride — Oct 11
+2023-10-11T00:00:05,Oct 11,Sportos,trade,Isiah Pacheco,Isiah Pacheco,DET,RB,Garrett Wilson,Garrett Wilson,NYJ,WR,Let's Ride,TRADE: Isiah Pacheco Det-RB → Sportos | Garrett Wilson NYJ-WR → Let's Ride — Oct 11
+2023-10-11T00:00:06,Oct 11,Let's Ride,trade,Garrett Wilson,Garrett Wilson,NYJ,WR,Isiah Pacheco,Isiah Pacheco,DET,RB,Sportos,TRADE: Isiah Pacheco Det-RB → Sportos | Garrett Wilson NYJ-WR → Let's Ride — Oct 11
 2023-10-11T00:00:07,Oct 11,Greendawgs,waiver,AJ Dillon,AJ Dillon,CAR,RB,Emari Demercado,Emari Demercado,KC,RB,,AJ Dillon Car-RB (FA)/Emari Demercado KC-RB (TFA) — Greendawgs — Oct 11
 2023-10-11T00:00:08,Oct 11,Greendawgs,waiver,Emari Demercado,Emari Demercado,KC,RB,Romeo Doubs,Romeo Doubs,NE,WR,,Emari Demercado KC-RB (FA)/Romeo Doubs NE-WR (TFA) — Greendawgs — Oct 11
 2023-10-11T00:00:09,Oct 11,Greendawgs,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Washington Commanders,Washington Commanders,WAS,DEF,,Rams LAR-DEF (FA)/Commanders Was-DEF (TFA) — Greendawgs — Oct 11

@@ -188,10 +188,23 @@ def parse_trade_line(line: str) -> list[dict]:
     # Each leg's counterparty is simply the other leg's team (a trade this
     # parser has ever seen is always exactly 2 legs -- 3+ team trades, if
     # this league ever runs one, would need a real redesign here, not a
-    # silent guess).
+    # silent guess). Each leg only tells us what that team RECEIVED -- for
+    # a straight 2-team trade, what a team GAVE UP is necessarily the other
+    # leg's received player (there's no third party it could have gone to).
+    # Without this, every trade would silently inflate both rosters by one
+    # (an add with no matching drop) -- caught via a real roster-count
+    # audit (2026-07-30) that found every team's season-long add/drop
+    # balance strictly positive, which isn't possible on a fixed-size
+    # roster.
     if len(results) == 2 and not any(r.get("unparsed") for r in results):
         results[0]["counterparty_team"] = results[1]["team"]
         results[1]["counterparty_team"] = results[0]["team"]
+        results[0]["player_dropped_raw"] = results[1]["player_added_raw"]
+        results[0]["player_dropped_nfl_team"] = results[1]["player_added_nfl_team"]
+        results[0]["player_dropped_pos"] = results[1]["player_added_pos"]
+        results[1]["player_dropped_raw"] = results[0]["player_added_raw"]
+        results[1]["player_dropped_nfl_team"] = results[0]["player_added_nfl_team"]
+        results[1]["player_dropped_pos"] = results[0]["player_added_pos"]
     return results
 
 

@@ -150,9 +150,19 @@ def parse_trade_line(line: str) -> list[dict]:
         else:
             row["unparsed"] = True
         results.append(row)
+    # See parse_transactions_paste.py's parse_trade_line for why the
+    # "dropped" side is derived from the OTHER leg's "added" player rather
+    # than left blank -- same fix, same reasoning, kept in sync by hand
+    # since these two trade parsers don't share code.
     if len(results) == 2 and not any(r.get("unparsed") for r in results):
         results[0]["counterparty_team"] = results[1]["team"]
         results[1]["counterparty_team"] = results[0]["team"]
+        results[0]["player_dropped_raw"] = results[1]["player_added_raw"]
+        results[0]["player_dropped_nfl_team"] = results[1]["player_added_nfl_team"]
+        results[0]["player_dropped_pos"] = results[1]["player_added_pos"]
+        results[1]["player_dropped_raw"] = results[0]["player_added_raw"]
+        results[1]["player_dropped_nfl_team"] = results[0]["player_added_nfl_team"]
+        results[1]["player_dropped_pos"] = results[0]["player_added_pos"]
     return results
 
 
