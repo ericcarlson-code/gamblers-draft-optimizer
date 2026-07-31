@@ -293,23 +293,22 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-12-06T00:00:22,Dec 6,Elite,waiver,,,,,Derek Carr,Derek Carr,NO,QB,,Derek Carr NO-QB (TFA) — Elite — Dec 6
 2023-12-12T00:00:00,Dec 12,ChronicMasterdeflatr,waiver,Trey McBride,Trey McBride,ARI,TE,Taysom Hill,Taysom Hill,NO,TE,,Trey McBride Ari-TE (FA)/Taysom Hill NO-TE (TFA) — ChronicMasterdeflatr — Dec 12
 2023-12-12T00:00:01,Dec 12,ChronicMasterdeflatr,waiver,Trevor Lawrence,Trevor Lawrence,JAX,QB,Justin Herbert,Justin Herbert,LAC,QB,,Trevor Lawrence Jax-QB (FA)/Justin Herbert LAC-QB (TFA) — ChronicMasterdeflatr — Dec 12
-2023-12-13T00:00:00,Dec 13,Hoofers,waiver,Washington Commanders,Washington Commanders,WAS,DEF,Tennessee Titans,Tennessee Titans,TEN,DEF,,Commanders Was-DEF (FA)/Titans Ten-DEF (TFA) — Hoofers — Dec 13
-2023-12-13T00:00:01,Dec 13,Greendawgs,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,New England Patriots,New England Patriots,NE,DEF,,Dolphins Mia-DEF (FA)/Patriots NE-DEF (TFA) — Greendawgs — Dec 13
-2023-12-13T00:00:02,Dec 13,Greendawgs,waiver,Brandin Cooks,Brandin Cooks,NO,WR,Jerry Jeudy,Jerry Jeudy,CLE,WR,,Brandin Cooks NO-WR (FA)/Jerry Jeudy Cle-WR (TFA) — Greendawgs — Dec 13
-2023-12-13T00:00:03,Dec 13,Greendawgs,waiver,Ezekiel Elliott,Ezekiel Elliott,DAL,RB,D'Andre Swift,D'Andre Swift,CHI,RB,,Ezekiel Elliott Dal-RB (FA)/D'Andre Swift Chi-RB (TFA) — Greendawgs — Dec 13
-2023-12-13T00:00:04,Dec 13,Greendawgs,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Miami Dolphins,Miami Dolphins,MIA,DEF,,Rams LAR-DEF (FA)/Dolphins Mia-DEF (TFA) — Greendawgs — Dec 13
-2023-12-13T00:00:05,Dec 13,Greendawgs,waiver,Adam Thielen,Adam Thielen,PIT,WR,Justin Fields,Justin Fields,KC,QB,,Adam Thielen Pit-WR (FA)/Justin Fields KC-QB (TFA) — Greendawgs — Dec 13
-2023-12-13T00:00:06,Dec 13,Redskins,waiver,Gardner Minshew II,Gardner Minshew II,ARI,QB,Geno Smith,Geno Smith,NYJ,QB,,Gardner Minshew II Ari-QB (FA)/Geno Smith NYJ-QB (TFA) — Redskins — Dec 13
-2023-12-13T00:00:07,Dec 13,Redskins,waiver,Desmond Ridder,Desmond Ridder,GB,QB,Joshua Dobbs,Joshua Dobbs,NE,QB,,Desmond Ridder GB-QB (FA)/Joshua Dobbs NE-QB (TFA) — Redskins — Dec 13
-2023-12-13T00:00:08,Dec 13,Sportos,waiver,Calvin Ridley,Calvin Ridley,TEN,WR,Brandin Cooks,Brandin Cooks,NO,WR,,Calvin Ridley Ten-WR (FA)/Brandin Cooks NO-WR (TFA) — Sportos — Dec 13
-2023-12-13T00:00:09,Dec 13,Sportos,waiver,David Njoku,David Njoku,LAC,TE,Jake Ferguson,Jake Ferguson,DAL,TE,,David Njoku LAC-TE (FA)/Jake Ferguson Dal-TE (TFA) — Sportos — Dec 13
-2023-12-13T00:00:10,Dec 13,Sportos,waiver,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,Miami Dolphins,Miami Dolphins,MIA,DEF,,Chiefs KC-DEF (FA)/Dolphins Mia-DEF (TFA) — Sportos — Dec 13
-2023-12-13T00:00:11,Dec 13,Sportos,waiver,Anders Carlson,Anders Carlson,SF,K,Riley Patterson,Riley Patterson,MIA,K,,Anders Carlson SF-K (FA)/Riley Patterson Mia-K (TFA) — Sportos — Dec 13
-2023-12-13T00:00:12,Dec 13,JBDA,waiver,Odell Beckham Jr.,Odell Beckham Jr.,NYG,WR,Nico Collins,Nico Collins,HOU,WR,,Odell Beckham Jr. NYG-WR (FA)/Nico Collins Hou-WR (TFA) — JBDA — Dec 13
-2023-12-13T00:00:13,Dec 13,JBDA,waiver,Chris Boswell,Chris Boswell,PIT,K,Cameron Dicker,Cameron Dicker,LAC,K,,Chris Boswell Pit-K (FA)/Cameron Dicker LAC-K (TFA) — JBDA — Dec 13
-2023-12-13T00:00:14,Dec 13,JBDA,waiver,Indianapolis Colts,Indianapolis Colts,IND,DEF,Pittsburgh Steelers,Pittsburgh Steelers,PIT,DEF,,Colts Ind-DEF (FA)/Steelers Pit-DEF (TFA) — JBDA — Dec 13
-2023-12-13T00:00:15,Dec 13,Hoofers,waiver,Amari Cooper,Amari Cooper,BUF,WR,Jordan Addison,Jordan Addison,MIN,WR,,Amari Cooper Buf-WR (FA)/Jordan Addison Min-WR (TFA) — Hoofers — Dec 13
-2023-12-13T00:00:16,Dec 13,Hoofers,waiver,Joe Flacco,Joe Flacco,CIN,QB,Jameis Winston,Jameis Winston,NYG,QB,,Joe Flacco Cin-QB (FA)/Jameis Winston NYG-QB (TFA) — Hoofers — Dec 13
+2023-12-13T00:00:00,Dec 13,Greendawgs,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,New England Patriots,New England Patriots,NE,DEF,,Dolphins Mia-DEF (FA)/Patriots NE-DEF (TFA) — Greendawgs — Dec 13
+2023-12-13T00:00:01,Dec 13,Greendawgs,waiver,Brandin Cooks,Brandin Cooks,NO,WR,Jerry Jeudy,Jerry Jeudy,CLE,WR,,Brandin Cooks NO-WR (FA)/Jerry Jeudy Cle-WR (TFA) — Greendawgs — Dec 13
+2023-12-13T00:00:02,Dec 13,Greendawgs,waiver,Ezekiel Elliott,Ezekiel Elliott,DAL,RB,D'Andre Swift,D'Andre Swift,CHI,RB,,Ezekiel Elliott Dal-RB (FA)/D'Andre Swift Chi-RB (TFA) — Greendawgs — Dec 13
+2023-12-13T00:00:03,Dec 13,Greendawgs,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Miami Dolphins,Miami Dolphins,MIA,DEF,,Rams LAR-DEF (FA)/Dolphins Mia-DEF (TFA) — Greendawgs — Dec 13
+2023-12-13T00:00:04,Dec 13,Greendawgs,waiver,Adam Thielen,Adam Thielen,PIT,WR,Justin Fields,Justin Fields,KC,QB,,Adam Thielen Pit-WR (FA)/Justin Fields KC-QB (TFA) — Greendawgs — Dec 13
+2023-12-13T00:00:05,Dec 13,Redskins,waiver,Gardner Minshew II,Gardner Minshew II,ARI,QB,Geno Smith,Geno Smith,NYJ,QB,,Gardner Minshew II Ari-QB (FA)/Geno Smith NYJ-QB (TFA) — Redskins — Dec 13
+2023-12-13T00:00:06,Dec 13,Redskins,waiver,Desmond Ridder,Desmond Ridder,GB,QB,Joshua Dobbs,Joshua Dobbs,NE,QB,,Desmond Ridder GB-QB (FA)/Joshua Dobbs NE-QB (TFA) — Redskins — Dec 13
+2023-12-13T00:00:07,Dec 13,Sportos,waiver,Calvin Ridley,Calvin Ridley,TEN,WR,Brandin Cooks,Brandin Cooks,NO,WR,,Calvin Ridley Ten-WR (FA)/Brandin Cooks NO-WR (TFA) — Sportos — Dec 13
+2023-12-13T00:00:08,Dec 13,Sportos,waiver,David Njoku,David Njoku,LAC,TE,Jake Ferguson,Jake Ferguson,DAL,TE,,David Njoku LAC-TE (FA)/Jake Ferguson Dal-TE (TFA) — Sportos — Dec 13
+2023-12-13T00:00:09,Dec 13,Sportos,waiver,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,Miami Dolphins,Miami Dolphins,MIA,DEF,,Chiefs KC-DEF (FA)/Dolphins Mia-DEF (TFA) — Sportos — Dec 13
+2023-12-13T00:00:10,Dec 13,Sportos,waiver,Anders Carlson,Anders Carlson,SF,K,Riley Patterson,Riley Patterson,MIA,K,,Anders Carlson SF-K (FA)/Riley Patterson Mia-K (TFA) — Sportos — Dec 13
+2023-12-13T00:00:11,Dec 13,JBDA,waiver,Odell Beckham Jr.,Odell Beckham Jr.,NYG,WR,Nico Collins,Nico Collins,HOU,WR,,Odell Beckham Jr. NYG-WR (FA)/Nico Collins Hou-WR (TFA) — JBDA — Dec 13
+2023-12-13T00:00:12,Dec 13,JBDA,waiver,Chris Boswell,Chris Boswell,PIT,K,Cameron Dicker,Cameron Dicker,LAC,K,,Chris Boswell Pit-K (FA)/Cameron Dicker LAC-K (TFA) — JBDA — Dec 13
+2023-12-13T00:00:13,Dec 13,JBDA,waiver,Indianapolis Colts,Indianapolis Colts,IND,DEF,Pittsburgh Steelers,Pittsburgh Steelers,PIT,DEF,,Colts Ind-DEF (FA)/Steelers Pit-DEF (TFA) — JBDA — Dec 13
+2023-12-13T00:00:14,Dec 13,Hoofers,waiver,Amari Cooper,Amari Cooper,BUF,WR,Jordan Addison,Jordan Addison,MIN,WR,,Amari Cooper Buf-WR (FA)/Jordan Addison Min-WR (TFA) — Hoofers — Dec 13
+2023-12-13T00:00:15,Dec 13,Hoofers,waiver,Joe Flacco,Joe Flacco,CIN,QB,Jameis Winston,Jameis Winston,NYG,QB,,Joe Flacco Cin-QB (FA)/Jameis Winston NYG-QB (TFA) — Hoofers — Dec 13
 2023-12-19T00:00:00,Dec 19,JBDA,waiver,Aaron Jones Sr.,Aaron Jones Sr.,MIN,RB,Zack Moss,Zack Moss,CIN,RB,,Aaron Jones Sr. Min-RB (FA)/Zack Moss Cin-RB (TFA) — JBDA — Dec 19
 2023-12-19T00:00:01,Dec 19,JBDA,waiver,Buffalo Bills,Buffalo Bills,BUF,DEF,Indianapolis Colts,Indianapolis Colts,IND,DEF,,Bills Buf-DEF (FA)/Colts Ind-DEF (TFA) — JBDA — Dec 19
 2023-12-20T00:00:00,Dec 20,JBDA,waiver,Justin Fields,Justin Fields,KC,QB,Sam Howell,Sam Howell,DAL,QB,,Justin Fields KC-QB (FA)/Sam Howell Dal-QB (TFA) — JBDA — Dec 20
