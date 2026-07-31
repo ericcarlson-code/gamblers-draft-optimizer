@@ -311,6 +311,10 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2024-12-11T00:00:08,Dec 11,Elite,waiver,Zay Flowers,Zay Flowers,BAL,WR,Ladd McConkey,Ladd McConkey,LAC,WR,,Zay Flowers Bal-WR (FA)/Ladd McConkey LAC-WR (TFA) — Elite — Dec 11
 2024-12-11T00:00:09,Dec 11,Let's Ride,waiver,Keenan Allen,Keenan Allen,LAC,WR,Geno Smith,Geno Smith,NYJ,QB,,Keenan Allen LAC-WR (FA)/Geno Smith NYJ-QB (TFA) — Let's Ride — Dec 11
 2024-12-11T00:00:10,Dec 11,Sportos,waiver,Harrison Butker,Harrison Butker,KC,K,Matthew Wright,Matthew Wright,BUF,K,,Harrison Butker KC-K (FA)/Matthew Wright Buf-K (TFA) — Sportos — Dec 11
+2024-12-11T00:00:11,Dec 11,Sportos,waiver,,,,,Jonathon Brooks,Jonathon Brooks,CAR,RB,,Jonathon Brooks Car-RB (TFA) — Sportos — Dec 11
+2024-12-11T00:00:12,Dec 11,Sportos,waiver,Ladd McConkey,Ladd McConkey,LAC,WR,,,,,,Ladd McConkey LAC-WR (FA) — Sportos — Dec 11
+2024-12-11T00:00:13,Dec 11,Hoofers,waiver,Washington Commanders,Washington Commanders,WAS,DEF,Tennessee Titans,Tennessee Titans,TEN,DEF,,Commanders Was-DEF (FA)/Titans Ten-DEF (TFA) — Hoofers — Dec 11
+2024-12-11T00:00:14,Dec 11,Hoofers,waiver,Patrick Taylor Jr.,Patrick Taylor,SF,RB,Isiah Pacheco,Isiah Pacheco,DET,RB,,Patrick Taylor Jr. SF-RB (FA)/Isiah Pacheco Det-RB (TFA) — Hoofers — Dec 11
 2024-12-18T00:00:00,Dec 18,Redskins,waiver,Rashod Bateman,Rashod Bateman,BAL,WR,Sincere McCormick,Sincere McCormick,SF,RB,,Rashod Bateman Bal-WR (FA)/Sincere McCormick SF-RB (TFA) — Redskins — Dec 18
 2024-12-18T00:00:01,Dec 18,Redskins,waiver,Green Bay Packers,Green Bay Packers,GB,DEF,Detroit Lions,Detroit Lions,DET,DEF,,Packers GB-DEF (FA)/Lions Det-DEF (TFA) — Redskins — Dec 18
 2024-12-18T00:00:02,Dec 18,Elite,waiver,Keon Coleman,Keon Coleman,BUF,WR,DK Metcalf,DK Metcalf,PIT,WR,,Keon Coleman Buf-WR (FA)/DK Metcalf Pit-WR (TFA) — Elite — Dec 18
@@ -325,24 +329,25 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2024-12-18T00:00:11,Dec 18,Hoofers,waiver,Buffalo Bills,Buffalo Bills,BUF,DEF,Washington Commanders,Washington Commanders,WAS,DEF,,Bills Buf-DEF (FA)/Commanders Was-DEF (TFA) — Hoofers — Dec 18
 2024-12-18T00:00:12,Dec 18,Hoofers,waiver,Tyjae Spears,Tyjae Spears,TEN,RB,Patrick Taylor Jr.,Patrick Taylor,SF,RB,,Tyjae Spears Ten-RB (FA)/Patrick Taylor Jr. SF-RB (TFA) — Hoofers — Dec 18
 2024-12-18T00:00:13,Dec 18,ChronicMasterdeflatr,waiver,Drake Maye,Drake Maye,NE,QB,Caleb Williams,Caleb Williams,CHI,QB,,Drake Maye NE-QB (FA)/Caleb Williams Chi-QB (TFA) — ChronicMasterdeflatr — Dec 18
-2024-12-18T00:00:14,Dec 18/19,JBDA,waiver,Arizona Cardinals,Arizona Cardinals,ARI,DEF,Minnesota Vikings,Minnesota Vikings,MIN,DEF,,Cardinals Ari-DEF (FA)/Vikings Min-DEF (TFA) — JBDA — Dec 18/19
-2024-12-18T00:00:15,Dec 18,Let's Ride,waiver,Indianapolis Colts,Indianapolis Colts,IND,DEF,Los Angeles Chargers,Los Angeles Chargers,LAC,DEF,,Colts Ind-DEF (FA)/Chargers LAC-DEF (TFA) — Let's Ride — Dec 18
-2024-12-24T00:00:00,Dec 24,Hoofers,waiver,DK Metcalf,DK Metcalf,PIT,WR,Khalil Shakir,Khalil Shakir,BUF,WR,,DK Metcalf Pit-WR (FA)/Khalil Shakir Buf-WR (TFA) — Hoofers — Dec 24
-2024-12-24T00:00:01,Dec 24,Hoofers,waiver,Geno Smith,Geno Smith,NYJ,QB,DeAndre Hopkins,DeAndre Hopkins,BAL,WR,,Geno Smith NYJ-QB (FA)/DeAndre Hopkins Bal-WR (TFA) — Hoofers — Dec 24
-2024-12-24T00:00:02,Dec 24,Sportos,waiver,Philadelphia Eagles,Philadelphia Eagles,PHI,DEF,Denver Broncos,Denver Broncos,DEN,DEF,,Eagles Phi-DEF (FA)/Broncos Den-DEF (TFA) — Sportos — Dec 24
-2024-12-24T00:00:03,Dec 24,Sportos,waiver,Justin Herbert,Justin Herbert,LAC,QB,Michael Penix Jr.,Michael Penix Jr.,ATL,QB,,Justin Herbert LAC-QB (FA)/Michael Penix Jr. Atl-QB (TFA) — Sportos — Dec 24
-2024-12-24T00:00:04,Dec 24,Cardinals,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,Atlanta Falcons,Atlanta Falcons,ATL,DEF,,Dolphins Mia-DEF (FA)/Falcons Atl-DEF (TFA) — Cardinals — Dec 24
-2024-12-24T00:00:05,Dec 24,JBDA,waiver,Baltimore Ravens,Baltimore Ravens,BAL,DEF,Arizona Cardinals,Arizona Cardinals,ARI,DEF,,Ravens Bal-DEF (FA)/Cardinals Ari-DEF (TFA) — JBDA — Dec 24
-2024-12-24T00:00:06,Dec 24,Elite,waiver,Devaughn Vele,Devaughn Vele,NO,WR,,,,,,Devaughn Vele NO-WR (FA) — Elite — Dec 24
-2024-12-24T00:00:07,Dec 24,Elite,waiver,,,,,C.J. Stroud,C.J. Stroud,HOU,QB,,C.J. Stroud Hou-QB (TFA) — Elite — Dec 24
-2024-12-24T00:00:08,Dec 24,Elite,waiver,Buffalo Bills,Buffalo Bills,BUF,DEF,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,,Bills Buf-DEF (FA)/Chiefs KC-DEF (TFA) — Elite — Dec 24
-2024-12-24T00:00:09,Dec 24,ChronicMasterdeflatr,waiver,Xavier Worthy,Xavier Worthy,KC,WR,Jerry Jeudy,Jerry Jeudy,CLE,WR,,Xavier Worthy KC-WR (FA)/Jerry Jeudy Cle-WR (TFA) — ChronicMasterdeflatr — Dec 24
-2024-12-24T00:00:10,Dec 24,ChronicMasterdeflatr,waiver,Anthony Richardson Sr.,Anthony Richardson,IND,QB,David Montgomery,David Montgomery,HOU,RB,,Anthony Richardson Sr. Ind-QB (FA)/David Montgomery Hou-RB (TFA) — ChronicMasterdeflatr — Dec 24
-2024-12-24T00:00:11,Dec 24,Greendawgs,waiver,Los Angeles Chargers,Los Angeles Chargers,LAC,DEF,Detroit Lions,Detroit Lions,DET,DEF,,Chargers LAC-DEF (FA)/Lions Det-DEF (TFA) — Greendawgs — Dec 24
-2024-12-24T00:00:12,Dec 24,Greendawgs,waiver,J.K. Dobbins,J.K. Dobbins,DEN,RB,Tyrone Tracy Jr.,Tyrone Tracy Jr.,NYG,RB,,J.K. Dobbins Den-RB (FA)/Tyrone Tracy Jr. NYG-RB (TFA) — Greendawgs — Dec 24
-2024-12-24T00:00:13,Dec 24,Greendawgs,waiver,Jaylen Warren,Jaylen Warren,PIT,RB,Zach Charbonnet,Zach Charbonnet,SEA,RB,,Jaylen Warren Pit-RB (FA)/Zach Charbonnet Sea-RB (TFA) — Greendawgs — Dec 24
-2024-12-24T00:00:14,Dec 24,Hoofers,waiver,Tank Bigsby,Tank Bigsby,PHI,RB,Tyjae Spears,Tyjae Spears,TEN,RB,,Tank Bigsby Phi-RB (FA)/Tyjae Spears Ten-RB (TFA) — Hoofers — Dec 24
-2024-12-24T00:00:15,Dec 24,Hoofers,waiver,Pat Freiermuth,Pat Freiermuth,PIT,TE,T.J. Hockenson,T.J. Hockenson,MIN,TE,,Pat Freiermuth Pit-TE (FA)/T.J. Hockenson Min-TE (TFA) — Hoofers — Dec 24
+2024-12-18T00:00:14,Dec 18,Let's Ride,waiver,Indianapolis Colts,Indianapolis Colts,IND,DEF,Los Angeles Chargers,Los Angeles Chargers,LAC,DEF,,Colts Ind-DEF (FA)/Chargers LAC-DEF (TFA) — Let's Ride — Dec 18
+2024-12-19T00:00:00,Dec 19,JBDA,waiver,Arizona Cardinals,Arizona Cardinals,ARI,DEF,Minnesota Vikings,Minnesota Vikings,MIN,DEF,,Cardinals Ari-DEF (FA)/Vikings Min-DEF (TFA) — JBDA — Dec 19
+2024-12-24T00:00:00,Dec 24,Hoofers,waiver,Los Angeles Rams,Los Angeles Rams,LA,DEF,Buffalo Bills,Buffalo Bills,BUF,DEF,,Rams LAR-DEF (FA)/Bills Buf-DEF (TFA) — Hoofers — Dec 24
+2024-12-24T00:00:01,Dec 24,Hoofers,waiver,DK Metcalf,DK Metcalf,PIT,WR,Khalil Shakir,Khalil Shakir,BUF,WR,,DK Metcalf Pit-WR (FA)/Khalil Shakir Buf-WR (TFA) — Hoofers — Dec 24
+2024-12-24T00:00:02,Dec 24,Hoofers,waiver,Geno Smith,Geno Smith,NYJ,QB,DeAndre Hopkins,DeAndre Hopkins,BAL,WR,,Geno Smith NYJ-QB (FA)/DeAndre Hopkins Bal-WR (TFA) — Hoofers — Dec 24
+2024-12-24T00:00:03,Dec 24,Sportos,waiver,Philadelphia Eagles,Philadelphia Eagles,PHI,DEF,Denver Broncos,Denver Broncos,DEN,DEF,,Eagles Phi-DEF (FA)/Broncos Den-DEF (TFA) — Sportos — Dec 24
+2024-12-24T00:00:04,Dec 24,Sportos,waiver,Justin Herbert,Justin Herbert,LAC,QB,Michael Penix Jr.,Michael Penix Jr.,ATL,QB,,Justin Herbert LAC-QB (FA)/Michael Penix Jr. Atl-QB (TFA) — Sportos — Dec 24
+2024-12-24T00:00:05,Dec 24,Cardinals,waiver,Miami Dolphins,Miami Dolphins,MIA,DEF,Atlanta Falcons,Atlanta Falcons,ATL,DEF,,Dolphins Mia-DEF (FA)/Falcons Atl-DEF (TFA) — Cardinals — Dec 24
+2024-12-24T00:00:06,Dec 24,JBDA,waiver,Baltimore Ravens,Baltimore Ravens,BAL,DEF,Arizona Cardinals,Arizona Cardinals,ARI,DEF,,Ravens Bal-DEF (FA)/Cardinals Ari-DEF (TFA) — JBDA — Dec 24
+2024-12-24T00:00:07,Dec 24,Elite,waiver,Devaughn Vele,Devaughn Vele,NO,WR,,,,,,Devaughn Vele NO-WR (FA) — Elite — Dec 24
+2024-12-24T00:00:08,Dec 24,Elite,waiver,,,,,C.J. Stroud,C.J. Stroud,HOU,QB,,C.J. Stroud Hou-QB (TFA) — Elite — Dec 24
+2024-12-24T00:00:09,Dec 24,Elite,waiver,Buffalo Bills,Buffalo Bills,BUF,DEF,Kansas City Chiefs,Kansas City Chiefs,KC,DEF,,Bills Buf-DEF (FA)/Chiefs KC-DEF (TFA) — Elite — Dec 24
+2024-12-24T00:00:10,Dec 24,ChronicMasterdeflatr,waiver,Xavier Worthy,Xavier Worthy,KC,WR,Jerry Jeudy,Jerry Jeudy,CLE,WR,,Xavier Worthy KC-WR (FA)/Jerry Jeudy Cle-WR (TFA) — ChronicMasterdeflatr — Dec 24
+2024-12-24T00:00:11,Dec 24,ChronicMasterdeflatr,waiver,Anthony Richardson Sr.,Anthony Richardson,IND,QB,David Montgomery,David Montgomery,HOU,RB,,Anthony Richardson Sr. Ind-QB (FA)/David Montgomery Hou-RB (TFA) — ChronicMasterdeflatr — Dec 24
+2024-12-24T00:00:12,Dec 24,Greendawgs,waiver,Los Angeles Chargers,Los Angeles Chargers,LAC,DEF,Detroit Lions,Detroit Lions,DET,DEF,,Chargers LAC-DEF (FA)/Lions Det-DEF (TFA) — Greendawgs — Dec 24
+2024-12-24T00:00:13,Dec 24,Greendawgs,waiver,J.K. Dobbins,J.K. Dobbins,DEN,RB,Tyrone Tracy Jr.,Tyrone Tracy Jr.,NYG,RB,,J.K. Dobbins Den-RB (FA)/Tyrone Tracy Jr. NYG-RB (TFA) — Greendawgs — Dec 24
+2024-12-24T00:00:14,Dec 24,Greendawgs,waiver,Jaylen Warren,Jaylen Warren,PIT,RB,Zach Charbonnet,Zach Charbonnet,SEA,RB,,Jaylen Warren Pit-RB (FA)/Zach Charbonnet Sea-RB (TFA) — Greendawgs — Dec 24
+2024-12-24T00:00:15,Dec 24,Hoofers,waiver,Tank Bigsby,Tank Bigsby,PHI,RB,Tyjae Spears,Tyjae Spears,TEN,RB,,Tank Bigsby Phi-RB (FA)/Tyjae Spears Ten-RB (TFA) — Hoofers — Dec 24
+2024-12-24T00:00:16,Dec 24,Hoofers,waiver,Pat Freiermuth,Pat Freiermuth,PIT,TE,T.J. Hockenson,T.J. Hockenson,MIN,TE,,Pat Freiermuth Pit-TE (FA)/T.J. Hockenson Min-TE (TFA) — Hoofers — Dec 24
 2025-01-02T00:00:00,Jan 2,Sportos,waiver,Zach Charbonnet,Zach Charbonnet,SEA,RB,Jerome Ford,Jerome Ford,WAS,RB,,Zach Charbonnet Sea-RB (FA)/Jerome Ford Was-RB (TFA) — Sportos — Jan 2
 2025-01-02T00:00:01,Jan 2,Sportos,waiver,Blake Corum,Blake Corum,LA,RB,Joe Mixon,Joe Mixon,HOU,RB,,Blake Corum LAR-RB (FA)/Joe Mixon Hou-RB (TFA) — Sportos — Jan 2
 2025-01-03T00:00:00,Jan 3,Hoofers,waiver,Daniel Carlson,Daniel Carlson,LV,K,Jake Moody,Jake Moody,WAS,K,,Daniel Carlson LV-K (FA)/Jake Moody Was-K (TFA) — Hoofers — Jan 3

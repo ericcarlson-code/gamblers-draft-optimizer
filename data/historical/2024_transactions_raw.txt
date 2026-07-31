@@ -310,6 +310,10 @@ Rhamondre Stevenson NE-RB (FA)/Tony Pollard Ten-RB (TFA) — Elite — Dec 11
 Zay Flowers Bal-WR (FA)/Ladd McConkey LAC-WR (TFA) — Elite — Dec 11
 Keenan Allen LAC-WR (FA)/Geno Smith NYJ-QB (TFA) — Let's Ride — Dec 11
 Harrison Butker KC-K (FA)/Matthew Wright Buf-K (TFA) — Sportos — Dec 11
+Jonathon Brooks Car-RB (TFA) — Sportos — Dec 11
+Ladd McConkey LAC-WR (FA) — Sportos — Dec 11
+Commanders Was-DEF (FA)/Titans Ten-DEF (TFA) — Hoofers — Dec 11
+Patrick Taylor Jr. SF-RB (FA)/Isiah Pacheco Det-RB (TFA) — Hoofers — Dec 11
 Rashod Bateman Bal-WR (FA)/Sincere McCormick SF-RB (TFA) — Redskins — Dec 18
 Packers GB-DEF (FA)/Lions Det-DEF (TFA) — Redskins — Dec 18
 Keon Coleman Buf-WR (FA)/DK Metcalf Pit-WR (TFA) — Elite — Dec 18
@@ -324,11 +328,12 @@ Falcons Atl-DEF (FA)/Ravens Bal-DEF (TFA) — Cardinals — Dec 18
 Bills Buf-DEF (FA)/Commanders Was-DEF (TFA) — Hoofers — Dec 18
 Tyjae Spears Ten-RB (FA)/Patrick Taylor Jr. SF-RB (TFA) — Hoofers — Dec 18
 Drake Maye NE-QB (FA)/Caleb Williams Chi-QB (TFA) — ChronicMasterdeflatr — Dec 18
+Rams LAR-DEF (FA)/Bills Buf-DEF (TFA) — Hoofers — Dec 24
 DK Metcalf Pit-WR (FA)/Khalil Shakir Buf-WR (TFA) — Hoofers — Dec 24
 Geno Smith NYJ-QB (FA)/DeAndre Hopkins Bal-WR (TFA) — Hoofers — Dec 24
 Eagles Phi-DEF (FA)/Broncos Den-DEF (TFA) — Sportos — Dec 24
 Justin Herbert LAC-QB (FA)/Michael Penix Jr. Atl-QB (TFA) — Sportos — Dec 24
-Cardinals Ari-DEF (FA)/Vikings Min-DEF (TFA) — JBDA — Dec 18/19
+Cardinals Ari-DEF (FA)/Vikings Min-DEF (TFA) — JBDA — Dec 19
 Colts Ind-DEF (FA)/Chargers LAC-DEF (TFA) — Let's Ride — Dec 18
 Daniel Carlson LV-K (FA)/Jake Moody Was-K (TFA) — Hoofers — Jan 3
 Michael Pittman Jr. Pit-WR (FA)/Darnell Mooney NYG-WR (TFA) — Hoofers — Jan 3
