@@ -59,23 +59,23 @@ Saints NO-DEF (FA)/Cowboys Dal-DEF (TFA) — Redskins — Oct 16
 Chuba Hubbard Car-RB (FA)/Travis Etienne Jr. NO-RB (TFA) — Redskins — Oct 16
 Jordan Addison Min-WR (FA)/Rashid Shaheed Sea-WR (TFA) — Redskins — Oct 16
 Jason Sanders NYJ-K (FA)/Bo Nix Den-QB (TFA) — Redskins — Oct 16
-Patrick Taylor Jr. SF-RB (FA)/Isiah Pacheco Det-RB (TFA) — Hoofers — Oct 23 (Dec 11 date correction noted)
-Commanders Was-DEF (FA)/Titans Ten-DEF (TFA) — Hoofers — Oct 23
-Ladd McConkey LAC-WR (FA)/Jonathon Brooks Car-RB (TFA) — Sportos — Oct 23
-Rashod Bateman Bal-WR (FA)/Sincere McCormick SF-RB (TFA) — Redskins — Oct 23
-Packers GB-DEF (FA)/Lions Det-DEF (TFA) — Redskins — Oct 23
-Keon Coleman Buf-WR (FA)/DK Metcalf Pit-WR (TFA) — Elite — Oct 23
-C.J. Stroud Hou-QB (FA)/Kirk Cousins LV-QB (TFA) — Elite — Oct 23
-Jalen McMillan TB-WR (FA)/Calvin Ridley Ten-WR (TFA) — Greendawgs — Oct 23
-Lions Det-DEF (FA)/Jets NYJ-DEF (TFA) — Greendawgs — Oct 23
-Will Reichard Min-K (FA)/Younghoe Koo NYG-K (TFA) — Greendawgs — Oct 23
+Patrick Taylor Jr. SF-RB (FA)/Isiah Pacheco Det-RB (TFA) — Hoofers — Dec 11
+Commanders Was-DEF (FA)/Titans Ten-DEF (TFA) — Hoofers — Dec 11
+Ladd McConkey LAC-WR (FA)/Jonathon Brooks Car-RB (TFA) — Sportos — Dec 11
+Rashod Bateman Bal-WR (FA)/Sincere McCormick SF-RB (TFA) — Redskins — Dec 18
+Packers GB-DEF (FA)/Lions Det-DEF (TFA) — Redskins — Dec 18
+Keon Coleman Buf-WR (FA)/DK Metcalf Pit-WR (TFA) — Elite — Dec 18
+C.J. Stroud Hou-QB (FA)/Kirk Cousins LV-QB (TFA) — Elite — Dec 18
+Jalen McMillan TB-WR (FA)/Calvin Ridley Ten-WR (TFA) — Greendawgs — Dec 18
+Lions Det-DEF (FA)/Jets NYJ-DEF (TFA) — Greendawgs — Dec 18
+Will Reichard Min-K (FA)/Younghoe Koo NYG-K (TFA) — Greendawgs — Dec 18
 Drake Maye NE-QB (FA)/Caleb Williams Chi-QB (TFA) — ChronicMasterdeflatr — Oct 23
-Michael Penix Jr. Atl-QB (FA)/Justin Herbert LAC-QB (TFA) — Sportos — Oct 23
-Jerome Ford Was-RB (FA)/Rachaad White Was-RB (TFA) — Sportos — Oct 23
-Tony Pollard Ten-RB (FA)/Braelon Allen NYJ-RB (TFA) — Cardinals — Oct 30
-Falcons Atl-DEF (FA)/Ravens Bal-DEF (TFA) — Cardinals — Oct 30
-Bills Buf-DEF (FA)/Commanders Was-DEF (TFA) — Hoofers — Oct 30
-Tyjae Spears Ten-RB (FA)/Patrick Taylor Jr. SF-RB (TFA) — Hoofers — Oct 30
+Michael Penix Jr. Atl-QB (FA)/Justin Herbert LAC-QB (TFA) — Sportos — Dec 18
+Jerome Ford Was-RB (FA)/Rachaad White Was-RB (TFA) — Sportos — Dec 18
+Tony Pollard Ten-RB (FA)/Braelon Allen NYJ-RB (TFA) — Cardinals — Dec 18
+Falcons Atl-DEF (FA)/Ravens Bal-DEF (TFA) — Cardinals — Dec 18
+Bills Buf-DEF (FA)/Commanders Was-DEF (TFA) — Hoofers — Dec 18
+Tyjae Spears Ten-RB (FA)/Patrick Taylor Jr. SF-RB (TFA) — Hoofers — Dec 18
 T.J. Hockenson Min-TE — Dropped by Commissioner — Redskins — Oct 30
 Brandon Aubrey Dal-K — Dropped by Commissioner — Redskins — Oct 30
 Nick Chubb Hou-RB (TFA) — Redskins — Oct 30
@@ -135,6 +135,7 @@ Tony Pollard Ten-RB (FA)/Javonte Williams Dal-RB (TFA) — Elite — Dec 4
 Jonnu Smith Pit-TE (FA)/Cade Otton TB-TE (TFA) — ChronicMasterdeflatr — Dec 4
 Jerry Jeudy Cle-WR (FA)/Jameson Williams Det-WR (TFA) — ChronicMasterdeflatr — Dec 4
 Caleb Williams Chi-QB (FA)/Drake Maye NE-QB (TFA) — ChronicMasterdeflatr — Dec 4
+Drake Maye NE-QB (FA)/Caleb Williams Chi-QB (TFA) — ChronicMasterdeflatr — Dec 18
 Rico Dowdle Pit-RB (FA)/Rachaad White Was-RB (TFA) — Greendawgs — Dec 4
 Eagles Phi-DEF (FA)/Bills Buf-DEF (TFA) — Greendawgs — Dec 4
 Blake Grupe Ind-K (FA) — Greendawgs — Dec 4
