@@ -149,7 +149,7 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-10-25T00:00:01,Oct 25,Ryan's Remarkable Team,waiver,C.J. Stroud,C.J. Stroud,HOU,QB,Zack Moss,Zack Moss,CIN,RB,,C.J. Stroud Hou-QB (FA)/Zack Moss Cin-RB (TFA) — Ryan's Remarkable Team — Oct 25
 2023-10-25T00:00:02,Oct 25,Let's Ride,waiver,Taysom Hill,Taysom Hill,NO,TE,Logan Thomas,Logan Thomas,SF,TE,,Taysom Hill NO-TE (FA)/Logan Thomas SF-TE (TFA) — Let's Ride — Oct 25
 2023-10-25T00:00:03,Oct 25,Let's Ride,waiver,New York Jets,New York Jets,NYJ,DEF,Washington Commanders,Washington Commanders,WAS,DEF,,Jets NYJ-DEF (FA)/Commanders Was-DEF (TFA) — Let's Ride — Oct 25
-2023-10-25T00:00:04,Oct 25,Redskins,waiver,Indianapolis Colts,Indianapolis Colts,IND,DEF,Courtland Sutton,Courtland Sutton,DEN,WR,,Colts Ind-DEF (FA)/Courtland Sutton Den-WR (TFA) — Redskins — Oct 25
+2023-10-25T00:00:04,Oct 25,Redskins,waiver,Courtland Sutton,Courtland Sutton,DEN,WR,Indianapolis Colts,Indianapolis Colts,IND,DEF,,Courtland Sutton Den-WR (FA)/Colts Ind-DEF (TFA) — Redskins — Oct 25
 2023-10-25T00:00:05,Oct 25,Redskins,waiver,Breece Hall,Breece Hall,NYJ,RB,Zach Evans,Zach Evans,NYJ,RB,,Breece Hall NYJ-RB (FA)/Zach Evans NYJ-RB (TFA) — Redskins — Oct 25
 2023-10-25T00:00:06,Oct 25,ChronicMasterdeflatr,waiver,Blake Grupe,Blake Grupe,IND,K,Brett Maher,Brett Maher,LA,K,,Blake Grupe Ind-K (FA)/Brett Maher LAR-K (TFA) — ChronicMasterdeflatr — Oct 25
 2023-10-25T00:00:07,Oct 25,Hoofers,waiver,Detroit Lions,Detroit Lions,DET,DEF,Las Vegas Raiders,Las Vegas Raiders,LV,DEF,,Lions Det-DEF (FA)/Raiders LV-DEF (TFA) — Hoofers — Oct 25
@@ -162,6 +162,7 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-10-25T00:00:14,Oct 25,Greendawgs,waiver,Ka'imi Fairbairn,Ka'imi Fairbairn,HOU,K,Anders Carlson,Anders Carlson,SF,K,,Ka'imi Fairbairn Hou-K (FA)/Anders Carlson SF-K (TFA) — Greendawgs — Oct 25
 2023-10-25T00:00:15,Oct 25,Greendawgs,waiver,Brandon Aubrey,Brandon Aubrey,DAL,K,Blake Grupe,Blake Grupe,IND,K,,Brandon Aubrey Dal-K (FA)/Blake Grupe Ind-K (TFA) — Greendawgs — Oct 25
 2023-10-25T00:00:16,Oct 25,Greendawgs,waiver,Michael Pittman Jr.,Michael Pittman Jr.,PIT,WR,Jaleel McLaughlin,Jaleel McLaughlin,DEN,RB,,Michael Pittman Jr. Pit-WR (FA)/Jaleel McLaughlin Den-RB (TFA) — Greendawgs — Oct 25
+2023-10-26T00:00:00,Oct 26,JBDA,waiver,Tee Higgins,Tee Higgins,CIN,WR,Curtis Samuel,Curtis Samuel,BUF,WR,,Tee Higgins Cin-WR (FA)/Curtis Samuel Buf-WR (TFA) — JBDA — Oct 26
 2023-11-01T00:00:00,Nov 1,Hoofers,waiver,Atlanta Falcons,Atlanta Falcons,ATL,DEF,Detroit Lions,Detroit Lions,DET,DEF,,Falcons Atl-DEF (FA)/Lions Det-DEF (TFA) — Hoofers — Nov 1
 2023-11-01T00:00:01,Nov 1,Sportos,waiver,Puka Nacua,Puka Nacua,LA,WR,Drake London,Drake London,ATL,WR,,Puka Nacua LAR-WR (FA)/Drake London Atl-WR (TFA) — Sportos — Nov 1
 2023-11-01T00:00:02,Nov 1,Sportos,waiver,Baltimore Ravens,Baltimore Ravens,BAL,DEF,Philadelphia Eagles,Philadelphia Eagles,PHI,DEF,,Ravens Bal-DEF (FA)/Eagles Phi-DEF (TFA) — Sportos — Nov 1
@@ -197,9 +198,8 @@ timestamp,date_raw,team,type,player_added_raw,player_added_resolved,player_added
 2023-11-08T00:00:12,Nov 8,Greendawgs,waiver,,,,,David Njoku,David Njoku,LAC,TE,,David Njoku LAC-TE (TFA) — Greendawgs — Nov 8
 2023-11-08T00:00:13,Nov 8,Elite,waiver,Nick Folk,Nick Folk,ATL,K,Harrison Butker,Harrison Butker,KC,K,,Nick Folk Atl-K (FA)/Harrison Butker KC-K (TFA) — Elite — Nov 8
 2023-11-08T00:00:14,Nov 8,Redskins,waiver,James Conner,James Conner,ARI,RB,Marquise Brown,Hollywood Brown,PHI,WR,,James Conner Ari-RB (FA)/Hollywood Brown Phi-WR (TFA) — Redskins — Nov 8
-2023-11-08T00:00:15,Nov 8,Redskins,waiver,Marquise Brown,Hollywood Brown,PHI,WR,James Conner,James Conner,ARI,RB,,Hollywood Brown Phi-WR (FA)/James Conner Ari-RB (TFA) — Redskins — Nov 8
-2023-11-08T00:00:16,Nov 8,Redskins,waiver,Kyler Murray,Kyler Murray,MIN,QB,Mac Jones,Mac Jones,SF,QB,,Kyler Murray Min-QB (FA)/Mac Jones SF-QB (TFA) — Redskins — Nov 8
-2023-11-08T00:00:17,Nov 8,Redskins,waiver,Joshua Dobbs,Joshua Dobbs,NE,QB,Zach Wilson,Zach Wilson,NO,QB,,Joshua Dobbs NE-QB (FA)/Zach Wilson NO-QB (TFA) — Redskins — Nov 8
+2023-11-08T00:00:15,Nov 8,Redskins,waiver,Kyler Murray,Kyler Murray,MIN,QB,Mac Jones,Mac Jones,SF,QB,,Kyler Murray Min-QB (FA)/Mac Jones SF-QB (TFA) — Redskins — Nov 8
+2023-11-08T00:00:16,Nov 8,Redskins,waiver,Joshua Dobbs,Joshua Dobbs,NE,QB,Zach Wilson,Zach Wilson,NO,QB,,Joshua Dobbs NE-QB (FA)/Zach Wilson NO-QB (TFA) — Redskins — Nov 8
 2023-11-09T00:00:00,Nov 9,Elite,waiver,Jason Myers,Jason Myers,SEA,K,,,,,,Jason Myers Sea-K (FA) — Elite — Nov 9
 2023-11-09T00:00:01,Nov 9,Elite,waiver,,,,,Jason Sanders,Jason Sanders,NYJ,K,,Jason Sanders NYJ-K (TFA) — Elite — Nov 9
 2023-11-09T00:00:02,Nov 9,Elite,waiver,Marquise Brown,Hollywood Brown,PHI,WR,,,,,,Hollywood Brown Phi-WR (FA) — Elite — Nov 9

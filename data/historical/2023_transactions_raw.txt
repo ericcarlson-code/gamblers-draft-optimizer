@@ -124,6 +124,7 @@ Kareem Hunt KC-RB (FA) — JBDA — Oct 18
 Nick Folk Atl-K (TFA) — JBDA — Oct 18
 Chris Boswell Pit-K (FA) — JBDA — Oct 18
 Russell Wilson NYG-QB (TFA) — JBDA — Oct 18
+Tee Higgins Cin-WR (FA)/Curtis Samuel Buf-WR (TFA) — JBDA — Oct 26
 Buccaneers TB-DEF (FA)/Ravens Bal-DEF (TFA) — Ryan's Remarkable Team — Oct 18
 Jakobi Meyers Jax-WR (FA)/Chris Godwin Jr. TB-WR (TFA) — Ryan's Remarkable Team — Oct 18
 Zack Moss Cin-RB (FA)/Rhamondre Stevenson NE-RB (TFA) — Ryan's Remarkable Team — Oct 18
@@ -147,7 +148,7 @@ Tyson Bagent Chi-QB (FA)/Derek Carr NO-QB (TFA) — Ryan's Remarkable Team — O
 C.J. Stroud Hou-QB (FA)/Zack Moss Cin-RB (TFA) — Ryan's Remarkable Team — Oct 25
 Taysom Hill NO-TE (FA)/Logan Thomas SF-TE (TFA) — Let's Ride — Oct 25
 Jets NYJ-DEF (FA)/Commanders Was-DEF (TFA) — Let's Ride — Oct 25
-Colts Ind-DEF (FA)/Courtland Sutton Den-WR (TFA) — Redskins — Oct 25
+Courtland Sutton Den-WR (FA)/Colts Ind-DEF (TFA) — Redskins — Oct 25
 Breece Hall NYJ-RB (FA)/Zach Evans NYJ-RB (TFA) — Redskins — Oct 25
 Blake Grupe Ind-K (FA)/Brett Maher LAR-K (TFA) — ChronicMasterdeflatr — Oct 25
 Lions Det-DEF (FA)/Raiders LV-DEF (TFA) — Hoofers — Oct 25
@@ -216,7 +217,6 @@ Bryce Young Car-QB (FA) — Greendawgs — Nov 8
 David Njoku LAC-TE (TFA) — Greendawgs — Nov 8
 Nick Folk Atl-K (FA)/Harrison Butker KC-K (TFA) — Elite — Nov 8
 James Conner Ari-RB (FA)/Hollywood Brown Phi-WR (TFA) — Redskins — Nov 8
-Hollywood Brown Phi-WR (FA)/James Conner Ari-RB (TFA) — Redskins — Nov 8
 Kyler Murray Min-QB (FA)/Mac Jones SF-QB (TFA) — Redskins — Nov 8
 Joshua Dobbs NE-QB (FA)/Zach Wilson NO-QB (TFA) — Redskins — Nov 8
 Diontae Johnson Cle-WR (FA)/Rashid Shaheed Sea-WR (TFA) — Sportos — Nov 29
