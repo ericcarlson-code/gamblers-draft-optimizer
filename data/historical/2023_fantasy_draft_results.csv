@@ -1,0 +1,127 @@
+overall_pick,round,pick_in_round,team,player_resolved,player_raw
+1,1,1,Greendawgs,Patrick Mahomes,Patrick Mahomes
+2,1,2,Redskins,Travis Kelce,Travis Kelce
+3,1,3,Elite,Josh Allen,Josh Allen
+4,1,4,ChronicMasterdeflatr,Jalen Hurts,Jalen Hurts
+5,1,5,Let's Ride,Justin Jefferson,Justin Jefferson
+6,1,6,Sportos,Christian McCaffrey,Christian McCaffrey
+7,1,7,Just Bout Dat Action,Lamar Jackson,Lamar Jackson
+8,1,8,Hoofers,Trevor Lawrence,Trevor Lawrence
+9,1,9,Ryan's Remarkable Team,Ja'Marr Chase,Ja'Marr Chase
+10,2,1,Ryan's Remarkable Team,Stefon Diggs,Stefon Diggs
+11,2,2,Hoofers,Tua Tagovailoa,Tua Tagovailoa
+12,2,3,Just Bout Dat Action,A.J. Brown,A.J. Brown
+13,2,4,Sportos,Joe Burrow,Joe Burrow
+14,2,5,Let's Ride,Tyreek Hill,Tyreek Hill
+15,2,6,ChronicMasterdeflatr,Justin Herbert,Justin Herbert
+16,2,7,Elite,Cooper Kupp,Cooper Kupp
+17,2,8,Redskins,Davante Adams,Davante Adams
+18,2,9,Greendawgs,Austin Ekeler,Austin Ekeler
+19,3,1,Greendawgs,Derrick Henry,Derrick Henry
+20,3,2,Redskins,George Kittle,George Kittle
+21,3,3,Elite,Saquon Barkley,Saquon Barkley
+22,3,4,ChronicMasterdeflatr,Nick Chubb,Nick Chubb
+23,3,5,Let's Ride,Bijan Robinson,Bijan Robinson
+24,3,6,Sportos,Garrett Wilson,Garrett Wilson
+25,3,7,Just Bout Dat Action,Tony Pollard,Tony Pollard
+26,3,8,Hoofers,Calvin Ridley,Calvin Ridley
+27,3,9,Ryan's Remarkable Team,Joe Mixon,Joe Mixon
+28,4,1,Ryan's Remarkable Team,,Aaron Rodgers
+29,4,2,Hoofers,CeeDee Lamb,CeeDee Lamb
+30,4,3,Just Bout Dat Action,Deshaun Watson,Deshaun Watson
+31,4,4,Sportos,Justin Fields,Justin Fields
+32,4,5,Let's Ride,Josh Jacobs,Josh Jacobs
+33,4,6,ChronicMasterdeflatr,Amon-Ra St. Brown,Amon-Ra St. Brown
+34,4,7,Elite,DeVonta Smith,DeVonta Smith
+35,4,8,Redskins,Travis Etienne Jr.,Travis Etienne Jr.
+36,4,9,Greendawgs,Keenan Allen,Keenan Allen
+37,5,1,Greendawgs,Jaylen Waddle,Jaylen Waddle
+38,5,2,Redskins,Tee Higgins,Tee Higgins
+39,5,3,Elite,Najee Harris,Najee Harris
+40,5,4,ChronicMasterdeflatr,Mark Andrews,Mark Andrews
+41,5,5,Let's Ride,DK Metcalf,DK Metcalf
+42,5,6,Sportos,Jahmyr Gibbs,Jahmyr Gibbs
+43,5,7,Just Bout Dat Action,T.J. Hockenson,T.J. Hockenson
+44,5,8,Hoofers,Chris Olave,Chris Olave
+45,5,9,Ryan's Remarkable Team,Aaron Jones Sr.,Aaron Jones Sr.
+46,6,1,Ryan's Remarkable Team,Brock Purdy,Brock Purdy
+47,6,2,Hoofers,Rhamondre Stevenson,Rhamondre Stevenson
+48,6,3,Just Bout Dat Action,Deebo Samuel,Deebo Samuel
+49,6,4,Sportos,J.K. Dobbins,J.K. Dobbins
+50,6,5,Let's Ride,Dallas Goedert,Dallas Goedert
+51,6,6,ChronicMasterdeflatr,Amari Cooper,Amari Cooper
+52,6,7,Elite,Drake London,Drake London
+53,6,8,Redskins,Breece Hall,Breece Hall
+54,6,9,Greendawgs,DeAndre Hopkins,DeAndre Hopkins
+55,7,1,Greendawgs,Kirk Cousins,Kirk Cousins
+56,7,2,Redskins,Miles Sanders,Miles Sanders
+57,7,3,Elite,Javonte Williams,Javonte Williams
+58,7,4,ChronicMasterdeflatr,Cam Akers,Cam Akers
+59,7,5,Let's Ride,Isiah Pacheco,Isiah Pacheco
+60,7,6,Sportos,Darren Waller,Darren Waller
+61,7,7,Just Bout Dat Action,Kenneth Walker III,Kenneth Walker III
+62,7,8,Hoofers,,Justin Tucker
+63,7,9,Ryan's Remarkable Team,James Cook III,James Cook III
+64,8,1,Ryan's Remarkable Team,Tyler Lockett,Tyler Lockett
+65,8,2,Hoofers,Daniel Carlson,Daniel Carlson
+66,8,3,Just Bout Dat Action,Dameon Pierce,Dameon Pierce
+67,8,4,Sportos,Diontae Johnson,Diontae Johnson
+68,8,5,Let's Ride,Jared Goff,Jared Goff
+69,8,6,ChronicMasterdeflatr,Christian Watson,Christian Watson
+70,8,7,Elite,Daniel Jones,Daniel Jones
+71,8,8,Redskins,Brandon Aiyuk,Brandon Aiyuk
+72,8,9,Greendawgs,George Pickens,George Pickens
+73,9,1,Greendawgs,New England Patriots,New England Patriots
+74,9,2,Redskins,DJ Moore,DJ Moore
+75,9,3,Elite,Kyle Pitts Sr.,Kyle Pitts Sr.
+76,9,4,ChronicMasterdeflatr,Alexander Mattison,Alexander Mattison
+77,9,5,Let's Ride,Christian Kirk,Christian Kirk
+78,9,6,Sportos,Mike Williams,Mike Williams
+79,9,7,Just Bout Dat Action,Michael Pittman Jr.,Michael Pittman Jr.
+80,9,8,Hoofers,Kadarius Toney,Kadarius Toney
+81,9,9,Ryan's Remarkable Team,Evan McPherson,Evan McPherson
+82,10,1,Ryan's Remarkable Team,Chris Godwin Jr.,Chris Godwin Jr.
+83,10,2,Hoofers,Dalton Kincaid,Dalton Kincaid
+84,10,3,Just Bout Dat Action,Hollywood Brown,Hollywood Brown
+85,10,4,Sportos,Dak Prescott,Dak Prescott
+86,10,5,Let's Ride,Jordan Love,Jordan Love
+87,10,6,ChronicMasterdeflatr,Jerry Jeudy,Jerry Jeudy
+88,10,7,Elite,Gabe Davis,Gabe Davis
+89,10,8,Redskins,Anthony Richardson Sr.,Anthony Richardson Sr.
+90,10,9,Greendawgs,Taysom Hill,Taysom Hill
+91,11,1,Greendawgs,Younghoe Koo,Younghoe Koo
+92,11,2,Redskins,Geno Smith,Geno Smith
+93,11,3,Elite,Harrison Butker,Harrison Butker
+94,11,4,ChronicMasterdeflatr,San Francisco 49ers,San Francisco 49ers
+95,11,5,Let's Ride,Khalil Herbert,Khalil Herbert
+96,11,6,Sportos,Tyler Bass,Tyler Bass
+97,11,7,Just Bout Dat Action,Jason Myers,Jason Myers
+98,11,8,Hoofers,Jerick McKinnon,Jerick McKinnon
+99,11,9,Ryan's Remarkable Team,Evan Engram,Evan Engram
+100,12,1,Ryan's Remarkable Team,Greg Zuerlein,Greg Zuerlein
+101,12,2,Hoofers,Michael Thomas,Michael Thomas
+102,12,3,Just Bout Dat Action,Nick Folk,Nick Folk
+103,12,4,Sportos,Cameron Dicker,Cameron Dicker
+104,12,5,Let's Ride,Jake Elliott,Jake Elliott
+105,12,6,ChronicMasterdeflatr,Matt Gay,Matt Gay
+106,12,7,Elite,Jason Sanders,Jason Sanders
+107,12,8,Redskins,Dallas Cowboys,Dallas Cowboys
+108,12,9,Greendawgs,Jamaal Williams,Jamaal Williams
+109,13,1,Greendawgs,Dalvin Cook,Dalvin Cook
+110,13,2,Redskins,Chris Boswell,Chris Boswell
+111,13,3,Elite,James Conner,James Conner
+112,13,4,ChronicMasterdeflatr,Chad Ryland,Chad Ryland
+113,13,5,Let's Ride,Philadelphia Eagles,Philadelphia Eagles
+114,13,6,Sportos,Denver Broncos,Denver Broncos
+115,13,7,Just Bout Dat Action,Buffalo Bills,Buffalo Bills
+116,13,8,Hoofers,Samaje Perine,Samaje Perine
+117,13,9,Ryan's Remarkable Team,David Montgomery,David Montgomery
+118,14,1,Ryan's Remarkable Team,New York Jets,New York Jets
+119,14,2,Hoofers,Baltimore Ravens,Baltimore Ravens
+120,14,3,Just Bout Dat Action,Russell Wilson,Russell Wilson
+121,14,4,Sportos,Skyy Moore,Skyy Moore
+122,14,5,Let's Ride,Brandon McManus,Brandon McManus
+123,14,6,ChronicMasterdeflatr,Mike Evans,Mike Evans
+124,14,7,Elite,Miami Dolphins,Miami Dolphins
+125,14,8,Redskins,Riley Patterson,Riley Patterson
+126,14,9,Greendawgs,Wil Lutz,Wil Lutz

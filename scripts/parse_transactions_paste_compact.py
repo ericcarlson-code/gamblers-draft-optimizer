@@ -1,18 +1,16 @@
-"""Parses the COMPACT 2024 transaction summary into
-data/historical/2024_transactions.csv -- same output schema as
-parse_transactions_paste.py, but a separate script because the input isn't
-a raw Yahoo export.
+"""Parses a COMPACT transaction summary (as opposed to a verbatim raw Yahoo
+export) into data/historical/{year}_transactions.csv -- same output schema
+as parse_transactions_paste.py.
 
 Why this exists: the 2025 pipeline (parse_transactions_paste.py) expects a
 verbatim copy-paste of Yahoo's transaction history, with full "Free Agent"/
-"To Free Agent" tags and minute-level timestamps. The 2024 log supplied
-instead was a date-only, "(FA)"/"(TFA)"-shorthand summary reconstructed from
-batch context (confirmed with the user, 2026-07-30, who chose to proceed
-with this reduced-precision version rather than track down the original
-Yahoo export). This script is intentionally kept separate rather than
-merged into parse_transactions_paste.py -- any FUTURE year should still use
-the real raw-paste format and the original script; this compact path is a
-one-off for 2024 unless another year shows up in the same shape.
+"To Free Agent" tags and minute-level timestamps. Starting with 2024, some
+season logs have instead arrived as a date-only, "(FA)"/"(TFA)"-shorthand
+summary reconstructed from batch context (confirmed with the user,
+2026-07-30, who chose to proceed with this reduced-precision version rather
+than track down the original Yahoo export each time). This script is kept
+separate from parse_transactions_paste.py -- any year that DOES have a real
+raw paste available should still use that script instead.
 
 Known precision losses vs. the raw-paste pipeline:
   - No time-of-day: `timestamp` is set to local midnight on the parsed date,
@@ -22,23 +20,25 @@ Known precision losses vs. the raw-paste pipeline:
   - Ambiguous slash-dates ("Nov 13/20", "Dec 4/11") use the FIRST date listed.
   - Injury-status flags (Q/NA/etc, present in the raw 2025 paste) don't
     exist in this input and are simply absent from the output.
+  - A `TRADE: A → TeamA | B → TeamB — Date` line carries only ONE shared
+    date for both legs (the raw-paste format gives each leg its own).
 
-Deduplication: 28 distinct transaction descriptions in the input recur
+Deduplication: some years have distinct transaction descriptions recurring
 verbatim under a second (or third) later date with nothing between them --
 almost certainly the same real event restated across overlapping
 reconstruction batches, not a genuine repeat (e.g. the exact same DEF swap
 "twice" a month apart with no other DEF moves for that team in between).
 This script keeps only the EARLIEST dated occurrence of each exact
-description and drops the rest, logging what was dropped.
+description and drops the rest, logging what was dropped -- confirmed
+present in both 2024 (28 cases) and 2023 (1 case) so far.
 
-One line ("Rhamondre Stevenson NE-RB/Jaleel McLaughlin Den-RB/CeeDee Lamb
-Dal-WR/Austin Ekeler Was-RB -- multiple internal Elite swaps") doesn't fit
-the add/drop pair shape at all and is left unparsed for manual review.
+Lines that don't fit the add/drop-pair (or trade) shape at all -- e.g. a
+multi-player "internal swap" description, or a self-contradictory line that
+lists the same player as both add and drop -- are rejected outright and
+left for manual review rather than silently force-parsed.
 
 Usage:
-    python scripts/parse_transactions_paste_compact.py <path_to_pasted_txt>
-(season_year is hardcoded to 2024 -- this script is not meant to be reused
-for a differently-shaped future paste; see module docstring.)
+    python scripts/parse_transactions_paste_compact.py <season_year> <path_to_pasted_txt>
 """
 import csv
 import re
@@ -52,18 +52,17 @@ from scripts.build_rankings_artifact_data import ESPN_TEAM_ABBR_FIXUPS, _build_n
 from scripts.parse_fantasy_draft_paste import DST_NICKNAME_TO_FULL_NAME  # noqa: E402
 from scripts.parse_transactions_paste import PLAYER_NAME_ALIASES, parse_player_token  # noqa: E402
 
-SEASON_YEAR = 2024
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 
 
-def parse_timestamp(date_str: str, day_seq: int) -> str:
+def parse_timestamp(date_str: str, season_year: int, day_seq: int) -> str:
     # Ambiguous slash-dates ("Nov 13/20") -> take the first date listed.
     date_str = date_str.split("/")[0].strip()
     # Drop any trailing parenthetical annotation, e.g.
     # "Oct 23 (Dec 11 date correction noted)" -> "Oct 23".
     date_str = re.sub(r"\s*\(.*\)\s*$", "", date_str).strip()
     dt = datetime.strptime(date_str, "%b %d")
-    year = SEASON_YEAR + 1 if dt.month == 1 else SEASON_YEAR
+    year = season_year + 1 if dt.month == 1 else season_year
     dt = dt.replace(year=year, second=min(day_seq, 59))
     return dt.isoformat()
 
@@ -90,6 +89,12 @@ def parse_standard_line(desc: str, team: str, date_str: str, raw: str) -> dict:
         left, right = desc.split("/", 1)
         added = parse_player_token(left.replace("(FA)", "").strip())
         dropped = parse_player_token(right.replace("(TFA)", "").strip())
+        if added and dropped and added["name"] == dropped["name"]:
+            # Self-contradictory line (same player listed as both add and
+            # drop) -- a real example seen in 2024's compact paste. Doesn't
+            # represent a genuine net roster change; reject for review.
+            row["unparsed"] = True
+            return row
     elif "(TFA)" in desc:
         added = None
         dropped = parse_player_token(desc.replace("(TFA)", "").strip())
@@ -121,10 +126,40 @@ def parse_commissioner_line(player_desc: str, action_desc: str, team: str, date_
     return row
 
 
-def parse_line(line: str) -> dict | None:
+def parse_trade_line(line: str) -> list[dict]:
+    # "TRADE: PlayerA TeamA-Pos → FantasyTeamA | PlayerB TeamB-Pos → FantasyTeamB — Date"
+    # -- unlike the raw-paste format, only ONE date trails the whole line,
+    # shared by both legs (see module docstring).
+    body = line[len("TRADE:"):].strip()
+    if " — " not in body:
+        return [{**_empty_row(), "type": "trade", "team": "", "date_str": "", "raw_line": line, "unparsed": True}]
+    legs_part, date_str = body.rsplit(" — ", 1)
+    legs = [s.strip() for s in legs_part.split(" | ")]
+    results = []
+    for leg in legs:
+        row = _empty_row()
+        row.update({"type": "trade", "date_str": date_str, "raw_line": line})
+        if " → " in leg:
+            player_desc, team = leg.split(" → ", 1)
+            player = parse_player_token(player_desc.strip())
+            row["team"] = team.strip()
+            if player:
+                row.update({"player_added_raw": player["name"], "player_added_nfl_team": player["nfl_team"], "player_added_pos": player["pos"]})
+            else:
+                row["unparsed"] = True
+        else:
+            row["unparsed"] = True
+        results.append(row)
+    if len(results) == 2 and not any(r.get("unparsed") for r in results):
+        results[0]["counterparty_team"] = results[1]["team"]
+        results[1]["counterparty_team"] = results[0]["team"]
+    return results
+
+
+def parse_line(line: str) -> list[dict]:
     line = line.strip()
     if not line:
-        return None
+        return []
     # Strip a trailing whole-line annotation, e.g. "... Oct 23 (Dec 11 date
     # correction noted)" or "... Nov 20 (labeled Oct 30 in one entry --
     # verify)" -- real transaction lines never legitimately end in "(...)"
@@ -132,12 +167,14 @@ def parse_line(line: str) -> dict | None:
     # flagged-uncertain annotations, including ones with an em-dash inside
     # the parens that would otherwise corrupt the " — " field split below.
     line = re.sub(r"\s*\([^()]*\)\s*$", "", line).strip()
+    if line.startswith("TRADE:"):
+        return parse_trade_line(line)
     parts = [s.strip() for s in line.split(" — ")]
     if len(parts) == 4 and "by Commissioner" in parts[1]:
-        return parse_commissioner_line(parts[0], parts[1], parts[2], parts[3], line)
+        return [parse_commissioner_line(parts[0], parts[1], parts[2], parts[3], line)]
     if len(parts) == 3:
-        return parse_standard_line(parts[0], parts[1], parts[2], line)
-    return {**_empty_row(), "type": "", "team": "", "date_str": "", "raw_line": line, "unparsed": True}
+        return [parse_standard_line(parts[0], parts[1], parts[2], line)]
+    return [{**_empty_row(), "type": "", "team": "", "date_str": "", "raw_line": line, "unparsed": True}]
 
 
 def dedupe_restatements(lines: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
@@ -147,9 +184,17 @@ def dedupe_restatements(lines: list[str]) -> tuple[list[str], list[tuple[str, st
     order: list[str] = []
     for raw_line in lines:
         line = re.sub(r"\s*\([^()]*\)\s*$", "", raw_line.strip()).strip()
+        if line.startswith("TRADE:"):
+            # Trades are rare (1-2 per season so far) and each one is
+            # already unique -- pass through ungrouped rather than trying
+            # to derive a dedup key from its own internal " | "/" — " shape.
+            order.append(line)
+            groups[line].append(("", line))
+            continue
         parts = [s.strip() for s in line.split(" — ")]
         if len(parts) < 3:
             order.append(line)
+            groups[line].append(("", line))
             continue
         desc_key = " — ".join(parts[:-1])
         date = parts[-1]
@@ -168,10 +213,7 @@ def dedupe_restatements(lines: list[str]) -> tuple[list[str], list[tuple[str, st
 
     kept, dropped = [], []
     for key in order:
-        entries = groups.get(key)
-        if entries is None:
-            kept.append(key)  # a non-3-part line stored verbatim in `order`
-            continue
+        entries = groups[key]
         entries_sorted = sorted(entries, key=lambda e: sort_key(e[0]))
         kept.append(entries_sorted[0][1])
         for date, full_line in entries_sorted[1:]:
@@ -179,21 +221,42 @@ def dedupe_restatements(lines: list[str]) -> tuple[list[str], list[tuple[str, st
     return kept, dropped
 
 
-def resolve_names(rows: list[dict]) -> None:
-    stats_path = DATA_DIR / f"{SEASON_YEAR}_actual_stats.csv"
+# PLAYER_NAME_ALIASES (imported from parse_transactions_paste.py) was built
+# against the 2025 board's naming and is applied unconditionally inside
+# parse_player_token -- but a different year's board can use the OPPOSITE
+# name for the same player (confirmed: 2023's board has "Hollywood Brown"
+# and "Michael Badgley" directly, the reverse of what the alias assumes).
+# Fall back to the pre-alias spelling if the aliased one doesn't resolve,
+# rather than leaving a real, resolvable player blank just because this
+# particular year's board happens to prefer the other name.
+_REVERSE_PLAYER_NAME_ALIASES = {v: k for k, v in PLAYER_NAME_ALIASES.items()}
+
+
+def resolve_names(rows: list[dict], season_year: int) -> None:
+    stats_path = DATA_DIR / f"{season_year}_actual_stats.csv"
     board_names = set()
     if stats_path.exists():
         with open(stats_path, newline="", encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 board_names.add(r["name"])
     resolver = _build_name_resolver({n: n for n in board_names})
+
+    def resolve_with_alias_fallback(name: str) -> str:
+        if not name:
+            return ""
+        resolved = resolver(name)
+        if resolved:
+            return resolved
+        alt = _REVERSE_PLAYER_NAME_ALIASES.get(name)
+        return (resolver(alt) if alt else "") or ""
+
     for row in rows:
-        row["player_added_resolved"] = (resolver(row["player_added_raw"]) or "") if row["player_added_raw"] else ""
-        row["player_dropped_resolved"] = (resolver(row["player_dropped_raw"]) or "") if row["player_dropped_raw"] else ""
+        row["player_added_resolved"] = resolve_with_alias_fallback(row["player_added_raw"])
+        row["player_dropped_resolved"] = resolve_with_alias_fallback(row["player_dropped_raw"])
 
 
-def write_csv(rows: list[dict]) -> Path:
-    out_path = DATA_DIR / f"{SEASON_YEAR}_transactions.csv"
+def write_csv(rows: list[dict], season_year: int) -> Path:
+    out_path = DATA_DIR / f"{season_year}_transactions.csv"
     fieldnames = [
         "timestamp", "date_raw", "team", "type",
         "player_added_raw", "player_added_resolved", "player_added_nfl_team", "player_added_pos",
@@ -209,10 +272,10 @@ def write_csv(rows: list[dict]) -> Path:
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/parse_transactions_paste_compact.py <path_to_pasted_txt>")
+    if len(sys.argv) != 3:
+        print("Usage: python scripts/parse_transactions_paste_compact.py <season_year> <path_to_pasted_txt>")
         sys.exit(1)
-    path = Path(sys.argv[1])
+    season_year, path = int(sys.argv[1]), Path(sys.argv[2])
     raw_lines = [l for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
     kept_lines, dropped = dedupe_restatements(raw_lines)
@@ -225,32 +288,30 @@ def main():
     rows, unparsed = [], []
     day_counters: dict[str, int] = defaultdict(int)
     for line in kept_lines:
-        row = parse_line(line)
-        if row is None:
-            continue
-        if row.get("unparsed"):
-            unparsed.append(row)
-            continue
-        row["date_raw"] = row.pop("date_str")
-        norm_date = re.sub(r"\s*\(.*\)\s*$", "", row["date_raw"].split("/")[0]).strip()
-        try:
-            seq = day_counters[norm_date]
-            row["timestamp"] = parse_timestamp(row["date_raw"], seq)
-            day_counters[norm_date] += 1
-        except ValueError:
-            row["timestamp"] = ""
-            unparsed.append(row)
-            continue
-        rows.append(row)
+        for row in parse_line(line):
+            if row.get("unparsed"):
+                unparsed.append(row)
+                continue
+            row["date_raw"] = row.pop("date_str")
+            norm_date = re.sub(r"\s*\(.*\)\s*$", "", row["date_raw"].split("/")[0]).strip()
+            try:
+                seq = day_counters[norm_date]
+                row["timestamp"] = parse_timestamp(row["date_raw"], season_year, seq)
+                day_counters[norm_date] += 1
+            except ValueError:
+                row["timestamp"] = ""
+                unparsed.append(row)
+                continue
+            rows.append(row)
 
-    resolve_names(rows)
+    resolve_names(rows, season_year)
     unresolved = [
         r for r in rows
         if (r["player_added_raw"] and not r["player_added_resolved"])
         or (r["player_dropped_raw"] and not r["player_dropped_resolved"])
     ]
 
-    out_path = write_csv(rows)
+    out_path = write_csv(rows, season_year)
     print(f"Parsed {len(rows)} transaction rows -> {out_path}")
     by_type = {}
     for r in rows:
