@@ -86,9 +86,10 @@ def score_kicking(stats: dict, cfg: dict) -> float:
     return points
 
 
-def score_defense(stats: dict, cfg: dict) -> float:
+def score_defense(stats: dict, cfg: dict, games: int | None = None) -> float:
     defense_cfg = cfg["scoring"]["defense"]
-    games = cfg["season"]["games_per_season"]
+    if games is None:
+        games = cfg["season"]["games_per_season"]
 
     points = _get(stats, "def_td") * defense_cfg["touchdown"]
     points += _get(stats, "def_safety") * defense_cfg["safety"]
@@ -112,14 +113,19 @@ _POSITION_SCORERS = {
     "WR": lambda s, c: score_rushing(s, c) + score_receiving(s, c) + score_misc(s, c),
     "TE": lambda s, c: score_rushing(s, c) + score_receiving(s, c) + score_misc(s, c),
     "K": score_kicking,
-    "DEF": score_defense,
+    "DEF": lambda s, c, games=None: score_defense(s, c, games=games),
 }
 
 
-def score_player(stats: dict, cfg: dict) -> float:
-    """Total fantasy points for one player's stat line under this league's rules."""
+def score_player(stats: dict, cfg: dict, games: int | None = None) -> float:
+    """Total fantasy points for one player's stat line under this league's
+    rules. `games` overrides the season-total games-played assumption
+    score_defense uses to bucket points-allowed -- pass games=1 when `stats`
+    represents a single week/game rather than a full season."""
     position = stats.get("position")
     scorer = _POSITION_SCORERS.get(position)
     if scorer is None:
         raise ValueError(f"Unknown or missing position: {position!r}")
+    if position == "DEF":
+        return round(scorer(stats, cfg, games), 2)
     return round(scorer(stats, cfg), 2)

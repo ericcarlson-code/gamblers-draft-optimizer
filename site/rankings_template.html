@@ -356,6 +356,8 @@
      this stylesheet) so the 72px size always wins regardless of source order. */
   .player-modal-header .player-avatar.player-modal-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: var(--surface-2); flex-shrink: 0; }
   .player-modal-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .player-modal-bio-row { font-size: 12.5px; margin-top: 4px; }
+  .player-modal-week-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
   .player-modal-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 16px 0; }
   .player-modal-stat-cell { background: var(--surface); padding: 10px 12px; }
   .player-modal-stat-cell .stat-label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
@@ -730,6 +732,16 @@
     font-weight: 700;
   }
   .roster-slot-cell.rs-full .rs-count { color: var(--accent); }
+  .roster-lineup-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 13.5px;
+  }
 
   .grade-banner {
     display: flex;
@@ -1490,6 +1502,7 @@
       <label class="field-label" for="mockSlotInput">Your draft slot (1–<span id="mockNumTeams"></span>)</label>
       <div class="mock-setup-row">
         <input type="number" id="mockSlotInput" min="1" value="1" />
+        <button class="btn-secondary" id="mockRandomizeSlotBtn" title="Pick a random draft slot">Randomize</button>
         <button class="btn-primary" id="mockStartBtn">Start Mock Draft</button>
       </div>
     </div>
@@ -1516,7 +1529,8 @@
       <div class="mock-pick-card">
         <label class="field-label">My Roster</label>
         <div id="myRosterSlotGrid" class="roster-slot-grid"></div>
-        <div class="table-shell"><div class="table-scroll"><table><thead><tr><th>Player</th><th>Pos</th><th>Slot</th></tr></thead><tbody id="myRosterBody"></tbody></table></div></div>
+        <div id="myRosterStacks"></div>
+        <div id="myRosterLineup"></div>
       </div>
       <div id="mockPickPanel"></div>
       <div id="mockGradeReport"></div>
@@ -1705,6 +1719,22 @@
     'Just Bout Dat Action', "Let's Ride", 'Redskins', 'Sportos', 'Wildcard',
   ];
   const INJURY_GAMES_MISSED = DATA_BY_VIEW.injury_games_missed || {};
+  // {year: {player_name_lower: {pos, w: [[week, points, opponent_team,
+  // ...stats], ...]}}} -- real per-week box scores (see
+  // scripts/fetch_weekly_actuals_nflreadpy.py + build_rankings_artifact_data.
+  // py's load_weekly_stats), scoped to 2023-2025 only (the years Season
+  // Timeline already supports) to fit the Artifact's 16MB hard limit. `w`
+  // rows are position-scoped -- decode each row's stat fields via
+  // WEEKLY_STAT_FIELDS[pos], NOT POSITION_STAT_FIELDS (that's the season-
+  // total field list, a strict superset).
+  const WEEKLY_STATS = DATA_BY_VIEW.weekly_stats || {};
+  // {position: [field_key, ...]} -- the field order each WEEKLY_STATS row's
+  // trailing stat values decode against for that position.
+  const WEEKLY_STAT_FIELDS = DATA_BY_VIEW.weekly_stat_fields || {};
+  // {player_name_lower: {height, weight, birth_date, college}} -- static
+  // career facts (scripts/fetch_player_bios_nflreadpy.py), same for every
+  // year a player appears in.
+  const PLAYER_BIOS = DATA_BY_VIEW.player_bios || {};
   // Untouched snapshot of the baked-in config, taken before any user edits --
   // "Reset to Defaults" in League Details re-applies this.
   const DEFAULT_LEAGUE_META = JSON.parse(JSON.stringify(DATA_BY_VIEW.meta));
@@ -2389,7 +2419,55 @@
 
   let currentPlayerModalPool = null;
 
-  function renderPlayerModalContent(player, pool) {
+  // "6'5"" from a raw inches value (nflreadpy's own convention, see
+  // scripts/fetch_player_bios_nflreadpy.py) -- null passes through untouched
+  // so callers can fall back cleanly when a bio has no height on file.
+  function formatHeightInches(inches) {
+    if (inches == null) return null;
+    const feet = Math.floor(inches / 12);
+    const remainder = Math.round(inches % 12);
+    return `${feet}'${remainder}"`;
+  }
+
+  // Age AS OF a given date (Sept 1 of the season being viewed, for
+  // historical modals -- see playerBioMetaHtml) rather than today's age,
+  // since "how old were they THAT season" is the meaningful number once
+  // you're looking at a past year, not their current real-world age.
+  function computeAgeAsOf(birthDateStr, asOfDate) {
+    if (!birthDateStr) return null;
+    const birth = new Date(birthDateStr);
+    if (isNaN(birth.getTime())) return null;
+    let age = asOfDate.getFullYear() - birth.getFullYear();
+    const hadBirthday = (asOfDate.getMonth() > birth.getMonth())
+      || (asOfDate.getMonth() === birth.getMonth() && asOfDate.getDate() >= birth.getDate());
+    if (!hadBirthday) age--;
+    return age;
+  }
+
+  // Height/weight/age/college row for the player modal header -- shared by
+  // both the season-summary and per-week views (see renderPlayerModalContent/
+  // renderPlayerWeeklyModalContent). `year` (if given) computes age as of
+  // that season rather than today -- see computeAgeAsOf's own comment.
+  function playerBioMetaHtml(name, year) {
+    const bio = PLAYER_BIOS[name.toLowerCase()];
+    if (!bio) return '';
+    const parts = [];
+    const height = formatHeightInches(bio.height);
+    if (height) parts.push(height);
+    if (bio.weight) parts.push(`${Math.round(bio.weight)} lbs`);
+    const asOfDate = year != null ? new Date(`${year}-09-01`) : new Date();
+    const age = computeAgeAsOf(bio.birth_date, asOfDate);
+    if (age != null) parts.push(`${age} yo`);
+    if (bio.college) parts.push(bio.college);
+    return parts.length ? `<div class="player-modal-bio-row cell-muted">${parts.join(' · ')}</div>` : '';
+  }
+
+  function renderPlayerModalContent(player, pool, year, week) {
+    const bioHtml = playerBioMetaHtml(player.name, year);
+    if (week != null) {
+      return renderPlayerWeeklyModalContent(player, pool, year, week, bioHtml);
+    }
+
     const statFields = POSITION_STAT_FIELDS[player.position] || [];
     const statCells = statFields.map(([field, label]) => {
       const value = player.stats ? player.stats[field] : null;
@@ -2430,6 +2508,7 @@
             ${injuryBadgeHtml(player.injuryStatus)}
             ${rookieBadgeHtml(player.projection_source)}
           </div>
+          ${bioHtml}
         </div>
       </div>
 
@@ -2451,6 +2530,85 @@
 
       <div class="player-modal-section">
         <h3 class="subhead" style="font-size:16px;">Notable Teammates</h3>
+        ${teammatesHtml}
+      </div>
+    `;
+  }
+
+  // Real per-week box score -- swapped in by renderPlayerModalContent
+  // whenever a `week` is given (currently only Historical Review's Season
+  // Timeline points column, see renderHistWeekRoster). WEEKLY_STATS is
+  // scoped to 2023-2025 only (see that constant's own comment) -- a missing
+  // entry here just means no box score exists for this player/year/week
+  // combination, not necessarily an error.
+  function renderPlayerWeeklyModalContent(player, pool, year, week, bioHtml) {
+    const playerWeekly = (WEEKLY_STATS[year] || {})[player.name.toLowerCase()];
+    const weeks = playerWeekly ? playerWeekly.w.map(r => r[0]).sort((a, b) => a - b) : [];
+    const row = playerWeekly ? playerWeekly.w.find(r => r[0] === week) : null;
+
+    const headerHtml = `
+      <div class="player-modal-header">
+        ${playerImageHtml(player.name, player.team, 'player-modal-avatar')}
+        <div>
+          <h3 class="subhead" style="margin-bottom:2px;">${player.name}</h3>
+          <div class="player-modal-meta-row">
+            <span class="pos-chip">${player.position}</span>
+            ${teamBadgeHtml(player.team)}
+            ${row ? `<span class="cell-muted">vs</span>${teamBadgeHtml(row[2])}` : ''}
+          </div>
+          ${bioHtml}
+        </div>
+      </div>`;
+
+    if (!row) {
+      return `${headerHtml}<p class="hist-note">No box score on record for Week ${week}.</p>`;
+    }
+
+    const [, points, opponent, ...statValues] = row;
+    const pos = playerWeekly.pos;
+    const fieldKeys = WEEKLY_STAT_FIELDS[pos] || [];
+    const labelByKey = new Map((POSITION_STAT_FIELDS[pos] || []));
+    const statCells = fieldKeys.map((key, i) =>
+      `<div class="player-modal-stat-cell"><span class="stat-label">${labelByKey.get(key) || key}</span><span class="stat-value">${(statValues[i] ?? 0).toFixed(1)}</span></div>`
+    ).join('');
+
+    const prevWeek = [...weeks].reverse().find(w => w < week);
+    const nextWeek = weeks.find(w => w > week);
+    const navBtn = (targetWeek, label) => `<button class="btn-secondary btn-sm" data-role="player-modal-week-nav" data-name="${player.name}" data-week="${targetWeek ?? ''}" ${targetWeek == null ? 'disabled' : ''}>${label}</button>`;
+
+    const teammates = pool
+      .filter(p => p.team === player.team && p.name !== player.name)
+      .map(p => {
+        const tWeekly = (WEEKLY_STATS[year] || {})[p.name.toLowerCase()];
+        const tRow = tWeekly ? tWeekly.w.find(r => r[0] === week) : null;
+        return tRow ? { name: p.name, team: p.team, points: tRow[1] } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 6);
+    const teammatesHtml = teammates.length
+      ? `<div class="player-modal-teammates">${teammates.map(t =>
+          `<span class="player-modal-teammate" data-role="player-modal-teammate" data-name="${t.name}" data-week="${week}">${playerImageHtml(t.name, t.team)}${t.name} (${t.points.toFixed(1)} pts)</span>`
+        ).join('')}</div>`
+      : '<p class="hist-note">No teammates with a box score this week.</p>';
+
+    return `
+      ${headerHtml}
+
+      <div class="player-modal-week-nav">
+        ${navBtn(prevWeek, `← Wk ${prevWeek ?? ''}`)}
+        <span class="subhead" style="font-size:15px;">Week ${week}</span>
+        ${navBtn(nextWeek, `Wk ${nextWeek ?? ''} →`)}
+      </div>
+
+      <div class="player-modal-stat-grid">
+        <div class="player-modal-stat-cell"><span class="stat-label">Points</span><span class="stat-value">${points.toFixed(1)}</span></div>
+        <div class="player-modal-stat-cell"><span class="stat-label">Opponent</span><span class="stat-value">${opponent}</span></div>
+        ${statCells}
+      </div>
+
+      <div class="player-modal-section">
+        <h3 class="subhead" style="font-size:16px;">Teammates, Week ${week}</h3>
         ${teammatesHtml}
       </div>
     `;
@@ -2596,11 +2754,20 @@
     });
   }
 
-  function openPlayerModal(name, pool) {
+  // year/week are only ever set by Historical Review's per-week box-score
+  // click path (see initHistoricalReview's openHistPlayerModal) -- every
+  // other call site omits them and gets the unchanged season-summary view.
+  // Stashed on module state (not threaded through every call site) so
+  // in-modal navigation (teammate clicks, week prev/next) can re-invoke
+  // openPlayerModal without every caller needing to know about weeks.
+  let currentPlayerModalYear = null;
+
+  function openPlayerModal(name, pool, year, week) {
     currentPlayerModalPool = pool || DATA;
+    currentPlayerModalYear = year != null ? year : null;
     const player = currentPlayerModalPool.find(p => p.name === name);
     if (!player) return;
-    document.getElementById('playerModalContent').innerHTML = renderPlayerModalContent(player, currentPlayerModalPool);
+    document.getElementById('playerModalContent').innerHTML = renderPlayerModalContent(player, currentPlayerModalPool, year, week);
     document.getElementById('playerModalOverlay').hidden = false;
   }
 
@@ -2613,7 +2780,15 @@
     document.getElementById('playerModalOverlay').addEventListener('click', (e) => {
       if (e.target.id === 'playerModalOverlay') { closePlayerModal(); return; }
       const teammateEl = e.target.closest('[data-role="player-modal-teammate"]');
-      if (teammateEl) openPlayerModal(teammateEl.dataset.name, currentPlayerModalPool);
+      if (teammateEl) {
+        const week = teammateEl.dataset.week ? parseInt(teammateEl.dataset.week, 10) : undefined;
+        openPlayerModal(teammateEl.dataset.name, currentPlayerModalPool, currentPlayerModalYear, week);
+        return;
+      }
+      const weekNavEl = e.target.closest('[data-role="player-modal-week-nav"]');
+      if (weekNavEl && weekNavEl.dataset.week) {
+        openPlayerModal(weekNavEl.dataset.name, currentPlayerModalPool, currentPlayerModalYear, parseInt(weekNavEl.dataset.week, 10));
+      }
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closePlayerModal();
@@ -3066,12 +3241,6 @@
   // Empty set means "All" (no filter); otherwise a multi-select set of
   // positions, e.g. {'QB','RB'} shows both simultaneously.
   let mockPositionFilters = new Set();
-  // Auto-navigates mockPositionFilters to the human's current starter needs
-  // after each of their own picks (see the Draft-button handler below) --
-  // but stops nudging for the rest of THIS draft the moment the user
-  // manually touches a position pill themselves, so it never fights a
-  // deliberate manual choice. Reset on every new draft.
-  let mockPositionFiltersUserModified = false;
   let mockQuery = '';
   const MOCK_SORT_OPTIONS = [
     { key: 'value', label: 'Value' },
@@ -3774,6 +3943,23 @@
     return !assignments.some(a => a.slot === 'OVERFLOW');
   }
 
+  // All true QB+pass-catcher/RB+RB/WR+WR stack pairs on this roster (same
+  // real NFL team, isStackPair-eligible position pair) -- same logic
+  // Team Pages already uses for "Stacks Within This Team"
+  // (computeTeamPageData), just against mockDraft.rosters['Me'] instead of
+  // a real NFL team's own roster, so it needs its own team-match check
+  // (a Team Page's roster is already all one team; a fantasy roster isn't).
+  function computeMyRosterStacks(rosterPlayers) {
+    const stacks = [];
+    for (let i = 0; i < rosterPlayers.length; i++) {
+      for (let j = i + 1; j < rosterPlayers.length; j++) {
+        const a = rosterPlayers[i], b = rosterPlayers[j];
+        if (a.team === b.team && isStackPair(a.position, b.position)) stacks.push([a, b]);
+      }
+    }
+    return stacks.sort((x, y) => (y[0].vor + y[1].vor) - (x[0].vor + x[1].vor));
+  }
+
   function renderMyRosterPanel() {
     const rosterSlots = LEAGUE_META.roster_slots;
     const { assignments, slotCounts } = computeSlotAssignments(mockDraft.rosters['Me'], rosterSlots);
@@ -3786,10 +3972,50 @@
       return `<div class="roster-slot-cell${fullClass}"><span class="rs-pos">${pos}</span><span class="rs-count">${filled}/${total}</span></div>`;
     }).join('');
 
-    const body = document.getElementById('myRosterBody');
-    body.innerHTML = assignments.length
-      ? assignments.map(a => `<tr><td>${playerImageHtml(a.name, a.team)}<span class="player-name player-name-link" data-player-name="${a.name}">${a.name}</span>${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}</td><td><span class="pos-chip">${a.position}</span></td><td>${a.slot}</td></tr>`).join('')
-      : '<tr><td colspan="3" class="trend-empty">No picks yet.</td></tr>';
+    const stacks = computeMyRosterStacks(mockDraft.rosters['Me']);
+    const stacksEl = document.getElementById('myRosterStacks');
+    stacksEl.innerHTML = stacks.length
+      ? `<label class="field-label">Your Stacks</label>${stacks.map(([a, b]) => `
+          <div class="team-page-stack-item">
+            <span class="pos-chip">${a.position}</span>
+            <span class="player-name player-name-link" data-player-name="${a.name}">${a.name}</span>
+            <span class="stack-plus">+</span>
+            <span class="pos-chip">${b.position}</span>
+            <span class="player-name player-name-link" data-player-name="${b.name}">${b.name}</span>
+            ${teamBadgeHtml(a.team)}
+            <span class="cell-muted">(${(a.vor + b.vor).toFixed(1)} combined VOR)</span>
+          </div>`).join('')}`
+      : '';
+
+    // Yahoo-style lineup: one row per STARTER SLOT INSTANCE, in roster_slots'
+    // own order (QB, RB, WR, ... -- excluding BN), filled with the
+    // highest-VOR player computeSlotAssignments gave that slot; empty rows
+    // show as open. BENCH follows as its own section -- computeSlotAssignments
+    // already puts whichever players didn't fit a starter slot there
+    // (lowest-VOR at their position spills over), which is what "the excess
+    // player" means here since a real draft can't be undone/reordered.
+    const byStarterSlot = {};
+    assignments.forEach(a => { if (a.slot !== 'BN' && a.slot !== 'OVERFLOW') (byStarterSlot[a.slot] = byStarterSlot[a.slot] || []).push(a); });
+    const bench = assignments.filter(a => a.slot === 'BN' || a.slot === 'OVERFLOW');
+
+    const rosterRowHtml = (a) => a
+      ? `<span class="player-name player-name-link" data-player-name="${a.name}">${playerImageHtml(a.name, a.team)}${a.name}</span>${teamBadgeHtml(a.team)}${injuryBadgeHtml(a.injuryStatus)}${rookieBadgeHtml(a.projection_source)}<span class="num" style="margin-left:auto;">${a.vor.toFixed(1)}</span>`
+      : '<span class="cell-muted">Empty</span>';
+
+    const lineupRows = [];
+    Object.keys(rosterSlots).filter(pos => pos !== 'BN').forEach(pos => {
+      const filled = byStarterSlot[pos] || [];
+      for (let i = 0; i < rosterSlots[pos]; i++) {
+        lineupRows.push(`<div class="roster-lineup-row"><span class="pos-chip">${pos}</span>${rosterRowHtml(filled[i])}</div>`);
+      }
+    });
+    const benchRows = bench.length
+      ? bench.map(a => `<div class="roster-lineup-row"><span class="pos-chip">BN</span>${rosterRowHtml(a)}</div>`).join('')
+      : '<div class="roster-lineup-row"><span class="pos-chip">BN</span><span class="cell-muted">Empty</span></div>';
+
+    document.getElementById('myRosterLineup').innerHTML = assignments.length
+      ? `${lineupRows.join('')}<label class="field-label" style="margin-top:14px;">Bench</label>${benchRows}`
+      : '<p class="trend-empty">No picks yet.</p>';
   }
 
   // Same slot-fill rendering as My Roster, generalized to any team so an
@@ -4079,7 +4305,6 @@
       teamTargetRounds,
     };
     mockPositionFilters = new Set();
-    mockPositionFiltersUserModified = false;
 
     document.getElementById('mockDraftSetup').hidden = true;
     document.getElementById('mockDraftBoard').hidden = false;
@@ -4484,7 +4709,6 @@
             } else {
               mockPositionFilters.add(pos);
             }
-            mockPositionFiltersUserModified = true;
             renderMockDraft();
           });
         });
@@ -4521,14 +4745,11 @@
             const logEntry = mockDraft.picksLog[mockDraft.picksLog.length - 1];
             logEntry.bestAvailableVor = eligible[0].vor;
             logEntry.bestAvailableName = eligible[0].name;
-            // Nudge the pool view toward whatever starter needs remain --
-            // but only while the user hasn't manually picked a position
-            // filter themselves this draft (set above), so this never
-            // overrides a deliberate manual choice.
-            if (!mockPositionFiltersUserModified) {
-              const newNeeds = computeStarterNeeds(mockDraft.rosters['Me'], rosterSlots);
-              mockPositionFilters = new Set(newNeeds);
-            }
+            // Position filter stays exactly where the user left it after
+            // every pick (defaulting to ALL, i.e. an empty
+            // mockPositionFilters set) -- previously auto-nudged toward
+            // remaining starter needs, which the user found more disruptive
+            // than helpful; removed per their direct request.
             runMockDraftStep();
           });
         });
@@ -4565,6 +4786,9 @@
     document.getElementById('mockNumTeams').textContent = LEAGUE_META.num_teams;
     document.getElementById('mockSlotInput').max = LEAGUE_META.num_teams;
     document.getElementById('mockStartBtn').addEventListener('click', startMockDraft);
+    document.getElementById('mockRandomizeSlotBtn').addEventListener('click', () => {
+      document.getElementById('mockSlotInput').value = 1 + Math.floor(Math.random() * LEAGUE_META.num_teams);
+    });
     document.getElementById('mockResetBtn').addEventListener('click', resetMockDraft);
     document.getElementById('mockUndoBtn').addEventListener('click', undoLastPick);
     document.getElementById('mockSimPickBtn').addEventListener('click', simPick);
@@ -5125,16 +5349,24 @@
   // fight the browser's pointer capture on it.
   function renderHistWeekRoster(year, team, week) {
     const roster = computeTeamRosterAtWeek(year, team, week);
-    const rows = roster.map(p => `
+    const rows = roster.map(p => {
+      const weekly = (WEEKLY_STATS[year] || {})[p.name.toLowerCase()];
+      const row = week > 0 && weekly ? weekly.w.find(r => r[0] === week) : null;
+      const ptsCell = row
+        ? `<span class="player-name-link" data-player-name="${p.name}" data-week="${week}">${row[1].toFixed(1)}</span>`
+        : '<span class="cell-muted">—</span>';
+      return `
       <tr>
         <td>${playerImageHtml(p.name, p.team)}<span class="player-name player-name-link" data-player-name="${p.name}">${p.name}</span>${teamBadgeHtml(p.team)}</td>
         <td><span class="pos-chip">${p.position}</span></td>
         <td class="num">${p.vor.toFixed(1)}</td>
-      </tr>`).join('');
+        <td class="num">${ptsCell}</td>
+      </tr>`;
+    }).join('');
     document.getElementById('histWeekRoster').innerHTML = `
       <div class="table-shell" style="margin-bottom:26px;"><div class="table-scroll"><table>
-        <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="3" class="trend-empty">No roster data for this week.</td></tr>'}</tbody>
+        <thead><tr><th>Player</th><th>Pos</th><th class="num">VOR</th><th class="num">Pts</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" class="trend-empty">No roster data for this week.</td></tr>'}</tbody>
       </table></div></div>`;
     document.getElementById('histWeekLabel').textContent = week === 0 ? 'Preseason' : `Week ${week}`;
   }
@@ -5225,7 +5457,8 @@
       const trigger = e.target.closest('[data-player-name]');
       if (!trigger) return;
       const year = document.getElementById('histYearSelect').value;
-      openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW[year], false));
+      const week = trigger.dataset.week != null ? parseInt(trigger.dataset.week, 10) : undefined;
+      openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW[year], false), year, week);
     };
     document.getElementById('histResults').addEventListener('click', openHistPlayerModal);
     document.getElementById('histTransactions').addEventListener('click', openHistPlayerModal);

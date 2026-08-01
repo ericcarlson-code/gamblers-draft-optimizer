@@ -24,17 +24,19 @@ from scripts.build_rankings_artifact_data import HISTORY_YEARS, build_data_bundl
 from scripts.fetch_player_images import slugify
 
 # Embedding a headshot for every player across every HISTORY_YEARS board
-# (now back to 2015) pushed the built site to 23MB -- Artifact's hard limit
-# is 16MB, confirmed by a real rejected publish attempt, not just the
-# ~16MB figure noted from session 5's testing. Capping historical headshot
-# embedding to this year and later keeps the site at the already-verified-
-# safe ~15.75MB (the exact configuration published successfully before this
-# expansion) -- players ONLY in 2015-2019 fall back to their team logo
-# instead of a photo, the same graceful degradation already used for any
-# player missing a headshot match. The underlying STATS DATA for 2015-2019
-# is NOT affected by this constant -- Rankings/Historical Review still work
-# fully for those years, this only trims which years' PHOTOS get embedded.
-IMAGE_HISTORY_MIN_YEAR = 2025
+# pushed the built site to 23MB -- Artifact's hard limit is 16MB, confirmed
+# by a real rejected publish attempt, not just a guess. Raised from 2025 to
+# 2026 (2026-08-01) to make room for build_rankings_artifact_data.py's new
+# per-week box-score stats (WEEKLY_STATS) -- with weekly data itself already
+# scoped down to just 2023-2025 (see WEEKLY_STATS_YEARS), restoring 2025's
+# photos on top of that still measured 17.3MB, over budget; cutting to
+# 2026-only closed the rest with room to spare. Players in any year below
+# this cutoff fall back to their team logo instead of a photo, the same
+# graceful degradation already used for any player missing a headshot
+# match. The underlying STATS DATA for those years is NOT affected by this
+# constant -- Rankings/Historical Review still work fully, this only trims
+# which years' PHOTOS get embedded.
+IMAGE_HISTORY_MIN_YEAR = 2026
 
 SITE_DIR = Path(__file__).resolve().parent.parent / "site"
 TEMPLATE_PATH = SITE_DIR / "rankings_template.html"

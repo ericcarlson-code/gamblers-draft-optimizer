@@ -462,6 +462,114 @@ def load_schedule() -> dict[str, list[dict]]:
     return by_week
 
 
+# Per-position field order for WEEKLY_STATS' compact per-row arrays (see
+# load_weekly_stats) -- mirrors site/rankings_template.html's own
+# POSITION_STAT_FIELDS exactly (same fields, same order) so the frontend can
+# decode a row using the same lookup it already has, and by hand-duplicating
+# this must stay in sync with that constant the same way optimizer/vor.py's
+# apply_scarcity_boosts already has to. A single UNIVERSAL field list (one
+# order for every position, all 23 STAT_FIELDS) was tried first and measured
+# at 11MB across the 11 embedded years -- this narrower, per-position list
+# cuts that by roughly 3x with no loss of displayed detail, since it's
+# exactly what the box-score card shows either way.
+WEEKLY_POSITION_FIELDS = {
+    "QB": ["pass_att", "pass_cmp", "pass_yds", "pass_td", "pass_int", "rush_yds", "rush_td", "two_pt"],
+    "RB": ["carries", "rush_yds", "rush_td", "targets", "rec", "rec_yds", "rec_td", "two_pt"],
+    "WR": ["targets", "rec", "rec_yds", "rec_td", "rush_yds", "rush_td", "two_pt"],
+    "TE": ["targets", "rec", "rec_yds", "rec_td", "rush_yds", "rush_td", "two_pt"],
+    "K": ["fg_0_19", "fg_20_29", "fg_30_39", "fg_40_49", "fg_50_plus", "fg_60_plus", "pat_made"],
+    "DEF": ["def_td", "def_safety", "def_return_td", "def_points_allowed"],
+}
+
+
+# Years embedded with full weekly box-score data -- the 3 years Season
+# Timeline already supports (real full-league draft + transaction data).
+# Every {year}_weekly_stats.csv gets fetched (see
+# fetch_weekly_actuals_nflreadpy.py) since fetching is cheap and may be
+# useful later, but embedding weekly data for ALL 11 history years measured
+# at 20.5MB total against the Artifact's confirmed-hard 16MB limit even
+# after the free wins below (relevant-players-only bios, position-scoped
+# stat fields, dropping 2025's embedded photos) closed most of the gap --
+# user's own call (2026-08-01) to close the rest by scoping weekly data to
+# these 3 years rather than cutting further into photos or stat depth.
+# 2015-2022 keep everything they already had (season totals, draft grades)
+# -- only the NEW per-week box-score feature doesn't reach that far back.
+WEEKLY_STATS_YEARS = {2023, 2024, 2025}
+
+
+def load_weekly_stats(cfg: dict) -> dict[str, dict[str, dict]]:
+    """{year: {player_name_lower: {pos, w: [[week, points, opponent_team,
+    *WEEKLY_POSITION_FIELDS[pos]], ...]}}} for every
+    data/historical/{year}_weekly_stats.csv on disk whose year is in
+    WEEKLY_STATS_YEARS (scripts/fetch_weekly_actuals_nflreadpy.py) -- powers
+    Historical Review's per-week box score card. Array-encoded (not one JSON
+    object per row) and position-scoped (see WEEKLY_POSITION_FIELDS) to keep
+    this compact against the Artifact's confirmed-hard 16MB publish limit.
+    `points` is computed here via the same score_player() every other view
+    uses -- games=1 for DEF rows, since def_points_allowed in a weekly row is
+    already a single game's total, not a season sum to re-divide. {} if no
+    such files exist yet."""
+    result: dict[str, dict[str, dict]] = {}
+    for path in sorted(DATA_DIR.glob("*_weekly_stats.csv")):
+        year = path.stem.split("_")[0]
+        if int(year) not in WEEKLY_STATS_YEARS:
+            continue
+        df = pd.read_csv(path)
+        df["team"] = df["team"].replace(ESPN_TEAM_ABBR_FIXUPS)
+        df["opponent_team"] = df["opponent_team"].replace(ESPN_TEAM_ABBR_FIXUPS)
+        by_player: dict[str, dict] = {}
+        for row in df.to_dict("records"):
+            position = row["position"]
+            fields = WEEKLY_POSITION_FIELDS.get(position)
+            if fields is None:
+                continue
+            stats = {f: row.get(f, 0) for f in RAW_STAT_FIELDS}
+            games = 1 if position == "DEF" else None
+            points = score_player({**stats, "position": position}, cfg, games=games)
+            entry = [int(row["week"]), points, row["opponent_team"]]
+            entry += [round(float(stats[f]), 1) if pd.notna(stats[f]) else 0 for f in fields]
+            entry_holder = by_player.setdefault(row["name"].lower(), {"pos": position, "w": []})
+            entry_holder["w"].append(entry)
+        result[year] = by_player
+    return result
+
+
+def load_player_bios(relevant_names: set[str]) -> dict[str, dict]:
+    """{player_name_lower: {height, weight, birth_date, college}} from
+    data/player_bios.csv (scripts/fetch_player_bios_nflreadpy.py) -- static
+    career facts, not year-specific, shared by every view. Keyed on name
+    alone (lowercased) even though the source file is keyed by (name,
+    position): a genuine same-name-different-position collision here would
+    only matter if this project's own board ever rostered BOTH people, which
+    isn't a real case among fantasy-relevant players -- keeps the frontend
+    lookup a single flat dict rather than needing position context wherever
+    a bio is displayed. Later rows win on collision (rare, harmless -- see
+    the fetch script's own dedup for the real disambiguation logic).
+    `relevant_names` (lowercased) restricts the embed to players who actually
+    appear somewhere on this app's boards -- the raw fetch covers all ~25,000
+    people in nflreadpy's full roster history (o-linemen, long-retired
+    players, etc.), which would otherwise cost ~2.7MB against the Artifact's
+    16MB hard limit for data nothing on this site ever displays. {} if the
+    file doesn't exist yet."""
+    path = Path(__file__).resolve().parent.parent / "data" / "player_bios.csv"
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path, keep_default_na=False)
+    result: dict[str, dict] = {}
+    for row in df.itertuples():
+        if row.name.lower() not in relevant_names:
+            continue
+        if not row.height and not row.weight and not row.birth_date and not row.college:
+            continue
+        result[row.name.lower()] = {
+            "height": row.height or None,
+            "weight": row.weight or None,
+            "birth_date": row.birth_date or None,
+            "college": row.college or None,
+        }
+    return result
+
+
 def load_injury_games_missed() -> dict[str, dict[str, int]]:
     """{player: {season: games_missed_injury}} for every
     data/historical/{year}_injury_games_missed.csv on disk
@@ -495,6 +603,9 @@ def build_data_bundle(cfg: dict) -> dict:
         for year, board in year_boards.items()
     }
 
+    relevant_names = {n.lower() for board in year_boards.values() for n in board["name"]}
+    relevant_names |= {n.lower() for n in projection_board["name"]}
+
     projection_rows = to_rows(projection_board)
     for row in projection_rows:
         key = (row["name"], row["position"])
@@ -523,6 +634,9 @@ def build_data_bundle(cfg: dict) -> dict:
         "fantasy_draft_results": load_fantasy_draft_results(),
         "transactions": load_transactions(),
         "schedule": load_schedule(),
+        "weekly_stats": load_weekly_stats(cfg),
+        "weekly_stat_fields": WEEKLY_POSITION_FIELDS,
+        "player_bios": load_player_bios(relevant_names),
         "injury_games_missed": load_injury_games_missed(),
     }
     for year, board in year_boards.items():
