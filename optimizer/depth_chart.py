@@ -119,3 +119,40 @@ def apply_depth_chart_damping(
             if field in projection.columns:
                 projection.at[idx, field] = projection.at[idx, field] * factor
     return projection
+
+
+def apply_team_change_damping(
+    projection: pd.DataFrame,
+    depth_ranks: dict[tuple[str, str], int],
+    current_teams: dict[tuple[str, str], str],
+    stat_fields: list[str],
+) -> pd.DataFrame:
+    """Scales down a projected stat line for a player who changed teams
+    (trade/free agency) since their last real season's stats were recorded,
+    and isn't the new team's depth-chart starter -- a real, confirmed gap
+    found 2026-08-02: Justin Fields started a full season at NYJ in 2025,
+    then signed with KC for 2026 as Patrick Mahomes' backup. His 2025 sample
+    is nowhere near thin (a normal full season), so apply_depth_chart_
+    damping's games_threshold gate never triggers -- that function was built
+    for "buried on the SAME team's depth chart with a thin sample" (Phil
+    Mafah), a different shape of problem than "was a full starter, then
+    changed teams into a backup role." A team change is itself a strong
+    enough signal to distrust last season's volume regardless of how big
+    that sample was, since it means an entirely different, real depth-chart
+    situation applies now. Run this AFTER apply_depth_chart_damping but
+    BEFORE `projection["team"]` gets overwritten to the corrected/current
+    team (needs the OLD team still in place to detect the mismatch)."""
+    projection = projection.copy()
+    for idx, row in projection.iterrows():
+        key = (row["name"], row["position"])
+        real_team = current_teams.get(key)
+        if not real_team or real_team == row["team"]:
+            continue
+        rank = depth_ranks.get(key)
+        if rank is None or rank <= 1:
+            continue
+        factor = DEPTH_RANK_DAMPING.get(rank, DEFAULT_DEEP_BENCH_DAMPING)
+        for field in stat_fields:
+            if field in projection.columns:
+                projection.at[idx, field] = projection.at[idx, field] * factor
+    return projection

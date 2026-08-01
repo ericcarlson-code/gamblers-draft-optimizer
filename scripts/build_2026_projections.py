@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from optimizer.config import load_config  # noqa: E402
 from optimizer.depth_chart import (  # noqa: E402
     apply_depth_chart_damping,
+    apply_team_change_damping,
     current_team_map,
     games_played_map,
     load_depth_chart_ranks,
@@ -31,7 +32,18 @@ from scripts.build_rankings_artifact_data import CONSENSUS_NAME_ALIASES, _build_
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 VETERAN_MODEL_YEARS = [2023, 2024, 2025]
-DEPTH_CHART_SEASON = 2025  # most recent completed season -- the best real signal for 2026's pecking order
+GAMES_SAMPLE_SEASON = 2025  # most recent completed season -- real games-played sample size
+# The season being projected FOR, not the most recent completed one --
+# nflreadpy's depth-chart feed already carries real, current preseason data
+# for the upcoming season (confirmed 2026-08-02: Justin Fields shows KC,
+# pos_rank 2, dated as recently as the day this was checked), which is
+# needed for BOTH the team-label correction below and apply_team_change_
+# damping. Using GAMES_SAMPLE_SEASON here instead was a real, confirmed bug:
+# that season's depth-chart snapshot doesn't yet reflect a signing that
+# happens later in that same offseason (Fields' 2025-season snapshot still
+# showed NYJ, not KC), silently keeping the corrected damping from ever
+# triggering for exactly the players it exists to catch.
+CURRENT_DEPTH_CHART_SEASON = 2026
 ROOKIE_BASELINE_TRAINING_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 ROOKIE_CLASS_YEAR = 2026
 
@@ -53,10 +65,10 @@ def main() -> None:
     games_per_season = load_config()["season"]["games_per_season"]
     veteran_projection = build_projection(history, games_per_season=games_per_season)
 
-    if DEPTH_CHART_SEASON in history:
+    if GAMES_SAMPLE_SEASON in history:
         try:
-            depth_ranks = load_depth_chart_ranks(DEPTH_CHART_SEASON)
-            recent_games = games_played_map(history[DEPTH_CHART_SEASON])
+            depth_ranks = load_depth_chart_ranks(CURRENT_DEPTH_CHART_SEASON)
+            recent_games = games_played_map(history[GAMES_SAMPLE_SEASON])
             veteran_projection = apply_depth_chart_damping(
                 veteran_projection, depth_ranks, recent_games, STAT_FIELDS
             )
@@ -71,7 +83,15 @@ def main() -> None:
             # show SEA (his 2025 team) even after signing with KC for 2026.
             # The depth chart's own team field is real-time, not frozen to
             # last season.
-            teams = current_team_map(DEPTH_CHART_SEASON)
+            teams = current_team_map(CURRENT_DEPTH_CHART_SEASON)
+            # Must run BEFORE the team-label correction below overwrites
+            # row["team"] -- needs the OLD (stats-CSV) team still in place to
+            # detect a real team change, which is the whole signal this
+            # damping pass keys off (see apply_team_change_damping's own
+            # docstring: a full-season starter who changed teams into a
+            # backup role isn't caught by apply_depth_chart_damping's
+            # thin-sample gate above).
+            veteran_projection = apply_team_change_damping(veteran_projection, depth_ranks, teams, STAT_FIELDS)
             corrected = 0
             for idx, row in veteran_projection.iterrows():
                 real_team = teams.get((row["name"], row["position"]))
