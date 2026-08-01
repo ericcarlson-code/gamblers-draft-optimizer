@@ -2417,6 +2417,37 @@
     DEF: [['def_td', 'Def TD'], ['def_safety', 'Safety'], ['def_return_td', 'Return TD'], ['def_points_allowed', 'Pts Allowed']],
   };
 
+  // Plain-language noun phrase per stat field, used to build hover tooltips
+  // on the player modal's stat grid (see statCellTooltip) -- e.g. "Pass Yds"
+  // -> "passing yards" so the tooltip can read "Total projected passing
+  // yards for the regular season." instead of the abbreviated column label.
+  const STAT_FIELD_DESCRIPTIONS = {
+    pass_att: 'pass attempts', pass_cmp: 'completed passes', pass_yds: 'passing yards',
+    pass_td: 'passing touchdowns', pass_int: 'interceptions thrown',
+    rush_yds: 'rushing yards', rush_td: 'rushing touchdowns', two_pt: 'two-point conversions',
+    carries: 'rushing attempts', targets: "targets (pass attempts thrown their way)",
+    rec: 'receptions', rec_yds: 'receiving yards', rec_td: 'receiving touchdowns',
+    fg_0_19: 'field goals made from 0-19 yards', fg_20_29: 'field goals made from 20-29 yards',
+    fg_30_39: 'field goals made from 30-39 yards', fg_40_49: 'field goals made from 40-49 yards',
+    fg_50_plus: 'field goals made from 50-59 yards', fg_60_plus: 'field goals made from 60+ yards',
+    pat_made: 'extra points made', def_td: 'defensive/special-teams touchdowns',
+    def_safety: 'safeties', def_return_td: 'defensive return touchdowns',
+    def_points_allowed: 'points allowed',
+  };
+
+  // `weekly` = a single real game's stat (renderPlayerWeeklyModalContent);
+  // otherwise a season-long figure, worded as a projection only when the
+  // board itself is a projection (the live 2026 view) -- historical years'
+  // season stats are real, not projected.
+  function statCellTooltip(field, weekly, isProjection) {
+    const desc = STAT_FIELD_DESCRIPTIONS[field];
+    if (!desc) return '';
+    if (weekly) return `${desc[0].toUpperCase()}${desc.slice(1)} in this game.`;
+    return isProjection
+      ? `Total projected ${desc} for the regular season.`
+      : `Total ${desc} for that regular season.`;
+  }
+
   let currentPlayerModalPool = null;
 
   // "6'5"" from a raw inches value (nflreadpy's own convention, see
@@ -2469,9 +2500,14 @@
     }
 
     const statFields = POSITION_STAT_FIELDS[player.position] || [];
+    // Every non-historical call site (Rankings, Team Pages, Mock Draft) omits
+    // `year` and always operates on the live 2026 projected board -- only
+    // Historical Review passes a real year, for a season that already
+    // happened (real stats, not a projection).
+    const isProjection = year == null || String(year) === '2026';
     const statCells = statFields.map(([field, label]) => {
       const value = player.stats ? player.stats[field] : null;
-      return `<div class="player-modal-stat-cell"><span class="stat-label">${label}</span><span class="stat-value">${value != null ? value.toFixed(1) : '—'}</span></div>`;
+      return `<div class="player-modal-stat-cell" title="${statCellTooltip(field, false, isProjection)}"><span class="stat-label">${label}</span><span class="stat-value">${value != null ? value.toFixed(1) : '—'}</span></div>`;
     }).join('');
 
     const adpCells = player.adp != null
@@ -2569,7 +2605,7 @@
     const fieldKeys = WEEKLY_STAT_FIELDS[pos] || [];
     const labelByKey = new Map((POSITION_STAT_FIELDS[pos] || []));
     const statCells = fieldKeys.map((key, i) =>
-      `<div class="player-modal-stat-cell"><span class="stat-label">${labelByKey.get(key) || key}</span><span class="stat-value">${(statValues[i] ?? 0).toFixed(1)}</span></div>`
+      `<div class="player-modal-stat-cell" title="${statCellTooltip(key, true)}"><span class="stat-label">${labelByKey.get(key) || key}</span><span class="stat-value">${(statValues[i] ?? 0).toFixed(1)}</span></div>`
     ).join('');
 
     const prevWeek = [...weeks].reverse().find(w => w < week);
