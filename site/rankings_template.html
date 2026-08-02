@@ -178,6 +178,9 @@
     letter-spacing: 0.08em;
     color: var(--ink-muted);
   }
+  .week-stepper { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .week-stepper .stat-arrow { width: 28px; height: 28px; }
+  .week-stepper-label { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; min-width: 16px; text-align: center; }
 
   .stat-strip-row {
     display: flex;
@@ -1437,7 +1440,7 @@
 
   <section id="section-rankings" class="app-section">
     <div class="view-switcher">
-      <span class="view-label">Season</span>
+      <span class="view-label">Year</span>
       <div class="pills" id="viewPills"></div>
     </div>
 
@@ -1445,6 +1448,11 @@
       <span class="view-label">Projection</span>
       <div class="pills" id="projectionModePills"></div>
       <select class="week-select" id="weekSelect" aria-label="Jump to a specific week"></select>
+      <div class="week-stepper" id="weekStepper" hidden>
+        <button class="stat-arrow" id="weekStepperPrev" aria-label="Previous week" title="Previous week">‹</button>
+        <span class="week-stepper-label" id="weekStepperLabel"></span>
+        <button class="stat-arrow" id="weekStepperNext" aria-label="Next week" title="Next week">›</button>
+      </div>
     </div>
 
     <div class="stat-strip-row">
@@ -2181,7 +2189,7 @@
     wrap.innerHTML = '';
     const btn = document.createElement('button');
     btn.className = 'pill pill-sm' + (projectionMode === 'restofseason' ? ' active' : '');
-    btn.textContent = 'Rest of Season';
+    btn.textContent = 'Season';
     btn.addEventListener('click', () => switchProjectionMode('restofseason'));
     wrap.appendChild(btn);
 
@@ -2209,6 +2217,25 @@
       });
     }
     select.value = projectionMode.startsWith('week') ? projectionMode : '';
+
+    // Compact "‹ N ›" stepper, top-right of this row (see .week-stepper's
+    // margin-left: auto) -- lets you walk week-to-week without reopening
+    // the dropdown each time. Only shown once a specific week is picked
+    // (matches the dropdown's own visibility logic); Season has no single
+    // week to step through.
+    const stepper = document.getElementById('weekStepper');
+    const isWeekMode = projectionMode.startsWith('week');
+    stepper.hidden = !isWeekMode;
+    if (isWeekMode) {
+      const currentWeek = parseInt(projectionMode.slice(4), 10);
+      document.getElementById('weekStepperLabel').textContent = currentWeek;
+      const prevBtn = document.getElementById('weekStepperPrev');
+      const nextBtn = document.getElementById('weekStepperNext');
+      prevBtn.disabled = currentWeek <= 1;
+      nextBtn.disabled = currentWeek >= calendarWeeks;
+      prevBtn.onclick = () => switchProjectionMode(`week${currentWeek - 1}`);
+      nextBtn.onclick = () => switchProjectionMode(`week${currentWeek + 1}`);
+    }
   }
 
   // Yahoo-style scrollable schedule sidebar -- only shown when a specific
