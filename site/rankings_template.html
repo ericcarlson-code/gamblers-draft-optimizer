@@ -3587,6 +3587,30 @@
   // < 1 makes them rank worse) -- every bot still runs the same underlying
   // model, this only nudges which of two similarly-ranked players a given
   // team reaches for first, same spirit as a real GM's tendencies.
+  // Per-position override of the 50/50 VOR/market blend weight below --
+  // default 0.5 everywhere except WR. Real historical drafts (this league's
+  // own + the broader market) regularly take WRs in rounds 1-2, but the
+  // simulated draft never did (confirmed 2026-08-02: 8 full headless Sim
+  // Drafts pre-fix, WR's earliest pick was round 2 twice and round 3+
+  // otherwise, never round 1) despite the blend already ranking 2-3 real
+  // WR1s in the top ~13 overall -- RBs and QBs are simply so densely packed
+  // above them (7 RB + 4 QB in the top 15 blend slots) that WR gets
+  // squeezed out of whichever team's specific top-3-of-eligible window
+  // comes up, almost every time. User's own call: don't touch VOR itself
+  // (it's defensible on its own terms), just weight bots' market signal
+  // more heavily for WR specifically so real draft tendency wins out more
+  // often. Tuned against 15 more headless Sim Drafts: 0.58 barely moved the
+  // needle (round-2 WR rate stayed ~20-25%); 0.65 roughly doubled it
+  // (6/15 runs had a round-2 WR) without touching QB's own dominance
+  // (QBs still averaged ~5 of round 1's 10 picks across the same 15 runs --
+  // consistent with this league's real 2024/2025 drafts, 7 and 9 QBs in
+  // the first 20 picks, so NOT something to also try to fix here). Round 1
+  // stays QB/RB-heavy even at 0.65 -- that's this league's real 2-QB-format
+  // history holding, not a residual bug; a WR-specific market weight can't
+  // (and per the user's framing, shouldn't) out-muscle QB's own real
+  // early-round density.
+  const BOT_MARKET_WEIGHT_OVERRIDES = { WR: 0.65 };
+
   function computeBlendedBotRank(players, teamLabel) {
     const byVor = [...players].sort((a, b) => b.vor - a.vor);
     const vorRank = new Map(byVor.map((p, i) => [p.name, i + 1]));
@@ -3616,7 +3640,8 @@
     return players
       .map(p => {
         const marketRank = Math.min(adpRank.get(p.name), historicalRank.get(p.name));
-        const base = 0.5 * vorRank.get(p.name) + 0.5 * marketRank;
+        const marketWeight = BOT_MARKET_WEIGHT_OVERRIDES[p.position] ?? 0.5;
+        const base = (1 - marketWeight) * vorRank.get(p.name) + marketWeight * marketRank;
         const mult = teamAffinity ? (teamAffinity[p.position] || 1) : 1;
         return { ...p, botBlendScore: base / mult };
       })
