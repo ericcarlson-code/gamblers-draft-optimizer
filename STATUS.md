@@ -25,6 +25,8 @@ This file is the single source of truth for "what's actually built right now" �
 
 ## Recent changes (most recent first)
 
+**Rankings: week stepper + label cleanup (2026-08-02):** a compact "‹ N ›" clicker in the top-right of the Projection row lets you walk week-to-week without reopening the dropdown. Renamed "Rest of Season" -> "Season" (shorter); freed "Season" up to relabel the year-selector row (was ambiguously also "Season") to "Year".
+
 **Historical Review: full draft recap modal (2026-08-02):** a "View Full Draft Recap" button next to the Season selector (only shown for years with a full real draft loaded -- currently 2023-2025) opens every team's actual picks for that season, round by round, in a grid styled like Mock Draft's own draft board. Clicking any player opens their usual detail card against that season's board.
 
 **Mock Draft: WR market-weight bump (2026-08-02):** real historical drafts regularly take WRs in rounds 1-2, but the simulated draft never did (confirmed via headless Sim Drafts) despite the bot blend already ranking 2-3 real WR1s in the top ~13 overall -- RB/QB density above them squeezed WR out almost every time. Added `BOT_MARKET_WEIGHT_OVERRIDES` to `computeBlendedBotRank` (WR's market-signal weight raised 0.5 -> 0.65, bots only -- the human's own recommendations stay pure VOR, unchanged). Verified: roughly doubles round-2 WR frequency without disturbing QB's own real early-round density (this league's real 2QB-format drafts already run ~5 QBs in round 1).
