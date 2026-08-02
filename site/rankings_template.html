@@ -1571,6 +1571,7 @@
     <div class="hist-controls">
       <label class="field-label" for="histYearSelect" style="margin:0;">Season</label>
       <select id="histYearSelect"></select>
+      <button class="btn-secondary btn-sm" id="histDraftRecapBtn" hidden title="See every team's full draft, round by round">View Full Draft Recap</button>
       <label class="field-label" for="histTeamSelect" style="margin:0;" id="histTeamSelectLabel" hidden>Team</label>
       <select id="histTeamSelect" hidden></select>
     </div>
@@ -1615,6 +1616,13 @@
   <div class="modal-box modal-box-wide">
     <button class="modal-close" id="teamPageModalClose" aria-label="Close">×</button>
     <div id="teamPageModalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="draftRecapModalOverlay" hidden>
+  <div class="modal-box modal-box-wide">
+    <button class="modal-close" id="draftRecapModalClose" aria-label="Close">×</button>
+    <div id="draftRecapModalContent"></div>
   </div>
 </div>
 
@@ -5475,12 +5483,66 @@
       </table></div></div>`;
   }
 
+  // Every team's full draft, round by round -- reuses Mock Draft's own
+  // .draft-board-grid/.draft-board-cell styling (same position-accent
+  // colors, same filled/empty shape) so a real historical draft and a
+  // simulated one read as the same kind of object, just fed
+  // FANTASY_DRAFT_RESULTS[year] instead of a live mockDraft.picksLog.
+  function renderDraftRecapContent(year) {
+    const picks = FANTASY_DRAFT_RESULTS[year] || [];
+    const teams = fullDraftTeams(year);
+    const pool = rescoreBoard(DATA_BY_VIEW[year], false);
+    const byName = new Map(pool.map(p => [p.name.toLowerCase(), p]));
+    const maxRound = picks.reduce((m, e) => Math.max(m, e.round), 0);
+
+    const byRoundTeam = {};
+    picks.forEach(e => { byRoundTeam[`${e.round}-${e.team}`] = e; });
+
+    let grid = `<div class="draft-board-header-cell">Rd</div>`;
+    teams.forEach(team => { grid += `<div class="draft-board-header-cell">${team}</div>`; });
+
+    for (let round = 1; round <= maxRound; round++) {
+      grid += `<div class="draft-board-round-cell">${round}</div>`;
+      teams.forEach(team => {
+        const e = byRoundTeam[`${round}-${team}`];
+        if (!e) { grid += `<div class="draft-board-cell empty"></div>`; return; }
+        const p = e.resolved ? byName.get(e.player.toLowerCase()) : null;
+        if (!p) {
+          grid += `<div class="draft-board-cell filled" title="${e.player} -- Rd ${e.round}, Pick #${e.overall_pick}">
+            <span class="draft-board-name">${e.player}</span>
+          </div>`;
+          return;
+        }
+        grid += `<div class="draft-board-cell filled pos-${p.position}" title="${p.name} (${p.position}) -- Rd ${e.round}, Pick #${e.overall_pick}, ${p.team}">
+          ${playerImageHtml(p.name, p.team, 'draft-board-avatar')}
+          <span class="draft-board-name player-name-link" data-player-name="${p.name}">${p.name}</span>
+        </div>`;
+      });
+    }
+
+    return `
+      <h3 class="subhead" style="margin-bottom:2px;">${year} Draft Recap</h3>
+      <p class="cell-muted" style="margin-bottom:14px;">Every team's real picks that season, round by round. Click any player for their full detail card.</p>
+      <div class="draft-board-scroll"><div class="draft-board-grid" style="grid-template-columns: 56px repeat(${teams.length}, 1fr);">${grid}</div></div>
+    `;
+  }
+
+  function openDraftRecapModal(year) {
+    document.getElementById('draftRecapModalContent').innerHTML = renderDraftRecapContent(year);
+    document.getElementById('draftRecapModalOverlay').hidden = false;
+  }
+
+  function closeDraftRecapModal() {
+    document.getElementById('draftRecapModalOverlay').hidden = true;
+  }
+
   function renderHistorical() {
     const year = document.getElementById('histYearSelect').value;
     const hasFullDraft = !!(FANTASY_DRAFT_RESULTS[year] && FANTASY_DRAFT_RESULTS[year].length);
     document.getElementById('histTeamSelectLabel').hidden = !hasFullDraft;
     document.getElementById('histTeamSelect').hidden = !hasFullDraft;
     document.getElementById('histFullDraftNote').hidden = !hasFullDraft;
+    document.getElementById('histDraftRecapBtn').hidden = !hasFullDraft;
     document.getElementById('histManualNote').hidden = hasFullDraft;
     document.getElementById('histManualEntryWrap').hidden = hasFullDraft;
 
@@ -5507,6 +5569,19 @@
       const team = document.getElementById('histTeamSelect').value;
       renderFullDraftReview(year, team);
       renderHistTransactions(year, team);
+    });
+
+    document.getElementById('histDraftRecapBtn').addEventListener('click', () => {
+      openDraftRecapModal(document.getElementById('histYearSelect').value);
+    });
+    document.getElementById('draftRecapModalClose').addEventListener('click', closeDraftRecapModal);
+    document.getElementById('draftRecapModalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'draftRecapModalOverlay') { closeDraftRecapModal(); return; }
+      const trigger = e.target.closest('[data-player-name]');
+      if (trigger) openPlayerModal(trigger.dataset.playerName, rescoreBoard(DATA_BY_VIEW[document.getElementById('histYearSelect').value], false), document.getElementById('histYearSelect').value);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDraftRecapModal();
     });
 
     // Player names throughout Historical Review's results (manual-entry,
