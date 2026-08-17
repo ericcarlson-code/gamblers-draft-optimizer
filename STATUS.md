@@ -25,6 +25,8 @@ This file is the single source of truth for "what's actually built right now" �
 
 ## Recent changes (most recent first)
 
+**Real 2026 league update: 9 teams, real draft order (2026-08-02):** Elite dropped out (10 -> 9 teams, `league_config.json`'s `num_teams`). `GAMBLERS_TEAM_NAMES` updated to the real 9-team slot-pick priority order the user gave live; Mock Draft's bot labels now use this exact order instead of a random shuffle. Confirmed live during the session as the real draft-slot selection happened: Redskins slot 1, JBDA slot 2, Cardinals (user's own team) slot 3, per plan.
+
 **Rankings: week stepper + label cleanup (2026-08-02):** a compact "‹ N ›" clicker in the top-right of the Projection row lets you walk week-to-week without reopening the dropdown. Renamed "Rest of Season" -> "Season" (shorter); freed "Season" up to relabel the year-selector row (was ambiguously also "Season") to "Year".
 
 **Historical Review: full draft recap modal (2026-08-02):** a "View Full Draft Recap" button next to the Season selector (only shown for years with a full real draft loaded -- currently 2023-2025) opens every team's actual picks for that season, round by round, in a grid styled like Mock Draft's own draft board. Clicking any player opens their usual detail card against that season's board.
