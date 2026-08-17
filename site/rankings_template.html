@@ -1509,7 +1509,7 @@
       <p class="section-intro">Bot opponents draft off a 50/50 blend of this league's own VOR ranking and real market ADP (+ roster need) in snake order, with some pick-to-pick variance so drafts don't play out identically every time. Your own recommendations stay pure VOR -- that's the real edge this model gives you over opponents who partly follow generic market consensus instead. Recomputes value from only the undrafted pool after every pick, same as the live app.</p>
       <label class="field-label" for="mockSlotInput">Your draft slot (1–<span id="mockNumTeams"></span>)</label>
       <div class="mock-setup-row">
-        <input type="number" id="mockSlotInput" min="1" value="1" />
+        <input type="number" id="mockSlotInput" min="1" value="3" />
         <button class="btn-secondary" id="mockRandomizeSlotBtn" title="Pick a random draft slot">Randomize</button>
         <button class="btn-primary" id="mockStartBtn">Start Mock Draft</button>
       </div>
@@ -1723,16 +1723,18 @@
   // filter those out before treating a row as a real owner decision (see
   // computeTeamPositionAffinity below, the one current consumer).
   const TRANSACTIONS = DATA_BY_VIEW.transactions || {};
-  // This real league's actual 10 team names (2025 season) -- Cardinals is
-  // the user's own team, listed first so it lines up with the 'Me' slot
-  // convention used elsewhere (see PRESET_ROSTERS_2025 further down, which
-  // must stay in sync with this list). Used by Mock Draft to label bot
-  // opponents with real Gamblers league teams instead of generic "Team N"
-  // placeholders, and to key each bot's historical position-draft tendency
-  // (see computeTeamPositionAffinity below).
+  // This real league's actual 9 team names for 2026 (Elite dropped out,
+  // 10 -> 9 teams), in the real priority order the user gave (2026-08-02)
+  // for choosing draft SLOT -- each team picks their preferred available
+  // slot in this order, it's NOT itself a fixed slot assignment. Used by
+  // Mock Draft to label bot opponents with real Gamblers league teams
+  // instead of generic "Team N" placeholders (see mockBotTeamNames, which
+  // uses this exact order as the anticipated slot order once the human's
+  // own chosen slot is filtered out), and to key each bot's historical
+  // position-draft tendency (see computeTeamPositionAffinity below).
   const GAMBLERS_TEAM_NAMES = [
-    'Cardinals', 'Hoofers', 'ChronicMasterdeflatr', 'Elite', 'Greendawgs',
-    'Just Bout Dat Action', "Let's Ride", 'Redskins', 'Sportos', 'Wildcard',
+    'Redskins', 'Just Bout Dat Action', 'Cardinals', 'ChronicMasterdeflatr',
+    'Sportos', 'Greendawgs', "Let's Ride", 'Hoofers', 'Wildcard',
   ];
   const INJURY_GAMES_MISSED = DATA_BY_VIEW.injury_games_missed || {};
   // {year: {player_name_lower: {pos, w: [[week, points, opponent_team,
@@ -4339,24 +4341,19 @@
     });
   }
 
-  function shuffled(arr) {
-    const out = [...arr];
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
-  }
-
   // Bot opponents are labeled with real Gamblers league teams (excluding
   // Cardinals, the user's own team -- always shown as 'Me') instead of
-  // generic "Team N" placeholders, randomly assigned to draft slots each
-  // time a mock draft starts (2026's real draft order isn't set yet, so
-  // there's no "correct" slot for any team). Falls back to "Team N" for any
-  // slot beyond the real roster of 9 opponents, in case num_teams is ever
-  // edited above 10 in League Details.
+  // generic "Team N" placeholders. Assigned in GAMBLERS_TEAM_NAMES' own
+  // order (the real 2026 slot-pick priority order the user gave 2026-08-02),
+  // NOT shuffled -- when the human's own slot lines up with Cardinals' real
+  // position in that order (3rd), this reproduces the real anticipated
+  // draft order exactly; picking a different slot for 'Me' in the Mock
+  // Draft UI still uses the other 8 teams' real relative order, just
+  // shifted around wherever 'Me' lands. Falls back to "Team N" for any slot
+  // beyond the real roster of 8 opponents, in case num_teams is ever edited
+  // above 9 in League Details.
   function mockBotTeamNames(numTeams) {
-    const realOpponents = shuffled(GAMBLERS_TEAM_NAMES.filter(n => n !== 'Cardinals'));
+    const realOpponents = GAMBLERS_TEAM_NAMES.filter(n => n !== 'Cardinals');
     const names = [];
     for (let i = 0; i < numTeams - 1; i++) {
       names.push(i < realOpponents.length ? realOpponents[i] : `Team ${i + 2}`);
