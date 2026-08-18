@@ -604,32 +604,29 @@ COMMITTEE_MIN_VOLUME = 40  # ignore tiny/noisy samples on either side
 COMMITTEE_MIN_GAMES = 15
 
 
-def compute_committee_notes() -> dict[str, str]:
-    """{player_name: note} for players whose real 2024->2025 volume dropped,
-    while playing close to a full season both years (see COMMITTEE_MIN_GAMES
-    -- rules out injury as the explanation), at the same time a same-team,
-    same-position teammate's volume rose sharply -- a real, confirmed model
-    gap (2026-08-18): our recency-weighted projection (optimizer/
-    projections.py) already down-weights older seasons, but it has no way
-    to extrapolate an ONGOING committee shift forward, only to average what
-    already happened. Real example that prompted this: Kyren Williams's
-    carries fell 316->259 (2024->2025, 17 games both years -- a real,
-    healthy role change) while teammate Blake Corum's rose 58->145 (+150%)
-    over the same span -- real market ADP already ranks Kyren ~15 spots
-    below our own VOR-based rank as a result, a gap this note surfaces
-    directly on his card instead of silently blending ADP into VOR (which
-    stays deliberately pure everywhere else on this site). Computed once
-    from 2024/2025 actual stats (not projections) -- a real, backward-
-    looking fact, not a prediction that the trend continues. Returns {} if
-    either year's stats file is missing."""
+def find_committee_pairs() -> list[dict]:
+    """[{decliner, riser, team, position, field, v24, v25, r24, r25}, ...] for
+    every same-team, same-position pair where one player's real volume
+    dropped (while playing close to a full season both years -- see
+    COMMITTEE_MIN_GAMES) at the same time the other's rose sharply. Shared
+    by compute_committee_notes() (flags the decliner's card, see its own
+    docstring for the real Kyren Williams/Blake Corum example that prompted
+    this) and scripts/build_2026_projections.py (re-projects the RISER's
+    volume with a more recent-weighted blend -- see that script's own
+    comment for why the default recency weighting still undershoots a
+    still-accelerating role: a rookie-year rate at even 25% weight drags
+    the blend down hard when the gap between it and the breakout rate is
+    large, e.g. Corum's 121.7 projected carries came in BELOW his already-
+    full-season 2025 rate of 145, despite his role visibly still growing).
+    Returns [] if either year's stats file is missing."""
     path_2024 = DATA_DIR / "2024_actual_stats.csv"
     path_2025 = DATA_DIR / "2025_actual_stats.csv"
     if not path_2024.exists() or not path_2025.exists():
-        return {}
+        return []
     df_2024 = pd.read_csv(path_2024)
     df_2025 = pd.read_csv(path_2025)
 
-    notes: dict[str, str] = {}
+    pairs: list[dict] = []
     for position, field in COMMITTEE_VOLUME_FIELD.items():
         if field not in df_2024.columns or field not in df_2025.columns:
             continue
@@ -665,14 +662,36 @@ def compute_committee_notes() -> dict[str, str]:
                         continue
                     if r25 < r24 * (1 + COMMITTEE_RISE_THRESHOLD):
                         continue  # didn't rise enough to matter
-                    decline_pct = round((1 - v25 / v24) * 100)
-                    rise_pct = round((r25 / r24 - 1) * 100)
-                    notes[decliner] = (
-                        f"Committee trend: {riser}'s {field} rose {int(r24)}→{int(r25)} "
-                        f"(+{rise_pct}%) from 2024 to 2025 while yours fell {int(v24)}→{int(v25)} "
-                        f"({-decline_pct}%) -- our model already discounts recent seasons more "
-                        f"heavily, but can't predict whether this shift keeps going."
-                    )
+                    pairs.append({
+                        "decliner": decliner, "riser": riser, "team": team, "position": position,
+                        "field": field, "v24": v24, "v25": v25, "r24": r24, "r25": r25,
+                    })
+    return pairs
+
+
+def compute_committee_notes() -> dict[str, str]:
+    """{player_name: note} for the DECLINER of each find_committee_pairs()
+    result -- a real, confirmed model gap (2026-08-18): our recency-weighted
+    projection (optimizer/projections.py) already down-weights older
+    seasons, but it has no way to extrapolate an ONGOING committee shift
+    forward, only to average what already happened. Real example that
+    prompted this: Kyren Williams's carries fell 316->259 (2024->2025, 17
+    games both years -- a real, healthy role change) while teammate Blake
+    Corum's rose 58->145 (+150%) over the same span -- real market ADP
+    already ranks Kyren ~15 spots below our own VOR-based rank as a result,
+    a gap this note surfaces directly on his card instead of silently
+    blending ADP into VOR (which stays deliberately pure everywhere else on
+    this site)."""
+    notes: dict[str, str] = {}
+    for pair in find_committee_pairs():
+        decline_pct = round((1 - pair["v25"] / pair["v24"]) * 100)
+        rise_pct = round((pair["r25"] / pair["r24"] - 1) * 100)
+        notes[pair["decliner"]] = (
+            f"Committee trend: {pair['riser']}'s {pair['field']} rose {int(pair['r24'])}→{int(pair['r25'])} "
+            f"(+{rise_pct}%) from 2024 to 2025 while yours fell {int(pair['v24'])}→{int(pair['v25'])} "
+            f"({-decline_pct}%) -- our model already discounts recent seasons more "
+            f"heavily, but can't predict whether this shift keeps going."
+        )
     return notes
 
 

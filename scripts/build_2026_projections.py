@@ -30,7 +30,11 @@ from optimizer.depth_chart import (  # noqa: E402
 from optimizer.projections import STAT_FIELDS, build_projection  # noqa: E402
 from optimizer.rookie_projections import build_round_position_baseline, project_rookies  # noqa: E402
 from optimizer.scoring import score_player  # noqa: E402
-from scripts.build_rankings_artifact_data import CONSENSUS_NAME_ALIASES, _build_name_resolver  # noqa: E402
+from scripts.build_rankings_artifact_data import (  # noqa: E402
+    CONSENSUS_NAME_ALIASES,
+    _build_name_resolver,
+    find_committee_pairs,
+)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
 VETERAN_MODEL_YEARS = [2023, 2024, 2025]
@@ -46,6 +50,21 @@ GAMES_SAMPLE_SEASON = 2025  # most recent completed season -- real games-played 
 # showed NYJ, not KC), silently keeping the corrected damping from ever
 # triggering for exactly the players it exists to catch.
 CURRENT_DEPTH_CHART_SEASON = 2026
+# Applied only to confirmed committee "risers" (see find_committee_pairs) --
+# a real, confirmed model gap (2026-08-18): the DEFAULT_WEIGHTS blend (0.6/
+# 0.25/0.15) still undershoots a player whose role is visibly still growing,
+# because even a 25% weight on a much-lower rookie/earlier-season rate drags
+# the blend down hard when the gap to the breakout season is large. Real
+# example: Blake Corum's carries rose 58->145 (+150%, both full seasons) --
+# DEFAULT_WEIGHTS projected him at just 121.7 carries, BELOW his already-
+# realized 2025 total, while our own model ranked him #321 overall against
+# real market consensus's ~#98 (Flock/blended consensus both agree). Only
+# applied to players find_committee_pairs() already confirmed played a real,
+# full, healthy season at the higher rate (not a small-sample fluke) --
+# weighted almost entirely toward that confirmed rate, with a modest 15%
+# floor on the prior season as a regression-to-mean guard rather than fully
+# committing to a single season's rate.
+COMMITTEE_RISER_WEIGHTS = {2025: 0.85, 2024: 0.15}
 ROOKIE_BASELINE_TRAINING_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
 ROOKIE_CLASS_YEAR = 2026
 
@@ -66,6 +85,25 @@ def main() -> None:
 
     games_per_season = load_config()["season"]["games_per_season"]
     veteran_projection = build_projection(history, games_per_season=games_per_season)
+
+    try:
+        riser_keys = {(p["riser"], p["position"]) for p in find_committee_pairs()}
+        if riser_keys:
+            recent_weighted = build_projection(history, weights=COMMITTEE_RISER_WEIGHTS, games_per_season=games_per_season)
+            recent_lookup = {(r["name"], r["position"]): r for r in recent_weighted.to_dict("records")}
+            reprojected = 0
+            for idx, row in veteran_projection.iterrows():
+                key = (row["name"], row["position"])
+                if key not in riser_keys or key not in recent_lookup:
+                    continue
+                replacement = recent_lookup[key]
+                for field in STAT_FIELDS:
+                    if field in veteran_projection.columns and field in replacement:
+                        veteran_projection.at[idx, field] = replacement[field]
+                reprojected += 1
+            print(f"Re-projected {reprojected} confirmed committee riser(s) with a recent-weighted blend")
+    except Exception as e:
+        print(f"Committee riser re-projection skipped ({e})")
 
     if GAMES_SAMPLE_SEASON in history:
         try:
