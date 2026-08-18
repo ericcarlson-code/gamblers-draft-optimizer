@@ -584,6 +584,98 @@ def load_injury_games_missed() -> dict[str, dict[str, int]]:
     return result
 
 
+# Position -> the one real volume stat that best signals "how big a role
+# did this player have," for detecting a same-team committee shift.
+COMMITTEE_VOLUME_FIELD = {"RB": "carries", "WR": "targets", "TE": "targets", "QB": "pass_att"}
+COMMITTEE_DECLINE_THRESHOLD = 0.10  # player's own volume dropped >=10%
+COMMITTEE_RISE_THRESHOLD = 0.50  # a same-team, same-position teammate's volume rose >=50%
+COMMITTEE_MIN_VOLUME = 40  # ignore tiny/noisy samples on either side
+# The DECLINING player must have played close to a full season BOTH years --
+# otherwise a real injury (not a role change) is the more likely explanation
+# for a volume drop, and flagging it as a "committee trend" would be actively
+# misleading. Real false positives caught during testing (2026-08-18) before
+# this filter existed: Jayden Daniels (7 games in 2025, hurt -- Marcus
+# Mariota's snaps filling in for an injury, not a real QB change) and Kirk
+# Cousins (10 games, benched mid-injury-recovery) both got flagged the same
+# way as Kyren Williams's genuine, healthy-all-season role erosion. No such
+# filter is needed on the RISING teammate's side -- a backup playing fewer
+# games is normal and doesn't undermine the signal that their role, when it
+# was on the field, was growing.
+COMMITTEE_MIN_GAMES = 15
+
+
+def compute_committee_notes() -> dict[str, str]:
+    """{player_name: note} for players whose real 2024->2025 volume dropped,
+    while playing close to a full season both years (see COMMITTEE_MIN_GAMES
+    -- rules out injury as the explanation), at the same time a same-team,
+    same-position teammate's volume rose sharply -- a real, confirmed model
+    gap (2026-08-18): our recency-weighted projection (optimizer/
+    projections.py) already down-weights older seasons, but it has no way
+    to extrapolate an ONGOING committee shift forward, only to average what
+    already happened. Real example that prompted this: Kyren Williams's
+    carries fell 316->259 (2024->2025, 17 games both years -- a real,
+    healthy role change) while teammate Blake Corum's rose 58->145 (+150%)
+    over the same span -- real market ADP already ranks Kyren ~15 spots
+    below our own VOR-based rank as a result, a gap this note surfaces
+    directly on his card instead of silently blending ADP into VOR (which
+    stays deliberately pure everywhere else on this site). Computed once
+    from 2024/2025 actual stats (not projections) -- a real, backward-
+    looking fact, not a prediction that the trend continues. Returns {} if
+    either year's stats file is missing."""
+    path_2024 = DATA_DIR / "2024_actual_stats.csv"
+    path_2025 = DATA_DIR / "2025_actual_stats.csv"
+    if not path_2024.exists() or not path_2025.exists():
+        return {}
+    df_2024 = pd.read_csv(path_2024)
+    df_2025 = pd.read_csv(path_2025)
+
+    notes: dict[str, str] = {}
+    for position, field in COMMITTEE_VOLUME_FIELD.items():
+        if field not in df_2024.columns or field not in df_2025.columns:
+            continue
+        pos_2024 = df_2024[df_2024["position"] == position]
+        pos_2025 = df_2025[df_2025["position"] == position]
+        vol_2024 = {(r.name, r.team): getattr(r, field) for r in pos_2024.itertuples()}
+        vol_2025 = {(r.name, r.team): getattr(r, field) for r in pos_2025.itertuples()}
+        games_2024 = {(r.name, r.team): r.games_played for r in pos_2024.itertuples()}
+        games_2025 = {(r.name, r.team): r.games_played for r in pos_2025.itertuples()}
+
+        # Group by team (2025 rosters) to find same-team, same-position pairs.
+        by_team: dict[str, list[str]] = {}
+        for (name, team) in vol_2025:
+            by_team.setdefault(team, []).append(name)
+
+        for team, names in by_team.items():
+            for decliner in names:
+                key = (decliner, team)
+                v24, v25 = vol_2024.get(key), vol_2025.get(key)
+                g24, g25 = games_2024.get(key), games_2025.get(key)
+                if v24 is None or v25 is None or v24 < COMMITTEE_MIN_VOLUME:
+                    continue
+                if g24 is None or g25 is None or g24 < COMMITTEE_MIN_GAMES or g25 < COMMITTEE_MIN_GAMES:
+                    continue  # missed real time either year -- injury, not role change
+                if v25 > v24 * (1 - COMMITTEE_DECLINE_THRESHOLD):
+                    continue  # didn't decline enough to matter
+                for riser in names:
+                    if riser == decliner:
+                        continue
+                    r24 = vol_2024.get((riser, team))
+                    r25 = vol_2025.get((riser, team))
+                    if r24 is None or r25 is None or r24 < COMMITTEE_MIN_VOLUME:
+                        continue
+                    if r25 < r24 * (1 + COMMITTEE_RISE_THRESHOLD):
+                        continue  # didn't rise enough to matter
+                    decline_pct = round((1 - v25 / v24) * 100)
+                    rise_pct = round((r25 / r24 - 1) * 100)
+                    notes[decliner] = (
+                        f"Committee trend: {riser}'s {field} rose {int(r24)}→{int(r25)} "
+                        f"(+{rise_pct}%) from 2024 to 2025 while yours fell {int(v24)}→{int(v25)} "
+                        f"({-decline_pct}%) -- our model already discounts recent seasons more "
+                        f"heavily, but can't predict whether this shift keeps going."
+                    )
+    return notes
+
+
 def build_data_bundle(cfg: dict) -> dict:
     """{'2026': [...rows with history...], '2025': [...], ..., '2020': [...]}"""
     year_boards = {
@@ -618,6 +710,12 @@ def build_data_bundle(cfg: dict) -> dict:
         # so the frontend can render it (and the line leading to it) distinctly.
         history.append({"year": 2026, "vor": row["vor"], "projected": True})
         row["history"] = history
+
+    committee_notes = compute_committee_notes()
+    for row in projection_rows:
+        note = committee_notes.get(row["name"])
+        if note:
+            row["committee_note"] = note
 
     bundle = {
         "meta": {

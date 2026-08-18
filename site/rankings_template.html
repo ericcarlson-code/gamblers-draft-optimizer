@@ -1002,6 +1002,15 @@
     color: var(--ink);
   }
   .hist-note { font-size: 12.5px; color: var(--ink-muted); margin: 10px 0 20px; }
+  .committee-note {
+    font-size: 12.5px;
+    margin: 10px 0 20px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--accent-2) 10%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent-2) 30%, var(--line));
+    color: var(--ink);
+  }
   .hist-week-slider-row {
     display: flex;
     align-items: center;
@@ -2595,6 +2604,7 @@
       </div>
 
       ${player.projection_source === 'draft_capital_model' ? `<p class="hist-note">This is a rookie projection from NFL draft round/position alone, not real prior-season stats -- see League Details for the full methodology and its limitations.</p>` : ''}
+      ${player.committee_note ? `<p class="committee-note">⚠ ${player.committee_note}</p>` : ''}
 
       <div class="player-modal-section">
         <h3 class="subhead" style="font-size:16px;">Year-over-Year VOR</h3>
@@ -3088,7 +3098,7 @@
       const posRank = ourPositionRanks ? ourPositionRanks.get(d.name) : null;
       tr.innerHTML = `
         <td class="rank">${d.overall_rank}${posRank != null ? `<span class="pos-rank-badge">${d.position}${posRank}</span>` : ''}</td>
-        <td>${playerImageHtml(d.name, d.team)}<span class="player-name player-name-link" data-player-name="${d.name}">${d.name}</span>${teamBadgeHtml(d.team)}${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}${d.isBye ? '<span class="bye-badge" title="On a bye this week">BYE</span>' : ''}</td>
+        <td>${playerImageHtml(d.name, d.team)}<span class="player-name player-name-link" data-player-name="${d.name}">${d.name}</span>${teamBadgeHtml(d.team)}${injuryBadgeHtml(d.injuryStatus)}${rookieBadgeHtml(d.projection_source)}${d.isBye ? '<span class="bye-badge" title="On a bye this week">BYE</span>' : ''}${d.committee_note ? `<span class="injury-badge injury-badge-warn" title="${d.committee_note}">⚠</span>` : ''}</td>
         <td><span class="pos-chip">${d.position}</span></td>
         <td class="num">${d.points.toFixed(1)}</td>
         <td class="num">
