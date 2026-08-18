@@ -29,6 +29,7 @@ from optimizer.depth_chart import (  # noqa: E402
 )
 from optimizer.projections import STAT_FIELDS, build_projection  # noqa: E402
 from optimizer.rookie_projections import build_round_position_baseline, project_rookies  # noqa: E402
+from optimizer.scoring import score_player  # noqa: E402
 from scripts.build_rankings_artifact_data import CONSENSUS_NAME_ALIASES, _build_name_resolver  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "historical"
@@ -163,8 +164,42 @@ def main() -> None:
         keep = projection.apply(
             lambda r: r["position"] == "DEF" or bool(resolver(r["name"])), axis=1
         )
-        projection = projection[keep].reset_index(drop=True)
-        print(f"Trimmed universe {before} -> {len(projection)} players (consensus list + all DEF)")
+        trimmed = projection[keep].reset_index(drop=True)
+
+        # Kickers get the same real-team-coverage problem DEF used to have,
+        # just less total (confirmed 2026-08-18: NYJ/NYG/BUF all had zero K
+        # survive the consensus trim -- a generic consensus source doesn't
+        # bother ranking every team's kicker, especially a team with an open
+        # camp competition and no clear favorite yet). Unlike DEF (always
+        # exactly one row per team, so "keep regardless of consensus" is
+        # safe), a team can have several real kicker CANDIDATES in the
+        # pre-trim universe (NYG had 4) -- keeping all of them would bloat
+        # the board with deep camp-battle names nobody would draft. Instead:
+        # only backfill a team that has ZERO kickers after the consensus
+        # trim, adding back just that team's single highest-scoring
+        # candidate (VOR doesn't exist yet at this stage of the pipeline --
+        # that's computed later in build_rankings_artifact_data.py -- so
+        # score_player() against the current scoring config is the
+        # equivalent ranking signal available here) -- guarantees every
+        # real team has at least one representative K without over-including
+        # committee depth for teams that already have consensus coverage.
+        all_k = projection[projection["position"] == "K"].copy()
+        kept_k_teams = set(trimmed[trimmed["position"] == "K"]["team"])
+        missing_k_teams = set(all_k["team"]) - kept_k_teams
+        if missing_k_teams:
+            score_cfg = load_config()
+            all_k["_score"] = all_k.apply(lambda r: score_player(r.to_dict(), score_cfg), axis=1)
+            backfill = (
+                all_k[all_k["team"].isin(missing_k_teams)]
+                .sort_values("_score", ascending=False)
+                .drop_duplicates(subset="team", keep="first")
+                .drop(columns="_score")
+            )
+            trimmed = pd.concat([trimmed, backfill], ignore_index=True)
+            print(f"Backfilled {len(backfill)} kicker(s) with zero consensus coverage: {sorted(missing_k_teams)}")
+
+        projection = trimmed
+        print(f"Trimmed universe {before} -> {len(projection)} players (consensus list + all DEF + kicker backfill)")
     else:
         print(f"No {consensus_path} found -- skipping universe trim, keeping all {before} players")
 
