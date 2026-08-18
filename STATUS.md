@@ -25,6 +25,8 @@ This file is the single source of truth for "what's actually built right now" �
 
 ## Recent changes (most recent first)
 
+**Second backup-QB projection bug fixed (Joe Flacco); injury reports updated (2026-08-18):** user caught the recommendation engine favoring Joe Flacco over CeeDee Lamb with both QB slots full. Same bug class as the earlier Justin Fields fix but via a different path -- Flacco never changed teams and had a normal-sized 2025 sample (real spot starts for an injured Joe Burrow), so neither existing damping pass triggered. New `apply_current_rank_damping()` in `optimizer/depth_chart.py`, QB/K only: current real depth-chart rank alone is sufficient signal for these single-occupant-per-team positions, independent of team change or sample size. Verified: Flacco #388 overall (-61 VOR), correctly below Lamb (#37, +27 VOR). Also updated `data/injury_status.json`: Makai Lemon (Doubtful), Jordyn Tyson (IR, hamstring, researched via web search).
+
 **Real 2026 league update: 9 teams, real draft order (2026-08-02):** Elite dropped out (10 -> 9 teams, `league_config.json`'s `num_teams`). `GAMBLERS_TEAM_NAMES` updated to the real 9-team slot-pick priority order the user gave live; Mock Draft's bot labels now use this exact order instead of a random shuffle. Confirmed live during the session as the real draft-slot selection happened: Redskins slot 1, JBDA slot 2, Cardinals (user's own team) slot 3, per plan.
 
 **Rankings: week stepper + label cleanup (2026-08-02):** a compact "‹ N ›" clicker in the top-right of the Projection row lets you walk week-to-week without reopening the dropdown. Renamed "Rest of Season" -> "Season" (shorter); freed "Season" up to relabel the year-selector row (was ambiguously also "Season") to "Year".
