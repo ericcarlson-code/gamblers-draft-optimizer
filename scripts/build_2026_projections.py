@@ -20,6 +20,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from optimizer.config import load_config  # noqa: E402
 from optimizer.depth_chart import (  # noqa: E402
+    apply_current_rank_damping,
     apply_depth_chart_damping,
     apply_team_change_damping,
     current_team_map,
@@ -75,6 +76,16 @@ def main() -> None:
             print(f"Applied depth-chart damping using {len(depth_ranks)} real depth-chart entries")
         except Exception as e:  # network/data hiccup shouldn't break the whole projection build
             print(f"Depth-chart damping skipped ({e})")
+
+        try:
+            # QB/K only -- see apply_current_rank_damping's own docstring for
+            # why current rank alone (independent of team change AND sample
+            # size) is needed on top of the two passes above for these two
+            # single-occupant-slot positions specifically.
+            veteran_projection = apply_current_rank_damping(veteran_projection, depth_ranks, STAT_FIELDS)
+            print("Applied current-rank QB/K damping")
+        except Exception as e:
+            print(f"Current-rank QB/K damping skipped ({e})")
 
         try:
             # A player's stats CSV team goes stale the moment they change

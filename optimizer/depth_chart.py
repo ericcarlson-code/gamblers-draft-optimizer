@@ -121,6 +121,48 @@ def apply_depth_chart_damping(
     return projection
 
 
+# Positions where only ONE player takes the field at a time per real NFL
+# team -- unlike RB/WR/TE, where a same-team rank-2 is often a real
+# committee/WR2 role with legitimate volume (confirmed by spot-checking
+# several real examples), a current non-starter QB or K simply doesn't play
+# barring injury, full stop. This makes CURRENT real depth-chart rank alone
+# sufficient signal here, independent of both team change and sample size.
+SINGLE_OCCUPANT_POSITIONS = ("QB", "K")
+
+
+def apply_current_rank_damping(
+    projection: pd.DataFrame,
+    depth_ranks: dict[tuple[str, str], int],
+    stat_fields: list[str],
+) -> pd.DataFrame:
+    """Scales down a QB/K's projected stat line whenever they are NOT the
+    real, current depth-chart starter at their position -- regardless of
+    whether they changed teams (apply_team_change_damping's gate) or how
+    large their sample was (apply_depth_chart_damping's gate). Real,
+    confirmed second instance of this bug class (2026-08-18, distinct from
+    apply_team_change_damping's Justin Fields case): Joe Flacco (CIN) was
+    still projected at a full 3838-yard/25-TD starter line -- he never
+    changed teams, so that damping never triggered, and his 2025 sample was
+    a normal 13 games (real starts filling in for an injured Joe Burrow),
+    so the thin-sample gate never triggered either. Neither gate was ever
+    going to catch "was a real spot-starter last year, but this year the
+    guy he filled in for is healthy and he's back to clipboard duty" --
+    only checking current rank directly does. Run this for QB/K in addition
+    to (not instead of) the other two damping passes."""
+    projection = projection.copy()
+    for idx, row in projection.iterrows():
+        if row["position"] not in SINGLE_OCCUPANT_POSITIONS:
+            continue
+        rank = depth_ranks.get((row["name"], row["position"]))
+        if rank is None or rank <= 1:
+            continue
+        factor = DEPTH_RANK_DAMPING.get(rank, DEFAULT_DEEP_BENCH_DAMPING)
+        for field in stat_fields:
+            if field in projection.columns:
+                projection.at[idx, field] = projection.at[idx, field] * factor
+    return projection
+
+
 def apply_team_change_damping(
     projection: pd.DataFrame,
     depth_ranks: dict[tuple[str, str], int],
